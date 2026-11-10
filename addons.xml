@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.5" provider-name="Prime Scene contributors; Sandmann79 and Varstahl (backend)">
+  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.6" provider-name="Prime Scene contributors; Sandmann79 and Varstahl (backend)">
     <requires>
       <import addon="xbmc.python" version="3.0.0" />
       <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -20,14 +20,14 @@
       <reuselanguageinvoker>false</reuselanguageinvoker>
       <license>GPL-3.0-or-later</license>
       <assets>
-        <icon>icon.png</icon>
-        <fanart>fanart.png</fanart>
+        <icon>resources/art/prime-scene-icon-v2.png</icon>
+        <fanart>resources/art/prime-scene-fanart-v2.png</fanart>
       </assets>
       <summary lang="en_GB">Progressive Prime Video browsing in a dedicated interface</summary>
       <description lang="en_GB">Independent community add-on with its own catalog, authentication, playback and settings. Includes backend code derived from Sandmann79/xbmc. Not affiliated with Amazon.</description>
     </extension>
   </addon>
-  <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.0" provider-name="Prime Scene contributors">
+  <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.1" provider-name="Prime Scene contributors">
     <extension point="xbmc.addon.repository">
       <dir>
         <info compressed="false">https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/addons.xml</info>

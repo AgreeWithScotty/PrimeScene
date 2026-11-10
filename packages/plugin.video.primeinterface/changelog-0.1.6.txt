@@ -1,0 +1,6 @@
+0.1.6
+- Rounded, framed inset sidebar buttons with gold text and the same blue focus.
+- Cinematic category artwork appears instantly; Home always uses our artwork.
+- Home removes top headings and starts the category grid near the top.
+- New Prime Scene icon and backdrop clearly labeled for Prime Video.
+- Existing sign-in, playback, fit artwork and progressive selection behavior preserved.
