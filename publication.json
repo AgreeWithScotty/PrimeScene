@@ -1,13 +1,18 @@
 {
   "base_url": "https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/",
-  "app_version": "0.1.4",
+  "app_version": "0.1.5",
   "files": {
-    "addons.xml": "a7b71219f4991d9018b4472485cb82438fa78d1bb3e384293fcd12ebb3fdcb9b",
-    "addons.xml.md5": "79d9edb6f84a4dc9f398fb4d60e94e88d3810c34a49ee213f8de071712864e6d",
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "addons.xml": "149e614b025c963361070a39be79f58e576c5329a2cac4bae6bf6799ae9a7382",
+    "addons.xml.md5": "e11ed4c41b00375b82c53209b1342b2ce77a07613add6b73d260d11cc5955ccf",
+    "LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
+    "README.md": "18b6c9ceb015ed372bd39d8bd12db3fcaedca3a9aeba3d27f5ccb5568f77ae1d",
     "packages/plugin.video.primeinterface/changelog-0.1.4.txt": "2095da75f8b2a3293dfe97db85c3b5793f91f4b3831a16e25ab15050528b5fd4",
+    "packages/plugin.video.primeinterface/changelog-0.1.5.txt": "ea992bcaa67afc607cc072348aeb834290069396c8803506a0ad19f4c20b020f",
     "packages/plugin.video.primeinterface/fanart.png": "1b02526244392a6feaebeac9b8264f2ae67a9ed8fc3d408fb90c9315c605276b",
     "packages/plugin.video.primeinterface/icon.png": "f0e30a1582590cb35c7bfc5fd989c3b746409beee6bbffd68e84b72e50e3c560",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.1.4.zip": "fa28259c7fdc000f8f17a8acfe2de1bd9adf7fe6e2ffe0802611720eed165b72",
+    "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.1.5.zip": "b96b86116e4d90de98d14ae119318e7e58049bd166a9b8edf9d851635f25c90d",
     "packages/repository.primescene/addon.xml": "cbce38e195bbbefc36e49616a0ec659dde28be518e06201950235b5afaa44adf",
     "packages/repository.primescene/icon.png": "f0e30a1582590cb35c7bfc5fd989c3b746409beee6bbffd68e84b72e50e3c560",
     "packages/repository.primescene/repository.primescene-0.1.0.zip": "cf5b18c11aa571e4cf24c42f8a8597a664981763af49a5875b40e888b6f19bc4"

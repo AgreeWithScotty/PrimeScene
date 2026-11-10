@@ -1,0 +1,5 @@
+0.1.5
+- Black sidebar buttons with gold lettering; existing blue hover retained.
+- Category artwork from cached provider images, with bundled cinema fallback.
+- Fit entire video artwork without cropping; two complete card rows.
+- Preserve selected title and sidebar focus while results append.
