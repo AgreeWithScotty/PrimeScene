@@ -1,0 +1,3 @@
+0.1.4
+- Add Settings / Updates / Check for updates using Kodi repository updates.
+- Finish plugin loading before opening the interface script; correct native WindowXML construction and trace startup stages.

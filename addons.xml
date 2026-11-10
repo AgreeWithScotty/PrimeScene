@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='utf-8'?>
+<addons>
+  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.4" provider-name="Prime Scene contributors; Sandmann79 and Varstahl (backend)">
+    <requires>
+      <import addon="xbmc.python" version="3.0.0" />
+      <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
+      <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1" />
+      <import addon="script.module.pyxbmct" version="1.3.1+matrix.1" />
+      <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1" />
+      <import addon="script.module.requests" version="2.22.0+matrix.1" />
+      <import addon="script.module.pyautogui" version="0.9.49+matrix.1" />
+      <import addon="script.module.amazoncaptcha" version="0.5.11+matrix.1" />
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+      <provides>video</provides>
+    </extension>
+    <extension point="xbmc.service" library="service.py" start="startup" />
+    <extension point="xbmc.addon.metadata">
+      <platform>all</platform>
+      <reuselanguageinvoker>false</reuselanguageinvoker>
+      <license>GPL-3.0-or-later</license>
+      <assets>
+        <icon>icon.png</icon>
+        <fanart>fanart.png</fanart>
+      </assets>
+      <summary lang="en_GB">Progressive Prime Video browsing in a dedicated interface</summary>
+      <description lang="en_GB">Independent community add-on with its own catalog, authentication, playback and settings. Includes backend code derived from Sandmann79/xbmc. Not affiliated with Amazon.</description>
+    </extension>
+  </addon>
+  <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.0" provider-name="Prime Scene contributors">
+    <extension point="xbmc.addon.repository">
+      <dir>
+        <info compressed="false">https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/addons.xml</info>
+        <checksum>https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/addons.xml.md5</checksum>
+        <datadir zip="true">https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/packages/</datadir>
+        <hashes>false</hashes>
+      </dir>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+      <summary lang="en_GB">Prime Scene releases and updates</summary>
+      <description lang="en_GB">Delivers updates for the standalone Prime Scene add-on.</description>
+      <platform>all</platform>
+      <license>GPL-3.0-or-later</license>
+      <assets>
+        <icon>icon.png</icon>
+      </assets>
+    </extension>
+  </addon>
+</addons>
