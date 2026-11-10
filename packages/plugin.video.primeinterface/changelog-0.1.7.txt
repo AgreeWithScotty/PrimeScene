@@ -1,0 +1,4 @@
+0.1.7
+- Fix blank Updates settings category and missing update action using Kodi language IDs.
+- Explain the one-time repository setup and native Versions/Update controls.
+- Keep cinematic Home artwork, inset sidebar, saved sign-in and playback.

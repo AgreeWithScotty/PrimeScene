@@ -10,6 +10,11 @@ once through Kodi's **Add-ons -> Install from ZIP file**. Open **Install from
 repository -> Prime Scene Repository -> Video add-ons -> Prime Scene**.
 Existing Prime Scene users can update without uninstalling or clearing data.
 
+If the add-on information screen says **Origin: Manual**, use its bottom
+**Versions** button and select the version from **Prime Scene Repository** once.
+The normal bottom **Update** button appears when Kodi detects an eligible newer
+repository release. A ZIP installation alone does not establish repository origin.
+
 Later releases appear in Kodi's update manager. In Prime Scene use **Settings ->
 Updates -> Check for updates** to refresh repositories and open available updates.
 Kodi can also install updates automatically if that option is enabled.
