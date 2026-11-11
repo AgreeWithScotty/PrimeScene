@@ -1,0 +1,2 @@
+0.1.12
+- Fit the Prime Scene icon edge to edge at the top of the sidebar.

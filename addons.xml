@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.11" provider-name="Prime Scene contributors; Sandmann79 and Varstahl (backend)">
+  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.12" provider-name="Prime Scene contributors; Sandmann79 and Varstahl (backend)">
     <requires>
       <import addon="xbmc.python" version="3.0.0" />
       <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
