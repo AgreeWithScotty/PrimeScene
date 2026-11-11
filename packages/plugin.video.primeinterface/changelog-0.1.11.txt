@@ -1,0 +1,2 @@
+0.1.11
+- Show movies and shows as Amazon artwork, with portrait posters where available.
