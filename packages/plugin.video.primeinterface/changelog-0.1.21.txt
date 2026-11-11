@@ -1,0 +1,12 @@
+0.1.21
+- Use pure black card backgrounds in every view.
+- Refine Home, browsing grids and title information for viewing across the room.
+- Load the first two catalog pages, then fetch the next page when you enter the newest page.
+- Fit category pictures without cropping, remove gold card frames, and brighten selection throughout.
+- Fill Home with two rows of four large category tiles and keep the landing page free of scrolling.
+- Prefetch catalog pages farther ahead and stop the grid wrapping to the top at the end.
+- Keep your selected card as new catalog pages arrive.
+- Start the Prime Scene window sooner and keep update checks on the current screen.
+- Show public Prime Video cards in Home, Movies, and TV as each storefront page arrives.
+- Show update status in Settings and let Kodi install available updates when automatic updates are on.
+- List AgreeWithScotty as the Prime Scene maintainer and retain upstream credits.
