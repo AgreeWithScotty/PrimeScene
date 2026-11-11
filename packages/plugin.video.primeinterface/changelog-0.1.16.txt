@@ -1,0 +1,6 @@
+0.1.16
+- Keep your selected card as new catalog pages arrive.
+- Start the Prime Scene window sooner and keep update checks on the current screen.
+- Show public Prime Video cards in Home, Movies, and TV as each storefront page arrives.
+- Show update status in Settings and let Kodi install available updates when automatic updates are on.
+- List AgreeWithScotty as the Prime Scene maintainer and retain upstream credits.
