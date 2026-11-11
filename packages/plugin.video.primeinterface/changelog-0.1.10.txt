@@ -1,0 +1,2 @@
+0.1.10
+- Scroll long movie and TV descriptions automatically when highlighted.
