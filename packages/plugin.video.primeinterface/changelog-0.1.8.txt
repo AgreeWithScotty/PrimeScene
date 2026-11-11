@@ -1,0 +1,4 @@
+0.1.8
+- Move the Home grid within its clipping area so the full top row is visible.
+- Add a Prime Scene logo, polished gold frames and black sidebar buttons with icons.
+- Remove the Classic view button and let Escape leave the add-on directly.
