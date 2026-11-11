@@ -16,8 +16,9 @@ The normal bottom **Update** button appears when Kodi detects an eligible newer
 repository release. A ZIP installation alone does not establish repository origin.
 
 Later releases appear in Kodi's update manager. In Prime Scene use **Settings ->
-Updates -> Check for updates** to refresh repositories and open available updates.
-Kodi can also install updates automatically if that option is enabled.
+Updates -> Check for updates** to check the repository and show the result in
+place. Kodi installs the update when automatic updates are enabled. If updates
+are manual, use Kodi's **Available updates** when an update is ready.
 
 ## Identity and source
 

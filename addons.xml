@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.12" provider-name="Prime Scene contributors; Sandmann79 and Varstahl (backend)">
+  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.15" provider-name="AgreeWithScotty">
     <requires>
       <import addon="xbmc.python" version="3.0.0" />
       <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -24,7 +24,7 @@
         <fanart>resources/art/prime-scene-fanart-v2.png</fanart>
       </assets>
       <summary lang="en_GB">Progressive Prime Video browsing in a dedicated interface</summary>
-      <description lang="en_GB">Independent community add-on with its own catalog, authentication, playback and settings. Includes backend code derived from Sandmann79/xbmc. Not affiliated with Amazon.</description>
+      <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     </extension>
   </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.1" provider-name="Prime Scene contributors">
