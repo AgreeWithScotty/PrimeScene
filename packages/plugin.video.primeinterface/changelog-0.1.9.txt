@@ -1,0 +1,4 @@
+0.1.9
+- Match the sidebar to the icon and make the catalog background black.
+- Begin loading the next batch up to two rows before the cursor reaches the end.
+- Back out of categories in Prime Scene and return directly to Kodi Home from the main page.
