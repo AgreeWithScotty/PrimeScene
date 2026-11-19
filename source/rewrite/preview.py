@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Condition, Thread
+from tempfile import NamedTemporaryFile
 import json
 from urllib.error import HTTPError
 
@@ -45,6 +46,26 @@ def ask_kodi(label, masked):
 
 def approve_kodi(message):
     return xbmcgui.Dialog().yesno(TITLE, message, yeslabel='Continue', nolabel='Cancel')
+
+
+def choose_kodi(message, options):
+    return xbmcgui.Dialog().select(message, options)
+
+
+def captcha_kodi(content, extension):
+    profile = Path(xbmcvfs.translatePath(xbmcaddon.Addon().getAddonInfo('profile')))
+    profile.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile(dir=profile, suffix='.' + extension, delete=False) as output:
+        output.write(content)
+        image_path = Path(output.name)
+    dialog = xbmcgui.WindowDialog()
+    try:
+        dialog.addControl(xbmcgui.ControlImage(450, 60, 1000, 300, str(image_path)))
+        dialog.show()
+        return ask_kodi('Type the characters from the Amazon security image', False)
+    finally:
+        dialog.close()
+        image_path.unlink(missing_ok=True)
 
 
 class StorefrontWindow(xbmcgui.WindowXML):
@@ -179,7 +200,8 @@ class StorefrontWindow(xbmcgui.WindowXML):
         cookies = load_cookies(self.account_file)
         dialog = xbmcgui.Dialog()
         try:
-            if not authenticate(cookies, ask_kodi, approve=approve_kodi, observer=self.record_test_event):
+            if not authenticate(cookies, ask_kodi, approve=approve_kodi, choose=choose_kodi,
+                                captcha=captcha_kodi, observer=self.record_test_event):
                 return
         except SignInError as error:
             self.record_test_event({'event': 'signin_failed', 'message': str(error)})

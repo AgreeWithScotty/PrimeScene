@@ -3,7 +3,7 @@
 Standalone Kodi video add-on with progressive browsing and its own account,
 catalog, playback and proxy code. Not affiliated with Amazon.
 
-## Rewrite Preview 0.0.4
+## Rewrite Preview 0.0.5
 
 The independent rewrite is available through **Prime Scene Repository -> Video add-ons -> Prime Scene Rewrite Preview**. Its add-on ID is script.primescene.rewrite.
 

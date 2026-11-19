@@ -1,11 +1,11 @@
-# Prime Scene Rewrite Preview 0.0.4
+# Prime Scene Rewrite Preview 0.0.5
 
 Install or update through Prime Scene Repository, Video add-ons, Prime Scene Rewrite Preview. The preview ID is script.primescene.rewrite.
 
-This directory contains the three runtime Python modules included in the installable ZIP. The ZIP also includes the dedicated Kodi skin and Prime Scene artwork.
+This directory contains the three independently implemented runtime modules included in the ZIP. They use Python standard-library HTTP, cookies, and HTML parsing with native Kodi dialogs.
 
-The native login accepts the observed North American regional redirect, prompts for verification codes, and supports sign-in approval messages. It requires an authentication cookie together with account-page data. Redacted diagnostics are written to prime-scene-test-report.jsonl in the preview profile.
+The login handles regional redirects, verification-method selection, code entry, email approval, approval-to-code transitions, and manual security-image entry. Authentication requires an authentication cookie together with account-page data. Redacted stages are written to prime-scene-test-report.jsonl in the preview profile.
 
-Seventeen local tests passed. Live public catalog checks returned 82 Movies cards and 65 TV cards. An earlier live login reached account-page data, but the strengthened authentication check and approval flow still need a complete live run. Signed-in Home remains under investigation.
+25 local tests passed. Exact AST comparison found no identical substantial function bodies among 39 functions in the runtime and 257 upstream functions. This is a structural check, not a full similarity analysis.
 
-Playback inside Kodi, search, watchlists, profiles, and episode navigation are unfinished. CAPTCHA and passkey challenges require further implementation.
+The complete live verification flow remains to be confirmed. Signed-in Home is under investigation. Playback inside Kodi, device-token integration, search, watchlists, profiles, and episode navigation are unfinished.
