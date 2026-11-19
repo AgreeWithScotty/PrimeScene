@@ -9,14 +9,17 @@ import hashlib
 import json
 import secrets
 import time
+from time import monotonic
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 try:
     from .prime_signin import AMAZON_HOSTS, SignInError, SignInHTTPError, trusted_host
+    from .prime_diagnostics import route
 except ImportError:
     from prime_signin import AMAZON_HOSTS, SignInError, SignInHTTPError, trusted_host
+    from prime_diagnostics import route
 
 
 class NoTokenRedirect(HTTPRedirectHandler):
@@ -35,6 +38,38 @@ class DeviceAuthorization:
     headers: dict
     verifier: str = field(default_factory=lambda: secrets.token_urlsafe(32))
     registered: dict = None
+    observer: object = None
+
+    def record(self, event):
+        if self.observer:
+            self.observer(event)
+
+    def record_result(self, value, status):
+        def hide_private(data, private=False):
+            if isinstance(data, dict):
+                for key, child in data.items():
+                    hide_private(child, private or any(word in key.lower() for word in
+                                 ('token', 'cookie', 'customer', 'authorization', 'device', 'secret', 'verifier')))
+            elif isinstance(data, list):
+                for child in data:
+                    hide_private(child, private)
+            elif private and hasattr(self.observer, 'secret'):
+                self.observer.secret(data)
+        hide_private(value)
+        details = []
+        def errors(data):
+            if isinstance(data, dict):
+                for key, child in data.items():
+                    if key.lower() in ('error', 'errorcode', 'error_code', 'error_description', 'message', 'type', 'reason') and isinstance(child, str):
+                        details.append({key: child})
+                    elif isinstance(child, (dict, list)):
+                        errors(child)
+            elif isinstance(data, list):
+                for child in data:
+                    errors(child)
+        errors(value)
+        self.record({'event': 'device_authorization_result', 'status': status,
+                     'top_level_keys': sorted(value) if isinstance(value, dict) else [], 'server_errors': details})
 
     def __post_init__(self):
         self.account = dict(self.account)
@@ -104,13 +139,35 @@ class DeviceAuthorization:
                         'x-amzn-requestid': secrets.token_hex(16)})
         request = Request('https://api.' + self.domain + '/auth/register',
                           data=json.dumps(payload).encode('utf-8'), headers=headers)
+        if hasattr(self.observer, 'secret'):
+            for private in (code[0], self.client, self.verifier, self.account['deviceid']):
+                self.observer.secret(private)
+        started = monotonic()
+        self.record({'event': 'device_authorization_started', 'address': route(request.full_url),
+                     'device_type': self.device_type, 'pkce_method': 'S256',
+                     'payload_sections': sorted(payload), 'authorization_fields': sorted(payload['auth_data']),
+                     'registration_fields': sorted(payload['registration_data']),
+                     'requested_token_types': payload['requested_token_type']})
         try:
             response = build_opener(NoTokenRedirect()).open(request, timeout=20)
         except HTTPError as error:
             status = error.code
+            self.record({'event': 'device_authorization_http_error', 'status': status,
+                         'network_ms': round((monotonic() - started) * 1000),
+                         'content_type': error.headers.get_content_type(),
+                         'server_request_id': error.headers.get('x-amzn-requestid') or error.headers.get('x-amz-rid')})
+            try:
+                self.record_result(json.loads(error.read(1024 * 1024)), status)
+            except (ValueError, UnicodeError):
+                self.record({'event': 'device_authorization_error_body', 'format': 'not-json'})
             error.close()
             raise SignInHTTPError(status, 'device authorization') from None
         with response:
+            status = response.status
+            self.record({'event': 'device_authorization_response', 'status': status,
+                         'network_ms': round((monotonic() - started) * 1000),
+                         'content_type': response.headers.get_content_type(),
+                         'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid')})
             raw = response.read(1024 * 1024 + 1)
             if len(raw) > 1024 * 1024:
                 raise SignInError('Amazon returned an oversized device authorization response.')
@@ -118,7 +175,11 @@ class DeviceAuthorization:
                 result = json.loads(raw)
             except (ValueError, UnicodeError):
                 raise SignInError('Amazon did not return a device authorization result.') from None
+        self.record_result(result, status)
         self.registered = self.parse_registration(result)
+        self.record({'event': 'device_authorization_validated', 'access_token_present': True,
+                     'refresh_token_present': True, 'website_cookie_count': len(self.registered['cookie']),
+                     'expires_in_seconds': self.registered['token']['expires'] - int(time.time())})
         return True
 
     def parse_registration(self, response):

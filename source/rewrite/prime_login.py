@@ -1,7 +1,6 @@
 """Native Kodi prompts and persistence for Prime Scene account authorization."""
 import json
-from datetime import datetime, timezone
-import secrets
+import sys
 from http.cookiejar import CookieJar
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -13,6 +12,7 @@ import xbmcgui
 from .common import Globals, Settings
 from .prime_device import DeviceAuthorization
 from .prime_signin import SignInError, authenticate
+from .prime_diagnostics import DiagnosticLog, exception_details
 from .account_state import account_epoch, clear_runtime, current_account, store_account
 
 
@@ -47,7 +47,8 @@ def LogIn(retToken=False):
     profile = Path(g.DATA_PATH)
     profile.mkdir(parents=True, exist_ok=True)
     generation = account_epoch(profile)
-    attempt = secrets.token_hex(8)
+    observe = DiagnosticLog(profile, g.addon.getAddonInfo('version'),
+                            active=lambda: current_account(profile, generation, allow_signed_out=True))
     # An OS-backed exclusive lock cannot survive the process holding it.
     # Kodi properties would not provide an atomic claim across script invocations.
     import sqlite3
@@ -56,25 +57,21 @@ def LogIn(retToken=False):
         try:
             lock.execute('BEGIN EXCLUSIVE')
         except sqlite3.OperationalError:
+            observe({'event': 'signin_blocked', 'reason': 'another_signin_is_open'})
             g.dialog.ok(TITLE, 'Another Prime Scene sign-in is already open.')
             return False
 
-        def observe(event):
-            # The transport emits booleans, counts and hostnames, never page bodies.
-            try:
-                if not current_account(profile, generation, allow_signed_out=True):
-                    return
-                with (profile / 'prime-scene-signin.jsonl').open('a', encoding='utf-8') as report:
-                    report.write(json.dumps(dict(event, attempt=attempt,
-                                                 time=datetime.now(timezone.utc).isoformat())) + '\n')
-            except OSError:
-                pass
-
-        observe({'event': 'signin_started'})
+        observe({'event': 'signin_started', 'python': sys.version.split()[0], 'platform': sys.platform,
+                 'kodi': xbmc.getInfoLabel('System.BuildVersion'), 'token_requested': bool(retToken),
+                 'user_agent': g.headers_android.get('User-Agent')})
+        observe({'event': 'territory_lookup_started'})
         account, valid = getTerritory(dict(loadUser(empty=True)))
         if not valid:
+            observe({'event': 'territory_lookup_failed'})
             raise SignInError('Amazon could not determine the account region. Please retry.')
-        authorization = DeviceAuthorization(account, g.dtid_android, g.headers_android)
+        observe({'event': 'territory_lookup_complete', 'domain': account.get('sidomain'),
+                 'language': account.get('lang'), 'locale': account.get('locale'), 'primevideo_site': account.get('pv')})
+        authorization = DeviceAuthorization(account, g.dtid_android, g.headers_android, observer=observe)
         cookies = CookieJar()
         success = authenticate(
             cookies, ask, observer=observe, entry_url=authorization.entry_url(),
@@ -99,6 +96,7 @@ def LogIn(retToken=False):
             raise SignInError('This sign-in was canceled by signing out. Start a new sign-in.')
         clear_runtime(g)
         generation = saved_generation
+        observe({'event': 'account_storage_complete'})
         observe({'event': 'signin_complete', 'device_registered': True})
         if retToken:
             return {'Authorization': 'Bearer ' + account['token']['access']}
@@ -106,6 +104,8 @@ def LogIn(retToken=False):
         jar.update(account['cookie'])
         return jar
     except Exception as error:
+        observe({'event': 'signin_failed', 'exception': exception_details(error),
+                 'last_sequence': observe.sequence})
         # HTTP errors can embed secret URL parameters; only our own messages are shown.
         if hasattr(error, 'status') and hasattr(error, 'stage'):
             observe({'event': 'http_error', 'status': error.status, 'stage': error.stage})

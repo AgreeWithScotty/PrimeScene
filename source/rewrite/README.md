@@ -1,9 +1,7 @@
 # Prime Scene replacement components
 
-Prime Scene 0.1.25 updates the existing plugin.video.primeinterface application. The bottom sidebar account button shows Sign in or the signed-in account name and a Sign out option. Signing out invalidates the account generation, clears local account files, cookies, caches, history and account artwork, and blocks stale writes. Anonymous playback-service infrastructure contains no Amazon account data.
+Prime Scene 0.1.26 adds real-run diagnostics to the existing plugin.video.primeinterface application. Every sign-in attempt records its release/environment, correlated attempt and sequence, stage and timing, redacted routes and redirect chain, HTTP statuses and server request IDs, form/hidden-field structure, cookie metadata without values, authorization result and redacted server errors, and exception locations. Credentials and tokens are excluded. Account sign-out erases the previous account reports along with its data.
 
-Native authorization callbacks are consumed directly rather than requested as HTML pages. HTTP failures report their status and stage; usable verification forms returned with an error allow code correction.
+The report can be opened in Kodi through Settings > Diagnostics > View diagnostic report. The complete file is prime-scene-diagnostics.jsonl in this add-on's own userdata profile. The older prime-scene-signin.jsonl is retained for compatibility.
 
-Validation: 48 automated tests, packaged startup checks and progressive catalog regressions passed. The supplied diagnostic report shows the prior attempt reached verification and then redirects, but its old format does not include the failing HTTP status. Full live-account 2FA success is not yet verified. Other inherited backend components remain present.
-
-The complete application source and license are in the release ZIP. No separate application or preview track is distributed.
+No simulated sign-in tests were run for this logging release. Syntax/package construction and published artifacts can be checked directly. Full live Amazon login/2FA success remains unverified; diagnosis must use the actual run. Other inherited backend components remain present. No separate add-on or preview is distributed.

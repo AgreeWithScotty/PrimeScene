@@ -173,7 +173,7 @@ def refresh_service_session(g, service):
     return epoch
 
 
-def sign_out(g, artwork=()):
+def _sign_out(g, artwork=()):
     import xbmc
     profile = Path(g.DATA_PATH)
     if profile.resolve().name != ADDON_ID:
@@ -229,6 +229,19 @@ def sign_out(g, artwork=()):
     (profile / 'profile-initialized').write_text('1', encoding='ascii')
     if texture_error is not None:
         raise RuntimeError('Signed out, but Kodi could not clear every cached artwork image.') from None
+
+
+def sign_out(g, artwork=()):
+    from .prime_diagnostics import DiagnosticLog, exception_details
+    report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'), operation='signout')
+    try:
+        _sign_out(g, artwork)
+    except Exception as error:
+        report({'event': 'signout_failed', 'exception': exception_details(error)})
+        raise
+    else:
+        # This records only the cleanup result after old account reports are erased.
+        report({'event': 'signout_complete', 'account_data_cleared': True})
 
 
 def remLoginData(info=True):

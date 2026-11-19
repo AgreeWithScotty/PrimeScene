@@ -7,14 +7,17 @@ import json
 from pathlib import Path
 import re
 from tempfile import NamedTemporaryFile
+from time import monotonic
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request, build_opener
 
 try:
     from .public_catalog import ORIGIN, StorefrontRedirect
+    from .prime_diagnostics import route
 except ImportError:
     from public_catalog import ORIGIN, StorefrontRedirect
+    from prime_diagnostics import route
 
 
 ACCOUNT = ORIGIN + '/settings/'
@@ -102,7 +105,9 @@ class SignInRedirect(HTTPRedirectHandler):
         method = req.get_method()
         if self.observer:
             self.observer({'event': 'redirect', 'status': code, 'method': method,
-                           'from_host': diagnostic_host(req.full_url), 'to_host': diagnostic_host(newurl)})
+                           'from_host': diagnostic_host(req.full_url), 'to_host': diagnostic_host(newurl),
+                           'source': route(req.full_url), 'destination': route(newurl),
+                           'preserves_submission': code in (307, 308)})
         if destination is None:
             raise SignInError(f'Amazon redirected to an unrecognized address '
                               f'(HTTP {code} {method} from {source} to {diagnostic_host(newurl)}).')
@@ -170,6 +175,7 @@ class Form:
     submit: tuple = ()
     choices: list = field(default_factory=list)
     other_controls: bool = False
+    unsupported: list = field(default_factory=list)
 
 
 class SignInDocument(HTMLParser):
@@ -190,6 +196,8 @@ class SignInDocument(HTMLParser):
         self.radio_inputs = {}
         self.label_text = {}
         self.country_select = None
+        self.embedded = []
+        self.markers = set()
         self.feed(html)
         self.close()
 
@@ -197,6 +205,12 @@ class SignInDocument(HTMLParser):
         attrs = dict(attrs)
         name = attrs.get('name') or ''
         element_id = attrs.get('id') or ''
+        if tag == 'iframe':
+            self.embedded.append({'id': element_id, 'source': attrs.get('src') or ''})
+        if element_id in ('auth-mfa-form', 'pollingForm', 'auth-polling-container', 'fwcim-form',
+                          'cvf-aamation-challenge-iframe', 'auth-captcha-image-container',
+                          'auth-error-message-box', 'ap_login_form', 'claimspicker', 'auth-select-device-form'):
+            self.markers.add(element_id)
         if tag == 'input' and name == 'transactionApprovalStatus':
             self.approval_status = attrs.get('value') or ''
         if tag == 'img' and 'captcha' in (element_id + ' ' + (attrs.get('alt') or '')).lower():
@@ -235,6 +249,7 @@ class SignInDocument(HTMLParser):
                 self.country_select = {'first': None, 'selected': None}
             else:
                 self.form.other_controls = True
+                self.form.unsupported.append({'tag': tag, 'name': name})
         if tag == 'option' and self.country_select is not None:
             value = attrs.get('value')
             if self.country_select['first'] is None:
@@ -276,6 +291,7 @@ class SignInDocument(HTMLParser):
             self.form.prompts.append((name, 'Amazon password', True))
         else:
             self.form.other_controls = True
+            self.form.unsupported.append({'tag': tag, 'name': name, 'type': input_type, 'id': element_id})
 
     def handle_endtag(self, tag):
         if tag == 'select' and self.country_select is not None:
@@ -324,14 +340,28 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
         headers['Origin'] = 'https://' + urlsplit(previous).netloc
         headers['Referer'] = previous
     body = urlencode(fields).encode('ascii') if fields is not None else None
+    started = monotonic()
+    if observer:
+        observer({'event': 'request_started', 'stage': stage, 'method': 'POST' if body is not None else 'GET',
+                  'address': route(url), 'field_names': [key for key, _ in fields or []],
+                  'request_bytes': len(body or b''), 'header_names': sorted(headers)})
     try:
         response = opener.open(Request(url, data=body, headers=headers), timeout=12)
     except AuthorizationReturn as result:
+        if observer:
+            observer({'event': 'authorization_return', 'stage': stage, 'address': route(result.url),
+                      'network_ms': round((monotonic() - started) * 1000), 'fetched_as_page': False})
         return result.url, SignInDocument('')
     except HTTPError as error:
         response = error
     with response:
         status = getattr(response, 'status', None) or response.code
+        if observer:
+            observer({'event': 'response_received', 'stage': stage, 'status': status,
+                      'address': route(response.url), 'network_ms': round((monotonic() - started) * 1000),
+                      'content_type': response.headers.get_content_type(),
+                      'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid'),
+                      'retry_after': response.headers.get('Retry-After')})
         if status >= 400 and response.headers.get_content_type() != 'text/html':
             if observer:
                 observer({'event': 'http_error', 'status': status, 'stage': stage,
@@ -343,6 +373,21 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
         if len(content) > MAX_DOCUMENT_BYTES:
             raise SignInError('Amazon returned a sign-in page that is too large.')
         document = SignInDocument(content.decode(response.headers.get_content_charset() or 'utf-8', 'replace'))
+        if observer:
+            observer({'event': 'form_inventory', 'stage': stage, 'forms': [
+                {'id': form.identity, 'action': route(urljoin(response.url, form.action)),
+                 'hidden_field_names': [key for key, _ in form.hidden],
+                 'hidden_field_presence': {key: bool(value) for key, value in form.hidden},
+                 'prompt_fields': [{'name': key, 'kind': label, 'masked': masked} for key, label, masked in form.prompts],
+                 'choice_field_names': sorted(set(choice.name for choice in form.choices)),
+                 'choice_count': len(form.choices), 'submit_name': form.submit[0] if form.submit else None,
+                 'unsupported_controls': form.unsupported, 'usable': not form.other_controls}
+                for form in document.forms], 'approval_status': document.approval_status,
+                'page_markers': sorted(document.markers),
+                'embedded_challenges': [{'id': item['id'], 'address': route(urljoin(response.url, item['source']))}
+                                        for item in document.embedded],
+                'approval_required': document.approval_required, 'captcha_required': document.captcha_required,
+                'document_bytes': len(content)})
         if status >= 400:
             if observer:
                 observer({'event': 'http_error', 'status': status, 'stage': stage,
@@ -374,6 +419,13 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
     def read_page(target, **kwargs):
         options = {'headers': headers} if headers else {}
         result = request_document(opener, target, observer=observer, **options, **kwargs)
+        if observer:
+            for cookie in cookies:
+                if hasattr(observer, 'secret'):
+                    observer.secret(cookie.value)
+            observer({'event': 'cookie_inventory', 'cookies': [
+                {'name': cookie.name, 'domain': cookie.domain, 'secure': cookie.secure,
+                 'expired': cookie.is_expired(), 'value_present': bool(cookie.value)} for cookie in cookies]})
         state['response'] = result
         return result
 
@@ -448,6 +500,8 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
                 raise SignInError('The verification selection was invalid.')
             fields.append((options[selected].name, options[selected].value))
         for name, label, masked in form.prompts:
+            if observer:
+                observer({'event': 'prompt_started', 'stage': label, 'field': name, 'masked': masked})
             if label == 'Amazon security image':
                 if captcha is None or not page.captcha_image:
                     raise SignInError('Amazon requested a security image that could not be displayed.')
@@ -457,7 +511,13 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
             else:
                 value = prompt(label, masked)
             if not value:
+                if observer:
+                    observer({'event': 'prompt_cancelled', 'stage': label, 'field': name})
                 return False
+            if observer:
+                if hasattr(observer, 'secret'):
+                    observer.secret(value)
+                observer({'event': 'prompt_completed', 'stage': label, 'field': name})
             fields.append((name, value))
         if form.submit:
             fields.append(form.submit)
