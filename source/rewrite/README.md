@@ -1,5 +1,7 @@
-# Prime Scene replacement source
+# Prime Scene replacement components
 
-The login, catalog reader, and native interface modules in this directory are being integrated into Prime Scene, permanent ID plugin.video.primeinterface. Future releases update that add-on.
+Prime Scene 0.1.24 integrates the native form-based login and device authorization into the existing plugin.video.primeinterface application. First opening, account settings, and session renewal use the same login entry point. No separate application is distributed.
 
-The extra application and release track were created without the user requesting them and have been retired. Complete native 2FA, device-token, playback, and account-feature integration remains under development. Source is retained here for the ongoing Prime Scene rewrite.
+Verification choices, email/SMS code entry, approval messages, security-image entry, secure redirects, device registration, and saved-account compatibility have automated coverage. The live Amazon entry-page check confirms the current email form can be read, including its country selector. Complete live account/2FA validation has not been performed for this release.
+
+The release ZIP contains the full application source and license. Other inherited backend components are still present; the complete independent backend rewrite remains unfinished.

@@ -1,10 +1,10 @@
 {
   "base_url": "https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/",
-  "app_version": "0.1.23",
+  "app_version": "0.1.24",
   "files": {
     ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "addons.xml": "ce58b23323bffaec4efa293d2f53e6d3e24455801acd1510acbe26a9a6d3d89b",
-    "addons.xml.md5": "bcfe5e23e7795d34d35f957cc689cbc6968087be57a265de09bec81391e1b78d",
+    "addons.xml": "8432cc7cdd5e51a3c05d49083d31983907dd072c8218ecc0396fd36be8820c1b",
+    "addons.xml.md5": "4e3d6929713fddbb4e9fc7d000f1a895a4a3bd8530ff981542a8866e1e5371fa",
     "LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
     "README.md": "6ddac4f2fceae2a4416c86f6508f3369e878594d38b099953681da29db5f465b",
     "packages/plugin.video.primeinterface/changelog-0.1.10.txt": "fa191eda67ad1b1eacb5e7a0cdbbe3040ba3f0d1579d6882e52f7eb3b9498edf",
@@ -50,6 +50,13 @@
     "packages/repository.primescene/repository.primescene-0.1.0.zip": "cf5b18c11aa571e4cf24c42f8a8597a664981763af49a5875b40e888b6f19bc4",
     "packages/repository.primescene/repository.primescene-0.1.1.zip": "a869e69d26915d5a8273d3c7bf21629fe9b22bf1fe348eb8f281c3badfe902d4",
     "packages/plugin.video.primeinterface/resources/art/prime-scene-fanart-v2.png": "a18ec8fc3ffe788030719a0dc77d73c374b817c0f16ecc9286414eeee912823d",
-    "packages/plugin.video.primeinterface/resources/art/prime-scene-icon-v2.png": "a64f1ff3454c4376cab5ccf635219a0bc4a87d728f09c006c3410c25868a695e"
+    "packages/plugin.video.primeinterface/resources/art/prime-scene-icon-v2.png": "a64f1ff3454c4376cab5ccf635219a0bc4a87d728f09c006c3410c25868a695e",
+    "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.1.24.zip": "476c791cd1ebd6db3a8b9123c586a2d7c05c391bd49c8451f001cbca972dc1ff",
+    "packages/plugin.video.primeinterface/changelog-0.1.24.txt": "146674ba5aef7ad89510bed5e270fd1c8e2456674394428e9f03888785cd5777",
+    "source/rewrite/prime_signin.py": "110099f38f5aba9167afe5f19eed220dc6f9191a4326fc94f3ef8b887adf0776",
+    "source/rewrite/prime_device.py": "60c3005753d9856c69d6bb30a386eaf348a70854e23e8c8435e0bab66d3a0af0",
+    "source/rewrite/prime_login.py": "6fddbdc1f96569e40703af45b5e5aa9834d6f014cb6f2dd887efb58e4ab65fd1",
+    "source/rewrite/test_signin_transport.py": "1df7c0cb0f45bbd6dac8873953ee7017d6825471f64248c14128345f00c6222f",
+    "source/rewrite/README.md": "e0c2bf390147d0ba836b7b8c699b45776c6f4c227bc320f1c669b28d4589e0f5"
   }
 }

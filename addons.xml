@@ -1,32 +1,32 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.23" provider-name="AgreeWithScotty">
-    <requires>
-      <import addon="xbmc.python" version="3.0.0" />
-      <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
-      <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1" />
-      <import addon="script.module.pyxbmct" version="1.3.1+matrix.1" />
-      <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1" />
-      <import addon="script.module.requests" version="2.22.0+matrix.1" />
-      <import addon="script.module.pyautogui" version="0.9.49+matrix.1" />
-      <import addon="script.module.amazoncaptcha" version="0.5.11+matrix.1" />
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="default.py">
-      <provides>video</provides>
-    </extension>
-    <extension point="xbmc.service" library="service.py" start="startup" />
-    <extension point="xbmc.addon.metadata">
-      <platform>all</platform>
-      <reuselanguageinvoker>false</reuselanguageinvoker>
-      <license>GPL-3.0-or-later</license>
-      <assets>
-        <icon>resources/art/prime-scene-icon-v2.png</icon>
-        <fanart>resources/art/prime-scene-fanart-v2.png</fanart>
+  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.1.24" provider-name="AgreeWithScotty">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+    <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
+    <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1" />
+    <import addon="script.module.pyxbmct" version="1.3.1+matrix.1" />
+    <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1" />
+    <import addon="script.module.requests" version="2.22.0+matrix.1" />
+    <import addon="script.module.pyautogui" version="0.9.49+matrix.1" />
+    <import addon="script.module.amazoncaptcha" version="0.5.11+matrix.1" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" start="startup" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <reuselanguageinvoker>false</reuselanguageinvoker>
+    <license>GPL-3.0-or-later</license>
+    <assets>
+      <icon>resources/art/prime-scene-icon-v2.png</icon>
+      <fanart>resources/art/prime-scene-fanart-v2.png</fanart>
       </assets>
-      <summary lang="en_GB">Progressive Prime Video browsing in a dedicated interface</summary>
-      <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
-    </extension>
-  </addon>
+    <summary lang="en_GB">Progressive Prime Video browsing in a dedicated interface</summary>
+    <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
+  </extension>
+</addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
     <requires>
       <import addon="xbmc.addon" version="21.0.0"/>

@@ -10,16 +10,20 @@ from tempfile import NamedTemporaryFile
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request, build_opener
 
-from public_catalog import ORIGIN, StorefrontRedirect
+try:
+    from .public_catalog import ORIGIN, StorefrontRedirect
+except ImportError:
+    from public_catalog import ORIGIN, StorefrontRedirect
 
 
 ACCOUNT = ORIGIN + '/settings/'
 PRIME_HOST = 'www.primevideo.com'
 AMAZON_HOST = 'www.amazon.com'
 PRIME_HOSTS = {PRIME_HOST, 'primevideo.com', 'na.primevideo.com'}
-AMAZON_HOSTS = {AMAZON_HOST, 'amazon.com'}
+AMAZON_HOSTS = {prefix + domain for domain in ('amazon.com', 'amazon.de', 'amazon.co.uk', 'amazon.co.jp')
+                for prefix in ('', 'www.')}
 HEADERS = {'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9',
-           'User-Agent': 'PrimeScene/0.0.5'}
+           'User-Agent': 'PrimeScene'}
 MAX_DOCUMENT_BYTES = 8 * 1024 * 1024
 CODE_FIELDS = {'otpcode', 'otppin', 'verificationcode', 'cvf_otp_input', 'mfa_otp_code'}
 CODE_FORM_IDS = {'fwcim-form', 'verification-code-form', 'auth-mfa-form'}
@@ -124,11 +128,11 @@ def security_image_host(url):
         return False
 
 
-def read_security_image(cookies, url):
+def read_security_image(cookies, url, *, user_agent=None):
     if not security_image_host(url):
         raise SignInError('Amazon returned an unexpected security image address.')
     opener = build_opener(SecurityImageRedirect(), HTTPCookieProcessor(cookies))
-    request = Request(url, headers={'User-Agent': HEADERS['User-Agent'], 'Accept': 'image/*'})
+    request = Request(url, headers={'User-Agent': user_agent or HEADERS['User-Agent'], 'Accept': 'image/*'})
     extensions = {'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp'}
     with opener.open(request, timeout=12) as response:
         kind = response.headers.get_content_type()
@@ -166,6 +170,7 @@ class SignInDocument(HTMLParser):
         self.labels = []
         self.radio_inputs = {}
         self.label_text = {}
+        self.country_select = None
         self.feed(html)
         self.close()
 
@@ -207,7 +212,16 @@ class SignInDocument(HTMLParser):
         if self.form is None or 'disabled' in attrs:
             return
         if tag == 'select':
-            self.form.other_controls = True
+            if name == 'countryCode':
+                self.country_select = {'first': None, 'selected': None}
+            else:
+                self.form.other_controls = True
+        if tag == 'option' and self.country_select is not None:
+            value = attrs.get('value')
+            if self.country_select['first'] is None:
+                self.country_select['first'] = value
+            if 'selected' in attrs:
+                self.country_select['selected'] = value
         if tag not in ('input', 'button') or not name:
             return
         input_type = (attrs.get('type') or ('submit' if tag == 'button' else 'text')).lower()
@@ -245,6 +259,11 @@ class SignInDocument(HTMLParser):
             self.form.other_controls = True
 
     def handle_endtag(self, tag):
+        if tag == 'select' and self.country_select is not None:
+            value = self.country_select['selected'] or self.country_select['first']
+            if self.form is not None and value is not None:
+                self.form.hidden.append(('countryCode', value))
+            self.country_select = None
         if tag == 'label' and self.labels:
             label = self.labels.pop()
             text = ' '.join(''.join(label['text']).split())
@@ -278,10 +297,10 @@ class SignInDocument(HTMLParser):
                 label['text'].append(data)
 
 
-def request_document(opener, url, *, fields=None, previous=None, observer=None):
+def request_document(opener, url, *, fields=None, previous=None, observer=None, headers=None):
     if not trusted_host(url):
         raise SignInError('Amazon returned an unexpected sign-in address.')
-    headers = dict(HEADERS)
+    headers = dict(HEADERS, **(headers or {}))
     if previous is not None:
         headers['Origin'] = 'https://' + urlsplit(previous).netloc
         headers['Referer'] = previous
@@ -305,21 +324,26 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None):
         return response.url, document
 
 
-def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, captcha=None, state=None):
+def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, captcha=None, state=None,
+                 entry_url=None, completion=None, headers=None):
     """Return true after Prime Video shows signed-in navigation. False means canceled."""
     opener = build_opener(SignInRedirect(observer), HTTPCookieProcessor(cookies))
     state = {} if state is None else state
 
     def read_page(target, **kwargs):
-        result = request_document(opener, target, observer=observer, **kwargs)
+        options = {'headers': headers} if headers else {}
+        result = request_document(opener, target, observer=observer, **options, **kwargs)
         state['response'] = result
         return result
 
-    url, page = state.get('response') or read_page(ACCOUNT)
+    url, page = state.get('response') or read_page(entry_url or ACCOUNT)
     attempted = state.setdefault('attempted_fields', set())
     checked_storefront = False
     for _ in range(12):
         host = trusted_host(url)
+        if completion is not None and completion(url, page, cookies):
+            state.clear()
+            return True
         if host in PRIME_HOSTS and (page.signed_in_navigation or page.authenticated_context):
             authenticated = has_authentication_cookie(cookies)
             if observer:
@@ -386,7 +410,8 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
             if label == 'Amazon security image':
                 if captcha is None or not page.captcha_image:
                     raise SignInError('Amazon requested a security image that could not be displayed.')
-                content, extension = read_security_image(cookies, urljoin(url, page.captcha_image))
+                image_options = {'user_agent': headers.get('User-Agent')} if headers else {}
+                content, extension = read_security_image(cookies, urljoin(url, page.captcha_image), **image_options)
                 value = captcha(content, extension)
             else:
                 value = prompt(label, masked)
