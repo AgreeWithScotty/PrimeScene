@@ -27,20 +27,24 @@
       <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     </extension>
   </addon>
-  <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.1" provider-name="Prime Scene contributors">
-    <extension point="xbmc.addon.repository">
+  <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
+    <requires>
+      <import addon="xbmc.addon" version="21.0.0"/>
+    </requires>
+    <extension point="xbmc.addon.repository" name="Prime Scene Repository">
       <dir>
-        <info compressed="false">https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/addons.xml</info>
-        <checksum>https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/addons.xml.md5</checksum>
-        <datadir zip="true">https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/packages/</datadir>
-        <hashes>false</hashes>
+        <info compressed="false">https://agreewithscotty.github.io/ScottyWins/addons.xml</info>
+        <checksum verify="md5">https://agreewithscotty.github.io/ScottyWins/addons.xml.md5</checksum>
+        <datadir zip="true">https://agreewithscotty.github.io/ScottyWins/</datadir>
       </dir>
     </extension>
     <extension point="xbmc.addon.metadata">
       <summary lang="en_GB">Prime Scene releases and updates</summary>
-      <description lang="en_GB">Delivers updates for the standalone Prime Scene add-on.</description>
+      <description lang="en_GB">Delivers updates for the standalone Prime Scene add-on. The index is now hosted by ScottyWins.</description>
       <platform>all</platform>
       <license>GPL-3.0-or-later</license>
+      <source>https://github.com/AgreeWithScotty/ScottyWins</source>
+      <news>0.1.2[CR]- Repository index moved to ScottyWins.</news>
       <assets>
         <icon>icon.png</icon>
       </assets>
