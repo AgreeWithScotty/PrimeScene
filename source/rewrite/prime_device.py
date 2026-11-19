@@ -10,12 +10,13 @@ import json
 import secrets
 import time
 from urllib.parse import parse_qs, urlencode, urlsplit
+from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 try:
-    from .prime_signin import AMAZON_HOSTS, SignInError, trusted_host
+    from .prime_signin import AMAZON_HOSTS, SignInError, SignInHTTPError, trusted_host
 except ImportError:
-    from prime_signin import AMAZON_HOSTS, SignInError, trusted_host
+    from prime_signin import AMAZON_HOSTS, SignInError, SignInHTTPError, trusted_host
 
 
 class NoTokenRedirect(HTTPRedirectHandler):
@@ -103,7 +104,13 @@ class DeviceAuthorization:
                         'x-amzn-requestid': secrets.token_hex(16)})
         request = Request('https://api.' + self.domain + '/auth/register',
                           data=json.dumps(payload).encode('utf-8'), headers=headers)
-        with build_opener(NoTokenRedirect()).open(request, timeout=20) as response:
+        try:
+            response = build_opener(NoTokenRedirect()).open(request, timeout=20)
+        except HTTPError as error:
+            status = error.code
+            error.close()
+            raise SignInHTTPError(status, 'device authorization') from None
+        with response:
             raw = response.read(1024 * 1024 + 1)
             if len(raw) > 1024 * 1024:
                 raise SignInError('Amazon returned an oversized device authorization response.')

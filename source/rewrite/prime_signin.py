@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 from tempfile import NamedTemporaryFile
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request, build_opener
 
@@ -44,6 +45,19 @@ class SignInError(RuntimeError):
     pass
 
 
+class SignInHTTPError(SignInError):
+    def __init__(self, status, stage):
+        self.status, self.stage = int(status), stage
+        super().__init__(f'Amazon returned HTTP {self.status} during {stage}.')
+
+
+class AuthorizationReturn(Exception):
+    """A native authorization callback is an address to consume, not a page."""
+    def __init__(self, url):
+        self.url = url
+        super().__init__('Amazon returned device authorization.')
+
+
 def trusted_host(url):
     if '\\' in url or any(ord(character) <= 32 or ord(character) == 127 for character in url):
         return None
@@ -78,8 +92,9 @@ def has_authentication_cookie(cookies):
 class SignInRedirect(HTTPRedirectHandler):
     http_error_308 = HTTPRedirectHandler.http_error_302
 
-    def __init__(self, observer=None):
+    def __init__(self, observer=None, capture_authorization=False):
         self.observer = observer
+        self.capture_authorization = capture_authorization
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         source = trusted_host(req.full_url)
@@ -91,6 +106,10 @@ class SignInRedirect(HTTPRedirectHandler):
         if destination is None:
             raise SignInError(f'Amazon redirected to an unrecognized address '
                               f'(HTTP {code} {method} from {source} to {diagnostic_host(newurl)}).')
+        if (self.capture_authorization and destination in AMAZON_HOSTS
+                and urlsplit(newurl).path == '/ap/maplanding'
+                and 'openid.oa2.authorization_code' in parse_qs(urlsplit(newurl).query)):
+            raise AuthorizationReturn(newurl)
         if code in (307, 308):
             # These responses retain the method and body. Only an Amazon auth
             # route on the original origin may receive a form submission again.
@@ -297,7 +316,7 @@ class SignInDocument(HTMLParser):
                 label['text'].append(data)
 
 
-def request_document(opener, url, *, fields=None, previous=None, observer=None, headers=None):
+def request_document(opener, url, *, fields=None, previous=None, observer=None, headers=None, stage='sign-in'):
     if not trusted_host(url):
         raise SignInError('Amazon returned an unexpected sign-in address.')
     headers = dict(HEADERS, **(headers or {}))
@@ -305,13 +324,35 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
         headers['Origin'] = 'https://' + urlsplit(previous).netloc
         headers['Referer'] = previous
     body = urlencode(fields).encode('ascii') if fields is not None else None
-    with opener.open(Request(url, data=body, headers=headers), timeout=12) as response:
+    try:
+        response = opener.open(Request(url, data=body, headers=headers), timeout=12)
+    except AuthorizationReturn as result:
+        return result.url, SignInDocument('')
+    except HTTPError as error:
+        response = error
+    with response:
+        status = getattr(response, 'status', None) or response.code
+        if status >= 400 and response.headers.get_content_type() != 'text/html':
+            if observer:
+                observer({'event': 'http_error', 'status': status, 'stage': stage,
+                          'host': diagnostic_host(response.url)})
+            raise SignInHTTPError(status, stage)
         if not trusted_host(response.url) or response.headers.get_content_type() != 'text/html':
             raise SignInError('Amazon did not return a sign-in page.')
         content = response.read(MAX_DOCUMENT_BYTES + 1)
         if len(content) > MAX_DOCUMENT_BYTES:
             raise SignInError('Amazon returned a sign-in page that is too large.')
         document = SignInDocument(content.decode(response.headers.get_content_charset() or 'utf-8', 'replace'))
+        if status >= 400:
+            if observer:
+                observer({'event': 'http_error', 'status': status, 'stage': stage,
+                          'host': diagnostic_host(response.url)})
+            # Amazon can use HTTP 400 for a rejected code while returning the
+            # same usable verification form. Let the user correct that code.
+            recoverable = status in (400, 401, 403, 422) and any(
+                (form.prompts or form.choices) and not form.other_controls for form in document.forms)
+            if not recoverable:
+                raise SignInHTTPError(status, stage)
         if observer:
             observer({'event': 'page', 'host': trusted_host(response.url),
                       'signed_in_navigation': document.signed_in_navigation, 'challenge': document.challenge,
@@ -327,7 +368,7 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
 def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, captcha=None, state=None,
                  entry_url=None, completion=None, headers=None):
     """Return true after Prime Video shows signed-in navigation. False means canceled."""
-    opener = build_opener(SignInRedirect(observer), HTTPCookieProcessor(cookies))
+    opener = build_opener(SignInRedirect(observer, capture_authorization=completion is not None), HTTPCookieProcessor(cookies))
     state = {} if state is None else state
 
     def read_page(target, **kwargs):
@@ -369,7 +410,7 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
             fields = list(form.hidden)
             if form.submit:
                 fields.append(form.submit)
-            url, page = read_page(target, fields=fields, previous=url)
+            url, page = read_page(target, fields=fields, previous=url, stage='sign-in approval')
             status = page.approval_status
             if status in ('TransactionCompleted', 'TransactionCompletionTimeout'):
                 url, page = read_page(return_url)
@@ -420,7 +461,9 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
             fields.append((name, value))
         if form.submit:
             fields.append(form.submit)
-        url, page = read_page(target, fields=fields, previous=url)
+        stage = ('verification-code submission' if code_entry else 'security-image submission' if image_entry
+                 else 'verification-method selection' if form.choices else 'credential submission')
+        url, page = read_page(target, fields=fields, previous=url, stage=stage)
     raise SignInError('Amazon did not finish signing in.')
 
 
