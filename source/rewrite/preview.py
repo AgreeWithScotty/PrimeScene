@@ -16,7 +16,7 @@ from prime_signin import SignInError, authenticate, catalog_opener, diagnostic_h
 from public_catalog import PublicCatalogError, fetch_cards
 
 
-TITLE = 'Prime Scene Rewrite Preview'
+TITLE = 'Prime Scene'
 GRID = 200
 ROOT = Path(__file__).resolve().parent
 MEDIA = ROOT / 'resources' / 'skins' / 'Default' / 'media'

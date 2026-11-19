@@ -1,7 +1,0 @@
-Prime Scene Rewrite Preview 0.0.5
-Added native selection of email or phone verification destinations.
-Approval pages can transition to a code-entry form.
-Approval completion works when its status appears outside a form.
-Security-image CAPTCHA is displayed for manual entry inside Kodi.
-25 local tests passed. No substantial function bodies matched the upstream comparison.
-Complete live 2FA and signed-in Home remain under investigation. Playback is unfinished.

@@ -1,6 +1,0 @@
-Prime Scene Rewrite Preview 0.0.4 is available in Video add-ons.
-Native sign-in supports observed regional redirects, code forms, and approval messages.
-Authentication requires both account data and an authentication cookie.
-17 local tests passed. Live public Movies and TV returned cards.
-Signed-in Home and live approval checks remain under investigation.
-Playback inside Kodi and account features are unfinished.

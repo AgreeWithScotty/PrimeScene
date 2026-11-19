@@ -50,21 +50,4 @@
       </assets>
     </extension>
   </addon>
-  <addon provider-name="AgreeWithScotty" id="script.primescene.rewrite" name="Prime Scene Rewrite Preview" version="0.0.5">
-    <requires>
-      <import addon="xbmc.python" version="3.0.0" />
-    </requires>
-    <extension point="xbmc.python.script" library="preview.py">
-      <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-      <summary lang="en_GB">Independent Prime Scene storefront development preview</summary>
-      <description lang="en_GB">Browse Prime Video cards and try native sign-in in Kodi.</description>
-      <news lang="en_GB">0.0.5 adds native verification-method selection, approval-to-code handling, and manual security-image entry. Development build; signed-in Home and playback remain unfinished.</news>
-      <platform>all</platform>
-      <assets>
-        <icon>resources/icon.png</icon>
-      </assets>
-    </extension>
-  </addon>
-</addons>
+  </addons>
