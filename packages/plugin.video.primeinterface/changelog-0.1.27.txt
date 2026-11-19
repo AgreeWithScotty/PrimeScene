@@ -1,0 +1,28 @@
+0.1.27
+- Open the dedicated application directly from Video add-ons, without first activating Kodi Videos.
+- Keep the same add-on ID, saved account, playback resolver URLs and normal updates.
+- Dispatch settings and background actions as scripts and record launch mode and native window IDs.
+- Record complete sign-in stages, redacted redirects, HTTP responses, form structures, server errors and exception locations.
+- Correlate each real attempt with the installed version and timing; keep secrets out of diagnostics.
+- Add a bottom sidebar account button: Sign in, or the signed-in account name with Sign out.
+- Clear the signed-out account, sessions, cached lists, history and account artwork.
+- Block delayed background writes from restoring signed-out account data.
+- Consume the native authorization return directly after verification, without requesting it as a web page.
+- Report HTTP status and sign-in stage, and allow correction of rejected verification codes.
+- Replace sign-in with the native Prime Scene email, password and verification workflow.
+- Handle verification-method choices, email/SMS codes, approval messages and security images in Kodi.
+- Complete device authorization and save playback credentials before reporting sign-in success.
+- Preserve saved accounts when authorization fails or is canceled.
+- Match the main background to the pure black card backgrounds.
+- Narrow the sidebar and give the recovered width to the catalog.
+- Use pure black card backgrounds in every view.
+- Refine Home, browsing grids and title information for viewing across the room.
+- Load the first two catalog pages, then fetch the next page when you enter the newest page.
+- Fit category pictures without cropping, remove gold card frames, and brighten selection throughout.
+- Fill Home with two rows of four large category tiles and keep the landing page free of scrolling.
+- Prefetch catalog pages farther ahead and stop the grid wrapping to the top at the end.
+- Keep your selected card as new catalog pages arrive.
+- Start the Prime Scene window sooner and keep update checks on the current screen.
+- Show public Prime Video cards in Home, Movies, and TV as each storefront page arrives.
+- Show update status in Settings and let Kodi install available updates when automatic updates are on.
+- List AgreeWithScotty as the Prime Scene maintainer and retain upstream credits.

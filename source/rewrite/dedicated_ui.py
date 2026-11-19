@@ -15,6 +15,8 @@ class StreamingWindow(xbmcgui.WindowXML):
         self.initialize_provider = kwargs.pop('initialize_provider', None)
         self.account_name = kwargs.pop('account_name', None)
         self.account_action = kwargs.pop('account_action', None)
+        self.offer_signin = kwargs.pop('offer_signin', False)
+        self.launch_diagnostics = kwargs.pop('launch_diagnostics', None)
         # Kodi constructs WindowXML in __new__; do not call object.__init__ with
         # XML filename/path arguments a second time.
         self.init_error = None
@@ -44,6 +46,8 @@ class StreamingWindow(xbmcgui.WindowXML):
         if self.worker is not None:
             return
         record(self.g, 'window_initialized')
+        if self.launch_diagnostics is not None:
+            self.launch_diagnostics({'event': 'window_on_init', 'current_window_id': xbmcgui.getCurrentWindowId()})
         try:
             self._initialize_controls()
         except Exception as error:
@@ -61,6 +65,14 @@ class StreamingWindow(xbmcgui.WindowXML):
         self.update_account_button()
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
+            if self.launch_diagnostics is not None:
+                self.launch_diagnostics({'event': 'interface_ready', 'signed_in': False,
+                                         'current_window_id': xbmcgui.getCurrentWindowId()})
+            if self.offer_signin:
+                self.offer_signin = False
+                if self.g.dialog.yesno('Prime Scene', 'Sign in to Amazon Prime Video to start watching.',
+                                       nolabel='Cancel', yeslabel='Sign in'):
+                    self.onClick(104)
             return
         if self.account_name is not None:
             from .account_state import account_epoch
@@ -70,6 +82,9 @@ class StreamingWindow(xbmcgui.WindowXML):
         self.navigate('root', remember=False)
         self.setFocusId(200)
         self.worker.start()
+        if self.launch_diagnostics is not None:
+            self.launch_diagnostics({'event': 'interface_ready', 'signed_in': True,
+                                     'current_window_id': xbmcgui.getCurrentWindowId()})
 
     def update_account_button(self):
         name = self.account_name() if self.account_name is not None else ''
@@ -343,7 +358,8 @@ class StreamingWindow(xbmcgui.WindowXML):
             self.close()
 
 
-def open_interface(globals_instance, settings_instance, initialize_provider=None, account_name=None, account_action=None):
+def open_interface(globals_instance, settings_instance, initialize_provider=None, account_name=None, account_action=None,
+                   offer_signin=False, launch_diagnostics=None):
     if settings_instance.data_source != 0:
         globals_instance.dialog.ok('Prime Video', 'This preview currently supports the Website data source. Opening Classic view.')
         return 'classic'
@@ -351,7 +367,8 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
     window = StreamingWindow('PrimeStreaming.xml', globals_instance.PLUGIN_PATH,
                              'Default', '1080i', globals_instance=globals_instance,
                              initialize_provider=initialize_provider, account_name=account_name,
-                             account_action=account_action)
+                             account_action=account_action, offer_signin=offer_signin,
+                             launch_diagnostics=launch_diagnostics)
     try:
         window.doModal()
     finally:
@@ -362,6 +379,10 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
             while window.worker.is_alive():
                 window.worker.join(0.1)
     if window.init_error is not None:
+        if launch_diagnostics is not None:
+            launch_diagnostics({'event': 'interface_initialization_failed', 'error_type': window.init_error,
+                                'current_window_id': xbmcgui.getCurrentWindowId()})
         globals_instance.dialog.ok('Prime Scene', 'The interface could not initialize (' +
                                    window.init_error + '). Your sign-in is saved.')
+        return False
     return window.result
