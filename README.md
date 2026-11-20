@@ -1,4 +1,4 @@
-# Prime Scene for Amazon Prime Video
+# Smooth Prime for Amazon Prime Video
 
 Standalone Kodi video add-on with progressive browsing and its own account,
 catalog, playback and proxy code. Not affiliated with Amazon.
@@ -7,15 +7,15 @@ catalog, playback and proxy code. Not affiliated with Amazon.
 
 Install the Prime Scene Repository ZIP from `packages/repository.primescene/`
 once through Kodi's **Add-ons -> Install from ZIP file**. Open **Install from
-repository -> Prime Scene Repository -> Video add-ons -> Prime Scene**.
-Existing Prime Scene users can update without uninstalling or clearing data.
+repository -> Prime Scene Repository -> Video add-ons -> Smooth Prime**.
+Existing installs can update without uninstalling or clearing data.
 
 If the add-on information screen says **Origin: Manual**, use its bottom
 **Versions** button and select the version from **Prime Scene Repository** once.
 The normal bottom **Update** button appears when Kodi detects an eligible newer
 repository release. A ZIP installation alone does not establish repository origin.
 
-Later releases appear in Kodi's update manager. In Prime Scene use **Settings ->
+Later releases appear in Kodi's update manager. In Smooth Prime use **Settings ->
 Updates -> Check for updates** to check the repository and show the result in
 place. Kodi installs the update when automatic updates are enabled. If updates
 are manual, use Kodi's **Available updates** when an update is ready.

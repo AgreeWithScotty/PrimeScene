@@ -500,7 +500,7 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
                 checked_storefront = True
                 url, page = read_page(ORIGIN + '/')
                 continue
-            raise SignInError('Prime Scene could not verify your Prime Video session or read the next Amazon sign-in step.')
+            raise SignInError('Smooth Prime could not verify your Prime Video session or read the next Amazon sign-in step.')
         names = {name for name, label, _ in form.prompts if label not in ('Amazon verification code', 'Amazon security image')}
         if names & attempted and not image_entry:
             raise SignInError('Amazon asked for the same information again. Check your details and retry.')

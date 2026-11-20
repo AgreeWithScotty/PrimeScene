@@ -53,7 +53,7 @@ def layout(text):
     """Up to two lines. Scale so the block stays inside the hero box."""
     words = [word for word in normalize(text).split(' ') if word]
     if not words:
-        words = ['PRIME SCENE']
+        words = ['SMOOTH PRIME']
     lines = [' '.join(words)]
     if _width(lines[0]) > _MAX_W and len(words) > 1:
         best = None

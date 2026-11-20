@@ -9,5 +9,5 @@ report = Path(xbmcvfs.translatePath(addon.getAddonInfo('profile'))) / 'prime-sce
 try:
     content = report.read_text(encoding='utf-8')
 except OSError:
-    content = 'No diagnostic report exists yet. Open Prime Scene and repeat the operation once.'
-xbmcgui.Dialog().textviewer('Prime Scene diagnostics', content)
+    content = 'No diagnostic report exists yet. Open Smooth Prime and repeat the operation once.'
+xbmcgui.Dialog().textviewer('Smooth Prime diagnostics', content)

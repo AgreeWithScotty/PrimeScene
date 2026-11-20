@@ -120,12 +120,12 @@ class ProviderBridge:
 
     def ensure_provider(self):
         if not self._active(lambda: True):
-            raise CatalogSigninRequired('The account changed. Open Prime Scene and sign in again.')
+            raise CatalogSigninRequired('The account changed. Open Smooth Prime and sign in again.')
         if self.provider is None:
             initialized = self.initialize_provider() if self.initialize_provider is not None else None
             self.provider = initialized if initialized not in (None, False, True) else getattr(self.g, 'pv', None)
             if self.provider is None:
-                raise CatalogSigninRequired('Sign in to Prime Scene before opening this section.')
+                raise CatalogSigninRequired('Sign in to Smooth Prime before opening this section.')
         if self.module is None:
             from . import web_api
             self.module = web_api

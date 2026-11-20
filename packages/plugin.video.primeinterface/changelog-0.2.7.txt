@@ -1,0 +1,2 @@
+0.2.7
+- Rebranded to Smooth Prime; new icon; removed Amazon logo asset.

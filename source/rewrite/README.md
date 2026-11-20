@@ -1,4 +1,8 @@
-# Prime Scene 0.2.6
+# Smooth Prime 0.2.7
+
+0.2.7 rebrands the 0.2.6 description read-ahead release to Smooth Prime. The add-on
+id stays `plugin.video.primeinterface`. Rebuild 0.2.7 with
+tools/package_navigation_release.py from the verified 0.2.6 ZIP.
 
 This updates the existing Aurora Cinema add-on. Missing descriptions are loaded
 for the current card, ten upcoming cards and two previous cards, before they
@@ -17,6 +21,6 @@ cache hits/writes, real request timing and outcomes. It excludes description tex
 credentials and private account identifiers. No simulated provider/Kodi tests
 were run. Syntax and package checks do not establish real provider success.
 
-Rebuild using tools/package_description_release.py and the verified 0.2.5 ZIP.
+0.2.6 was built with tools/package_description_release.py from the verified 0.2.5 ZIP.
 Source overlays are aurora.py, public_catalog.py and description_cache.py.
 Playback selection, resolution and overlay source are preserved.
