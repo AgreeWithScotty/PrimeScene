@@ -54,6 +54,16 @@ class Card:
     title: str
     detail_url: str
     artwork_url: str
+    fanart_url: str = ''
+    poster_url: str = ''
+    plot: str = ''
+    year: str = ''
+    duration: str = ''
+    rating: str = ''
+    genres: str = ''
+    mediatype: str = ''
+    season: str = ''
+    episode: str = ''
 
 
 @dataclass(frozen=True)
@@ -148,6 +158,140 @@ def _image(value, depth=0):
     return ''
 
 
+def _shot_map(node):
+    found = {}
+    for key in ('images', 'image', 'artmeta', 'artwork'):
+        blob = node.get(key)
+        if isinstance(blob, str):
+            url = safe_url(blob, IMAGE_HOSTS)
+            if url:
+                found.setdefault('image', url)
+            continue
+        if not isinstance(blob, dict):
+            continue
+        for name, value in blob.items():
+            url = safe_url(value, IMAGE_HOSTS) if isinstance(value, str) else _image(value)
+            if url:
+                found[str(name).casefold()] = url
+    return found
+
+
+def _first_shot(shots, names):
+    for name in names:
+        if shots.get(name):
+            return shots[name]
+    return ''
+
+
+def _year_value(node):
+    for key in ('releaseYear', 'year'):
+        value = node.get(key)
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int) and 1888 <= value <= 2100:
+            return str(value)
+        if isinstance(value, str):
+            match = re.match(r'\s*(\d{4})\b', value)
+            if match and 1888 <= int(match.group(1)) <= 2100:
+                return match.group(1)
+    for key in ('releaseDate', 'premiered', 'aired'):
+        value = node.get(key)
+        if isinstance(value, str):
+            match = re.match(r'\s*(\d{4})\b', value)
+            if match and 1888 <= int(match.group(1)) <= 2100:
+                return match.group(1)
+    return ''
+
+
+def _duration_value(node):
+    if isinstance(node.get('runtimeMillis'), (int, float)) and not isinstance(node.get('runtimeMillis'), bool):
+        if node['runtimeMillis'] > 0:
+            return str(int(node['runtimeMillis'] // 1000))
+    if isinstance(node.get('runtimeSeconds'), (int, float)) and not isinstance(node.get('runtimeSeconds'), bool):
+        if node['runtimeSeconds'] > 0:
+            return str(int(node['runtimeSeconds']))
+    for key in ('duration', 'runtime'):
+        value = node.get(key)
+        if isinstance(value, dict):
+            if isinstance(value.get('valueMillis'), (int, float)) and value['valueMillis'] > 0:
+                return str(int(value['valueMillis'] // 1000))
+            if isinstance(value.get('seconds'), (int, float)) and value['seconds'] > 0:
+                return str(int(value['seconds']))
+            value = value.get('value') or value.get('text') or value.get('displayText')
+        if isinstance(value, bool) or value in (None, ''):
+            continue
+        if isinstance(value, (int, float)) and value > 0:
+            return str(int(value))
+        if isinstance(value, str) and value.strip():
+            return ' '.join(value.split())
+    return ''
+
+
+def _rating_value(node):
+    for key in ('ratingBadge', 'maturityRating', 'contentRating', 'rating'):
+        value = node.get(key)
+        if isinstance(value, dict):
+            text = _text(value.get('displayText') or value.get('text') or value.get('value') or value.get('label'))
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            text = '%g' % value
+        else:
+            text = _text(value)
+        if text:
+            return text
+    return ''
+
+
+def _genre_value(node):
+    raw = node.get('genres')
+    if raw in (None, ''):
+        raw = node.get('genre')
+    names = []
+    if isinstance(raw, str):
+        names = [part.strip() for part in raw.split(',') if part.strip()]
+    elif isinstance(raw, list):
+        for entry in raw:
+            if isinstance(entry, str) and entry.strip():
+                names.append(entry.strip())
+            elif isinstance(entry, dict):
+                text = _text(entry.get('text') or entry.get('name') or entry.get('label'))
+                if text:
+                    names.append(text)
+    return ', '.join(names[:3])
+
+
+def _media_value(node):
+    raw = ''
+    for key in ('titleType', 'entityType', 'contentType', 'catalogType'):
+        raw = _text(node.get(key))
+        if raw:
+            break
+    key = raw.casefold().replace('_', ' ').replace('-', ' ').strip()
+    return {
+        'movie': 'movie', 'film': 'movie', 'movies': 'movie',
+        'tv show': 'tvshow', 'tvshow': 'tvshow', 'show': 'tvshow', 'series': 'tvshow',
+        'tv series': 'tvshow', 'tv': 'tvshow',
+        'season': 'season', 'episode': 'episode',
+    }.get(key, '')
+
+
+def _count_value(value):
+    if isinstance(value, bool) or value in (None, ''):
+        return ''
+    if isinstance(value, (int, float)) and value > 0:
+        return str(int(value))
+    if isinstance(value, str) and value.strip().isdigit() and int(value.strip()) > 0:
+        return str(int(value.strip()))
+    return ''
+
+
+def _plot_value(node):
+    for key in ('synopsis', 'plot', 'synopsisText', 'shortSynopsis', 'description'):
+        text = _text(node.get(key))
+        if text:
+            return text
+    return ''
+
+
 def _json_card(node, page_url):
     detail = ''
     for key in ('detailUrl', 'detailURL', 'detailPageUrl', 'href', 'url', 'link', 'titleLink'):
@@ -155,6 +299,10 @@ def _json_card(node, page_url):
         if candidate and detail_id(candidate):
             detail = candidate
             break
+    if not detail and isinstance(node.get('link'), dict):
+        candidate = _link(node.get('link'), page_url)
+        if candidate and detail_id(candidate):
+            detail = candidate
     if not detail:
         return None
     title = ''
@@ -162,14 +310,26 @@ def _json_card(node, page_url):
         title = _text(node.get(key))
         if title:
             break
-    artwork = ''
-    for key in ('image', 'images', 'imageUrl', 'imageURL', 'imageUrls', 'imageURLs',
-                'packshot', 'poster', 'thumbnail', 'thumb', 'cover', 'artwork', 'artmeta'):
-        artwork = _image(node.get(key))
-        if artwork:
-            break
+    shots = _shot_map(node)
+    artwork = _first_shot(shots, ('packshot', 'thumbnail', 'thumb', 'landscape', 'wide', 'image', 'src'))
+    poster = _first_shot(shots, ('titleshot', 'covershot', 'poster', 'cover', 'boxart', 'tall'))
+    fanart = _first_shot(shots, ('heroshot', 'hero', 'fanart', 'background', 'backdrop'))
+    if not artwork:
+        for key in ('image', 'images', 'imageUrl', 'imageURL', 'imageUrls', 'imageURLs',
+                    'packshot', 'poster', 'thumbnail', 'thumb', 'cover', 'artwork', 'artmeta'):
+            artwork = _image(node.get(key))
+            if artwork:
+                break
+    if not poster:
+        poster = artwork
     if title and artwork:
-        return Card(title, detail, artwork)
+        return Card(title, detail, artwork, fanart_url=fanart, poster_url=poster or artwork,
+                    plot=_plot_value(node), year=_year_value(node), duration=_duration_value(node),
+                    rating=_rating_value(node), genres=_genre_value(node), mediatype=_media_value(node),
+                    season=_count_value(node.get('seasonNumber') if node.get('seasonNumber') not in (None, '')
+                                        else node.get('season')),
+                    episode=_count_value(node.get('episodeNumber') if node.get('episodeNumber') not in (None, '')
+                                         else node.get('episode')))
     return None
 
 

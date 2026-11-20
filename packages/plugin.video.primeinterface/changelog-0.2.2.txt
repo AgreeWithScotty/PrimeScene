@@ -1,0 +1,5 @@
+0.2.2
+- Home opens on real Prime Video movies and TV shows from the signed-in storefront.
+- Show year, runtime, rating, genre and synopsis when Prime Video provides them, and leave the line blank when it does not.
+- Bind the hero backdrop, title and metadata to the focused card so they update as you move.
+- Use a matte charcoal and cool slate screen, with a bright focus border on the selected card and a light pill on the focused navigation item.
