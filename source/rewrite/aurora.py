@@ -1,12 +1,14 @@
 """Aurora Cinema windows for Prime Scene.
 
-Layout, type and charcoal tint follow SmoothFlix Aurora Cinema. Python fills
-window properties from this add-on's own catalogue and plays through the
-existing Prime Scene playback URL. No separate Kodi skin is required.
+Layout and the charcoal tint follow SmoothFlix Aurora Cinema. The home hero
+is drawn by the skin from the focused card. Playback uses the existing Prime
+Scene PlayVideo URL. No separate Kodi skin is required.
 """
 from json import dumps, load
 from pathlib import Path
 from queue import Empty, Queue
+from re import IGNORECASE
+from re import compile as compile_re
 from re import fullmatch
 from threading import Event, RLock, Thread
 from time import time
@@ -20,10 +22,8 @@ from .dedicated_bridge import CatalogSigninRequired, ProviderBridge
 from .interface_diagnostics import record
 
 _BACK = (9, 10, 92)
-_LATERAL = {1: -1, 2: 1}
-# Cool slate washes. The visible scrim stays on one matte tone; it does not
-# cycle, and it never stands in for missing artwork.
-_TINTS = ('66181C22', '661C1916', '66141A1C', '661A1814', '66121618')
+# The visible scrim stays on one matte tone. It does not cycle, and it never
+# stands in for missing artwork. PrimeSceneHome.xml paints this on control 101.
 _SCRIM = '99141A20'
 _NOTE = 'aurora-playback.json'
 _NOTE_WINDOW = 120
@@ -34,8 +34,15 @@ ADDON_ID = 'plugin.video.primeinterface'
 # Estuary always ships Home.xml, so that name loads the skin window. These
 # names are not skin windows, so the add-on files are the ones that open.
 _HOME_XML = 'PrimeSceneHome.xml'
-_TITLE_XML = 'PrimeSceneTitle.xml'
 _PLAYER_XML = 'PrimeScenePlayer.xml'
+# Amazon's public image service. A width suffix keeps the texture cache on a
+# predictable file instead of the full master.
+_AMAZON_IMAGE = compile_re(
+    r'^(https://(?:m\.media-amazon\.com|images-na\.ssl-images-amazon\.com)/images/.+?)'
+    r'(?:\._[^./]+_)?(\.(?:jpe?g|png|webp))$',
+    IGNORECASE)
+_CARD_ART = 720
+_HERO_ART = 1280
 
 
 def _addon_path():
@@ -120,16 +127,24 @@ def _genre_label(info):
             text = ' '.join(str(entry).split())
             if text:
                 names.append(text)
-    if not names:
+    cleaned = [' '.join(name.upper().split()) for name in names if name]
+    if not cleaned:
         return ''
-    return ' '.join(names[0].upper().split())
+    return '  ·  '.join(cleaned[:3])
 
 
-def _synopsis(text, limit=320):
-    text = ' '.join((text or '').split())
-    if len(text) > limit:
-        return text[:limit - 1].rstrip() + '…'
-    return text
+def _plain(text):
+    return ' '.join((text or '').split())
+
+
+def _count_label(value):
+    if isinstance(value, bool) or value in (None, ''):
+        return ''
+    if isinstance(value, (int, float)) and value > 0:
+        return str(int(value))
+    if isinstance(value, str) and value.strip().isdigit() and int(value.strip()) > 0:
+        return str(int(value.strip()))
+    return ''
 
 
 def _meta(row):
@@ -146,9 +161,13 @@ def _meta(row):
     year = _year_label(info)
     if year:
         bits.append(year)
-    runtime = _runtime_label(info.get('duration') if info.get('duration') not in (None, '') else info.get('runtime'))
-    if runtime:
-        bits.append(runtime)
+    seasons = _count_label(info.get('seasons') or info.get('seasoncount'))
+    if kind in ('tvshow', 'show', 'series') and seasons:
+        bits.append('%s %s' % (seasons, 'SEASON' if seasons == '1' else 'SEASONS'))
+    else:
+        runtime = _runtime_label(info.get('duration') if info.get('duration') not in (None, '') else info.get('runtime'))
+        if runtime:
+            bits.append(runtime)
     rating = _rating_label(info)
     if rating:
         bits.append(rating)
@@ -162,18 +181,6 @@ def _detail_meta(row):
     return _meta(row)
 
 
-def _kicker_for(row):
-    return {
-        'movie': 'FILM',
-        'film': 'FILM',
-        'episode': 'EPISODE',
-        'tvshow': 'SERIES',
-        'show': 'SERIES',
-        'series': 'SERIES',
-        'season': 'SEASON',
-    }.get(_kind(row.get('info')), '')
-
-
 def _browse_path(pluginid, url):
     marker = pluginid + 'pv/browse/'
     if isinstance(url, str) and url.startswith(marker):
@@ -181,13 +188,67 @@ def _browse_path(pluginid, url):
     return None
 
 
+def _fit_art(url, width):
+    """Request a cacheable width from Amazon's image host. Other URLs pass through."""
+    url = _http(url)
+    if not url:
+        return ''
+    base, _, query = url.partition('?')
+    match = _AMAZON_IMAGE.match(base)
+    if not match:
+        return url
+    sized = '%s._SX%d_.%s' % (match.group(1), int(width), match.group(2).lstrip('.'))
+    return sized + ('?' + query if query else '')
+
+
+def _play_url(url):
+    return isinstance(url, str) and 'mode=PlayVideo' in url
+
+
+def _nested_playable(value, row):
+    if isinstance(value, str):
+        if not _play_url(value):
+            return None
+        return {'title': row.get('title') or 'Prime Scene', 'url': value, 'video': True,
+                'info': dict(row.get('info') or {})}
+    if isinstance(value, dict) and value.get('video', True) and _play_url(value.get('url')):
+        return value
+    return None
+
+
+def playback_row(row):
+    """The PlayVideo row a card click should start, or None.
+
+    A movie or episode card already carries mode=PlayVideo. A series card
+    plays its next episode, or the first episode, when that playable row is
+    already on the card. A series with only a detail link has no single
+    playable item here.
+    """
+    if not isinstance(row, dict):
+        return None
+    if _play_url(row.get('url')):
+        return row
+    info = row.get('info') if isinstance(row.get('info'), dict) else {}
+    for key in ('next', 'next_episode', 'resume'):
+        found = _nested_playable(info.get(key), row)
+        if found:
+            return found
+    episodes = info.get('episodes')
+    if isinstance(episodes, (list, tuple)):
+        for episode in episodes:
+            found = _nested_playable(episode, row)
+            if found:
+                return found
+    return None
+
+
 def _item(row):
     info = row.get('info') or {}
     title = (row.get('title') or 'Untitled').upper()
     item = xbmcgui.ListItem(label=title)
-    thumb = _http(info.get('thumb')) or _http(info.get('poster')) or _http(info.get('fanart'))
-    poster = _http(info.get('poster')) or thumb
-    fanart = _http(info.get('fanart'))
+    thumb = _fit_art(info.get('thumb') or info.get('poster') or info.get('fanart'), _CARD_ART)
+    poster = _fit_art(info.get('poster') or info.get('thumb'), _CARD_ART)
+    fanart = _fit_art(info.get('fanart'), _HERO_ART)
     art = {}
     if thumb:
         art['thumb'] = thumb
@@ -200,12 +261,10 @@ def _item(row):
     if art:
         item.setArt(art)
     meta = _meta(row)
-    plot = _synopsis(info.get('plot') or '')
-    kicker = _kicker_for(row)
+    plot = _plain(info.get('plot') or '')
     item.setProperty('Meta', meta)
     item.setProperty('Watched', '%s%% WATCHED' % _progress(info) if _progress(info) else meta)
     item.setProperty('Plot', plot)
-    item.setProperty('Kicker', kicker)
     item.setProperty('Year', _year_label(info))
     item.setProperty('Runtime', _runtime_label(info.get('duration') if info.get('duration') not in (None, '') else info.get('runtime')))
     item.setProperty('Rating', _rating_label(info))
@@ -340,8 +399,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.artwork = set()
         self.account_generation = None
         self._ready = False
-        self._followed = None
         self._restore = None
+        self._play_single = False
 
     def onInit(self):
         if self._ready:
@@ -438,7 +497,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.worker = None
         self.jobs = Queue()
 
-    def navigate(self, path, remember=True, query=None, selection=0, heading=None):
+    def navigate(self, path, remember=True, query=None, selection=0, heading=None, play_single=False):
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
             return
@@ -454,6 +513,10 @@ class AuroraHome(xbmcgui.WindowXML):
             self.prefetch_at = 0
             self.busy = True
             self._restore = selection or None
+            # Set only for a card that had no PlayVideo row of its own. When
+            # that detail page comes back with exactly one playable item, it
+            # starts. Category shortcuts leave this false.
+            self._play_single = bool(play_single)
             token = self.generation
         self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
         self.setProperty('Section', (self.heading or 'Home').upper())
@@ -461,7 +524,6 @@ class AuroraHome(xbmcgui.WindowXML):
         control = self.getControl(200)
         if hasattr(control, 'reset'):
             control.reset()
-        self._followed = None
         self.jobs.put((token, path, query, selection))
 
     def _selected_index(self):
@@ -514,15 +576,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 control.reset()
             for item in additions:
                 control.addItem(item)
-            focus = 0
             if not had and self._restore and self._restore < len(rows):
-                focus = self._restore
                 if hasattr(control, 'selectItem'):
-                    control.selectItem(focus)
+                    control.selectItem(self._restore)
                 self._restore = None
-            if rows:
-                self._apply_hero(rows[focus], focus)
-                self._followed = focus
             self.setProperty('Section', (self.heading or 'Home').upper())
 
     def _work(self):
@@ -547,6 +604,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if token != self.generation:
                 continue
             page_start = len(self.rows)
+            finished = False
             try:
                 record(self.g, 'catalog_request_started')
                 bridge.browse_progressive(
@@ -560,6 +618,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         if not self.rows:
                             self._set_hero_status((self.heading or 'Prime Scene').upper(),
                                                   'NO TITLES WERE RETURNED. TRY HOME OR SEARCH.')
+                finished = True
             except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
@@ -570,10 +629,18 @@ class AuroraHome(xbmcgui.WindowXML):
                                    'UNABLE TO FINISH LOADING. RETURN HOME OR OPEN DIAGNOSTICS.')
                         self._set_hero_status((self.heading or 'Prime Scene').upper(), message)
             finally:
+                single = None
                 with self.lock:
                     if token == self.generation:
                         self.busy = False
+                        if finished and self._play_single:
+                            targets = [item for item in (playback_row(row) for row in self.rows) if item]
+                            if len(targets) == 1:
+                                single = targets[0]
+                        self._play_single = False
                         self._prefetch()
+                if single is not None and not self.stop.is_set():
+                    play_row(single, self.g.DATA_PATH)
 
     def _prefetch(self):
         with self.lock:
@@ -585,59 +652,22 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.busy = True
                 self.jobs.put((self.generation, path, None, 0))
 
-    def _apply_hero(self, row, index):
-        info = row.get('info') or {}
-        fanart = _http(info.get('fanart')) or _http(info.get('poster')) or _http(info.get('thumb'))
-        self.setProperty('HeroKicker', _kicker_for(row))
-        self.setProperty('HeroTitle', (row.get('title') or '').upper())
-        self.setProperty('HeroMeta', _meta(row))
-        self.setProperty('HeroSynopsis', _synopsis(info.get('plot') or ''))
-        self.setProperty('HeroTag', _meta(row))
-        self.setProperty('HeroFanart', fanart)
-        self.setProperty('HeroTint', _SCRIM)
-        wash = self.getControl(101)
-        if hasattr(wash, 'setColorDiffuse'):
-            wash.setColorDiffuse(_SCRIM)
-
-    def _hero_from_list(self):
-        with self.lock:
-            if not self.rows:
-                return
-            position = self._selected_index()
-            if position >= len(self.rows):
-                position = 0
-            row = self.rows[position]
-        self._apply_hero(row, position)
-        self._followed = position
-
     def _selected_row(self):
         with self.lock:
             index = self._selected_index()
             if not 0 <= index < len(self.rows):
-                return None, []
-            row = dict(self.rows[index])
-            related = [dict(other) for other in self.rows
-                       if other.get('video') and other.get('url') != row.get('url')][:8]
-        return row, related
+                return None
+            return dict(self.rows[index])
 
-    def _open_browse(self, row):
+    def _open_browse(self, row, play_single=False):
         path = _browse_path(self.g.pluginid, row.get('url'))
         if path:
-            self.navigate(path, heading=row.get('title') or 'Prime Scene')
+            self.navigate(path, heading=row.get('title') or 'Prime Scene', play_single=play_single)
             return True
         if '?mode=Search' in (row.get('url') or ''):
             self._search()
             return True
         return False
-
-    def _focus_id(self):
-        getter = getattr(self, 'getFocusId', None)
-        if callable(getter):
-            try:
-                return getter()
-            except Exception:
-                return None
-        return getattr(self, 'focus', None)
 
     def _search(self):
         phrase = self.g.dialog.input('Search Prime Video')
@@ -645,10 +675,6 @@ class AuroraHome(xbmcgui.WindowXML):
             return
         self.nav = ''
         self.navigate('search', query=phrase.strip(), heading='Search')
-
-    def onFocus(self, control_id):
-        if control_id == 200:
-            self._hero_from_list()
 
     def onClick(self, control_id):
         if control_id == 301:
@@ -690,37 +716,24 @@ class AuroraHome(xbmcgui.WindowXML):
                     self._initialize_controls()
                 elif self.account_name is not None and not self.account_name():
                     self.show_signed_out()
-        elif control_id in (200, 320, 321):
-            row, related = self._selected_row()
+        elif control_id == 200:
+            row = self._selected_row()
             if not row:
                 return
-            if control_id == 320 and row.get('video'):
-                play_row(row, self.g.DATA_PATH)
+            target = playback_row(row)
+            if target is not None:
+                play_row(target, self.g.DATA_PATH)
                 return
-            if row.get('video') and control_id in (200, 321):
-                open_title(row, related, self.g.PLUGIN_PATH, self.g.DATA_PATH)
-                return
-            if not self._open_browse(row):
+            # No PlayVideo row on the card. A series with a next or first
+            # episode already returned above. What remains is a detail link:
+            # open it, and start playback when that page has one playable item.
+            if not self._open_browse(row, play_single=True):
                 self.g.dialog.ok('Prime Scene', 'This menu item is unavailable here. Open Settings for account options.')
 
     def onAction(self, action):
+        # Left and right belong to the list. The hero reads Container(200),
+        # so updating it from here only delays the move.
         action_id = action.getId()
-        # The skin paints the hero from Container(200) on every move. This
-        # updates the same fields on the main thread for the scrim and for
-        # hosts that read window properties. Left/right are predicted because
-        # Kodi delivers onAction before the list selection changes.
-        if action_id in _LATERAL and self._focus_id() in (None, 200):
-            with self.lock:
-                if self.rows:
-                    position = self._selected_index() + _LATERAL[action_id]
-                    position = max(0, min(len(self.rows) - 1, position))
-                    row = self.rows[position]
-                else:
-                    row = None
-                    position = 0
-            if row is not None:
-                self._apply_hero(row, position)
-                self._followed = position
         if action_id not in _BACK or self.stop.is_set():
             return
         if self.path != 'root' and self.history:
@@ -732,43 +745,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self.stop.set()
             record(self.g, 'window_exit_to_kodi_home')
             self.close()
-
-
-class TitleWindow(xbmcgui.WindowXML):
-    def __init__(self, *args, **kwargs):
-        _prepare(self, args)
-        self.video = {}
-        self.related = []
-        self.profile = ''
-
-    def onInit(self):
-        video = self.video or {}
-        info = video.get('info') or {}
-        self.setProperty('Kicker', _kicker_for(video))
-        self.setProperty('HeroTitle', (video.get('title') or '').upper())
-        self.setProperty('Meta', _detail_meta(video))
-        self.setProperty('Synopsis', _synopsis(info.get('plot') or '', 600))
-        self.setProperty('HeroFanart', _http(info.get('fanart')) or _http(info.get('poster')) or _http(info.get('thumb')))
-        control = self.getControl(210)
-        if hasattr(control, 'reset'):
-            control.reset()
-        for entry in self.related or []:
-            control.addItem(_item(entry))
-        self.setFocusId(310)
-
-    def onAction(self, action):
-        if action.getId() in _BACK:
-            self.close()
-
-    def onClick(self, control_id):
-        if control_id == 310 and self.video:
-            play_row(self.video, self.profile)
-        elif control_id == 210 and self.related:
-            control = self.getControl(210)
-            position = control.getSelectedPosition() if hasattr(control, 'getSelectedPosition') else 0
-            if position is None or position < 0 or position >= len(self.related):
-                position = 0
-            play_row(self.related[position], self.profile)
 
 
 class PlayerOverlay(xbmcgui.WindowXMLDialog):
@@ -814,15 +790,6 @@ class PlayerOverlay(xbmcgui.WindowXMLDialog):
         except Exception:
             return
         self.apply_times(position, duration)
-
-
-def open_title(video, related, plugin_path, profile):
-    window = TitleWindow(_TITLE_XML, plugin_path, 'Default', '1080i')
-    window.video = video
-    window.related = list(related or [])
-    window.profile = profile
-    window.doModal()
-    return window
 
 
 def playback_overlay(profile):

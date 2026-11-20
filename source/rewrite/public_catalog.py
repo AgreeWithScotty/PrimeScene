@@ -64,6 +64,7 @@ class Card:
     mediatype: str = ''
     season: str = ''
     episode: str = ''
+    seasons: str = ''
 
 
 @dataclass(frozen=True)
@@ -274,6 +275,14 @@ def _media_value(node):
     }.get(key, '')
 
 
+def _seasons_value(node):
+    for key in ('seasonCount', 'numberOfSeasons', 'totalSeasons'):
+        found = _count_value(node.get(key))
+        if found:
+            return found
+    return ''
+
+
 def _count_value(value):
     if isinstance(value, bool) or value in (None, ''):
         return ''
@@ -329,7 +338,8 @@ def _json_card(node, page_url):
                     season=_count_value(node.get('seasonNumber') if node.get('seasonNumber') not in (None, '')
                                         else node.get('season')),
                     episode=_count_value(node.get('episodeNumber') if node.get('episodeNumber') not in (None, '')
-                                         else node.get('episode')))
+                                         else node.get('episode')),
+                    seasons=_seasons_value(node))
     return None
 
 

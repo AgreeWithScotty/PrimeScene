@@ -16,7 +16,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.2.zip'
+ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.3.zip'
 PROFILE = tempfile.mkdtemp(prefix='primescene-aurora-')
 
 FILM_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B001'
@@ -66,6 +66,57 @@ TV = {
     'url': 'plugin://plugin.video.primeinterface/pv/browse/root/tv',
     'video': False,
     'info': {'thumb': 'https://example.com/art/tv.jpg', 'plot': 'Series included with Prime.'},
+}
+EPISODE_A_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B003E1'
+                 '&name=The+Breaking&adult=0&trailer=0&selbitrate=0')
+EPISODE_B_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B003E2'
+                 '&name=To+the+Edge&adult=0&trailer=0&selbitrate=0')
+EPISODE_A = {
+    'title': 'The Breaking',
+    'url': EPISODE_A_URL,
+    'video': True,
+    'info': {'mediatype': 'episode', 'season': 1, 'episode': 3, 'plot': 'The ice opens.', 'year': 2021},
+}
+EPISODE_B = {
+    'title': 'To the Edge',
+    'url': EPISODE_B_URL,
+    'video': True,
+    'info': {'mediatype': 'episode', 'season': 1, 'episode': 4, 'plot': 'The ship turns.', 'year': 2021},
+}
+SERIES_LIST = {
+    'title': 'The North Water',
+    'url': 'plugin://plugin.video.primeinterface/pv/browse/__storefront__/B003SERIES',
+    'video': False,
+    'info': {
+        'mediatype': 'tvshow',
+        'plot': 'A man can disappear up here.',
+        'year': 2021,
+        'seasons': '1',
+        'genre': ['Drama'],
+    },
+}
+SERIES_NEXT = {
+    'title': 'Succession',
+    'url': 'plugin://plugin.video.primeinterface/pv/browse/__storefront__/B004NEXT',
+    'video': False,
+    'info': {
+        'mediatype': 'tvshow',
+        'year': 2023,
+        'seasons': '4',
+        'plot': 'A family decides.',
+        'next': {
+            'title': 'America Decides',
+            'url': EPISODE_A_URL,
+            'video': True,
+            'info': {'mediatype': 'episode', 'season': 4, 'episode': 8},
+        },
+    },
+}
+STORE_MOVIE = {
+    'title': 'Blade Runner 2049',
+    'url': 'plugin://plugin.video.primeinterface/pv/browse/__storefront__/B009MOVIE',
+    'video': False,
+    'info': {'mediatype': 'movie', 'plot': 'A new blade runner.', 'year': 2017},
 }
 
 
@@ -131,7 +182,7 @@ class Addon(object):
             'path': str(ADDON),
             'profile': PROFILE,
             'name': 'Prime Scene',
-            'version': '0.2.2',
+            'version': '0.2.3',
             'icon': str(ADDON / 'icon.png'),
             'fanart': str(ADDON / 'fanart.png'),
         }[key]
@@ -320,7 +371,7 @@ def referenced_files(addon):
     media = skin / 'media'
     fonts = skin / 'fonts'
     missing = []
-    for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeSceneTitle.xml', 'PrimeScenePlayer.xml'):
+    for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeScenePlayer.xml'):
         root = ET.parse(skin / '1080i' / name).getroot()
         print('parsed %s' % name)
         for node in root.iter():
@@ -371,6 +422,10 @@ class FakeBridge(object):
             publish({'rows': [FILM, SHOW], 'next': 'root/movies/nextPage'})
         elif path in ('__prime_tv__', 'root/tv'):
             publish({'rows': [SHOW], 'next': None})
+        elif str(path).endswith('B003SERIES'):
+            publish({'rows': [EPISODE_A, EPISODE_B], 'next': None})
+        elif str(path).endswith('B009MOVIE'):
+            publish({'rows': [FILM], 'next': None})
         elif str(path).endswith('/nextPage'):
             publish({'rows': [], 'next': None})
         else:
@@ -598,6 +653,32 @@ def windowxml_contract(addon, packaged_source, zip_names):
     return problems
 
 
+def _lateral_work(source):
+    """AuroraHome must not touch the window or the list while left and right move."""
+    tree = ast.parse(source)
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != 'AuroraHome':
+            continue
+        methods = {item.name: item for item in node.body if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))}
+        problems = []
+        if 'onFocus' in methods:
+            problems.append('AuroraHome.onFocus still runs on focus changes')
+        action = methods.get('onAction')
+        if action is None:
+            return problems + ['AuroraHome.onAction is missing']
+        names = set()
+        for child in ast.walk(action):
+            if isinstance(child, ast.Attribute):
+                names.add(child.attr)
+            elif isinstance(child, ast.Name):
+                names.add(child.id)
+        blocked = names & {'setProperty', 'getControl', '_apply_hero', '_hero_from_list', '_selected_index', '_LATERAL'}
+        if blocked:
+            problems.append('onAction references %s' % ', '.join(sorted(blocked)))
+        return problems
+    return ['AuroraHome is missing']
+
+
 def main():
     global ADDON
     failures = []
@@ -618,7 +699,7 @@ def main():
     check(not any('prime-nav-' in name or 'prime-card-gold' in name for name in names),
           'old sidebar textures are not packaged')
     addon_xml = (ADDON / 'addon.xml').read_text(encoding='utf-8')
-    check('version="0.2.2"' in addon_xml, 'addon.xml version is 0.2.2')
+    check('version="0.2.3"' in addon_xml, 'addon.xml version is 0.2.3')
     check('Aurora Cinema' in addon_xml, 'addon.xml describes Aurora Cinema')
     source = (ROOT / 'source' / 'rewrite' / 'aurora.py').read_bytes()
     packaged = (ADDON / 'resources' / 'lib' / 'aurora.py').read_bytes()
@@ -629,15 +710,14 @@ def main():
             ('resources/lib/public_catalog.py', 'public_catalog.py'),
             ('resources/lib/dedicated_bridge.py', 'dedicated_bridge.py'),
             ('resources/skins/Default/1080i/PrimeSceneHome.xml', 'skins/Default/1080i/PrimeSceneHome.xml'),
-            ('resources/skins/Default/1080i/PrimeSceneTitle.xml', 'skins/Default/1080i/PrimeSceneTitle.xml'),
             ('resources/skins/Default/1080i/PrimeScenePlayer.xml', 'skins/Default/1080i/PrimeScenePlayer.xml'),
             ('resources/skins/Default/1080i/Font.xml', 'skins/Default/1080i/Font.xml')):
         check((ROOT / 'source' / 'rewrite' / source_name).read_bytes() == (ADDON / packaged_name).read_bytes(),
               'packaged %s matches source' % source_name)
+    check('PrimeSceneTitle.xml' not in ''.join(names), 'the title window is not packaged')
     home_xml = (ADDON / 'resources/skins/Default/1080i/PrimeSceneHome.xml').read_text(encoding='utf-8')
-    title_xml = (ADDON / 'resources/skins/Default/1080i/PrimeSceneTitle.xml').read_text(encoding='utf-8')
     aurora_text = packaged.decode('utf-8')
-    check('EXPLORE' not in aurora_text and 'EXPLORE' not in home_xml and 'EXPLORE' not in title_xml,
+    check('EXPLORE' not in aurora_text and 'EXPLORE' not in home_xml,
           'EXPLORE filler is gone from the window and the catalogue labels')
     check('category-cinema' not in aurora_text and 'category-' not in home_xml and 'fanart.jpg' not in home_xml,
           'home does not use the gold theater art or category icons')
@@ -646,12 +726,43 @@ def main():
             'Container(200).ListItem.Art(thumb)',
             'Container(200).ListItem.Label',
             'Container(200).ListItem.Property(Meta)',
-            'Container(200).ListItem.Property(Plot)',
-            'Container(200).ListItem.Property(Kicker)'):
+            'Container(200).ListItem.Property(Plot)'):
         check(binding in home_xml, 'hero binds %s' % binding)
-    check('bordersize>4<' in home_xml and 'effect="zoom"' in home_xml, 'focused card has a 4px border and a lift')
-    check('focus-pill.png' in home_xml and 'button-focus.png' in home_xml,
-          'nav and hero buttons use a high-contrast focus texture')
+    home_root = ET.parse(ADDON / 'resources/skins/Default/1080i/PrimeSceneHome.xml').getroot()
+    buttons = [node.attrib.get('id') for node in home_root.iter('control')
+               if (node.attrib.get('type') or '').lower() == 'button']
+    check(set(buttons) <= {'301', '302', '303', '304', '305', '306'},
+          'home buttons are the navigation row (%s)' % buttons)
+    check('WATCH NOW' not in home_xml and '>WATCH<' not in home_xml and '>DETAILS<' not in home_xml,
+          'the hero has no watch or details button')
+    boxes = [node for node in home_root.iter('control') if (node.attrib.get('type') or '').lower() == 'textbox']
+    check(len(boxes) == 1, 'the synopsis is one textbox')
+    if boxes:
+        synopsis = boxes[0].findtext('label') or ''
+        autoscroll = boxes[0].find('autoscroll')
+        check(synopsis == '$INFO[Container(200).ListItem.Property(Plot)]',
+              'synopsis textbox is bound to the focused card')
+        check(autoscroll is not None and (autoscroll.text or '').strip() == 'true'
+              and autoscroll.attrib.get('delay') and autoscroll.attrib.get('time'),
+              'synopsis textbox autoscrolls')
+    check('bordersize>4<' in home_xml, 'focused card has a 4px border')
+    check('effect="zoom"' not in home_xml and 'effect="slide"' not in home_xml,
+          'focus does not zoom or slide the card')
+    check('<scrolltime>0</scrolltime>' in home_xml, 'the row has no scroll delay')
+    check('<fadetime>0</fadetime>' in home_xml, 'hero art swaps without a fade')
+    check('focus-pill.png' in home_xml, 'navigation uses a high-contrast focus texture')
+    check('button-focus.png' not in home_xml, 'hero buttons are gone')
+    fonts = ET.parse(ADDON / 'resources/skins/Default/1080i/Font.xml').getroot()
+    hero_font = next((font for font in fonts.iter('font') if font.findtext('name') == 'Hero'), None)
+    check(hero_font is not None and hero_font.findtext('filename') == 'BebasNeue-Regular.ttf'
+          and int(hero_font.findtext('size') or 0) >= 160
+          and float(hero_font.findtext('linespacing') or 1) < 1,
+          'hero title uses a large condensed Bebas Neue')
+    check('<colordiffuse>99141A20</colordiffuse>' in home_xml, 'hero scrim is the matte slate wash')
+    lateral = _lateral_work(aurora_text)
+    for problem in lateral:
+        check(False, problem)
+    check(not lateral, 'no Python handler does work on plain left/right moves')
     bridge_text = (ADDON / 'resources/lib/dedicated_bridge.py').read_text(encoding='utf-8')
     home_branch = bridge_text.split('def _browse_progressive', 1)[1].split('\n    def browse', 1)[0]
     check("public_packet('home'" in home_branch, 'home loads the signed-in storefront')
@@ -670,8 +781,9 @@ def main():
 
     xbmc = install_stubs()
     sys.path.insert(0, str(ADDON))
-    from resources.lib.aurora import (AuroraHome, PlayerOverlay, _SCRIM, _meta, note_playback,
-                                      open_interface, overlay_due, watch_playback)
+    from resources.lib.aurora import (AuroraHome, PlayerOverlay, _SCRIM, _fit_art, _item, _meta,
+                                      note_playback, open_interface, overlay_due, playback_row,
+                                      watch_playback)
     from resources.lib.public_catalog import parse_cards
 
     import resources.lib.aurora as aurora
@@ -722,42 +834,69 @@ def main():
     check(home.xml == 'PrimeSceneHome.xml', 'home loads PrimeSceneHome.xml')
     check(home.getProperty('Nav') == 'home', 'home nav underline')
     check(home.getControl(200).size() == 2, 'home row lists real titles')
-    check(home.getProperty('HeroTitle') == 'HARBOR LIGHTS', 'first title is the hero')
-    check(home.getControl(101).color == _SCRIM, 'hero scrim is the matte slate wash')
+    check(_SCRIM == '99141A20', 'the scrim constant matches the skin')
     first = home.getControl(200).items[0]
     print('card meta %s art %s' % (first.properties.get('Meta'), sorted(first.art)))
+    check(first.getLabel() == 'HARBOR LIGHTS', 'first card carries the hero title')
     check('2021' in first.properties.get('Meta', '') and '1H 42M' in first.properties.get('Meta', '')
           and '16+' in first.properties.get('Meta', '') and 'DRAMA' in first.properties.get('Meta', ''),
           'card sublabel uses year, runtime, rating and genre')
-    check(not any('EXPLORE' in (item.getLabel() + item.properties.get('Meta', '') + item.properties.get('Kicker', ''))
+    check(not any('EXPLORE' in (item.getLabel() + item.properties.get('Meta', ''))
                   for item in home.getControl(200).items),
           'no card label is EXPLORE')
     check(first.art.get('fanart') == FILM['info']['fanart'] and first.art.get('thumb') == FILM['info']['thumb']
           and first.art.get('poster') == FILM['info']['poster'],
           'each title sets fanart, thumb and poster')
     check(first.properties.get('Plot', '').startswith('A coastal town'), 'card carries the synopsis')
+    check(first.properties.get('Plot') == FILM['info']['plot'], 'the synopsis is the full plot')
     check(_meta({'title': 'Shelf', 'video': False, 'info': {}}) == '', 'a missing field stays blank')
+    series_meta = _meta({'title': 'Shelf', 'video': False,
+                         'info': {'mediatype': 'tvshow', 'year': 2021, 'seasons': '2', 'duration': 3600,
+                                  'genre': ['Drama', 'Mystery']}})
+    check('2021' in series_meta and '2 SEASONS' in series_meta and 'DRAMA' in series_meta
+          and 'MYSTERY' in series_meta and '1H' not in series_meta,
+          'a series line shows year, season count and genres')
     check('2024' in home.getControl(200).items[1].properties.get('Meta', '')
           and 'TV-MA' in home.getControl(200).items[1].properties.get('Meta', '')
           and 'MYSTERY' in home.getControl(200).items[1].properties.get('Meta', ''),
           'a series card shows its own metadata')
+    long_plot = ('A man can disappear up here. ' * 40).strip()
+    sized = _item({'title': 'The North Water', 'url': 'x', 'video': False, 'info': {
+        'plot': long_plot, 'mediatype': 'tvshow', 'year': 2021, 'seasons': '1',
+        'fanart': 'https://m.media-amazon.com/images/I/north._UR1920,1080_SX3000_.jpg',
+        'thumb': 'https://m.media-amazon.com/images/I/north-card.jpg'}})
+    check(sized.properties.get('Plot') == long_plot and '…' not in sized.properties.get('Plot', ''),
+          'a long synopsis is stored whole for the scrolling textbox')
+    check(sized.art.get('fanart', '').endswith('/north._SX1280_.jpg'), 'hero art requests a 1280-wide cache file')
+    check(sized.art.get('thumb', '').endswith('/north-card._SX720_.jpg'), 'card art requests a 720-wide cache file')
+    check(_fit_art('https://example.com/art/harbor-fan.jpg', 1280) == 'https://example.com/art/harbor-fan.jpg',
+          'non-Amazon artwork is left unchanged')
+    check(playback_row(FILM)['url'] == FILM_URL, 'a movie card is its PlayVideo url')
+    check(playback_row(SERIES_NEXT)['url'] == EPISODE_A_URL, 'a series plays the next episode when the card has one')
+    check(playback_row(SERIES_LIST) is None, 'a series with only a detail link is not a single playable item')
     check('provider' not in started, 'the home screen does not start the playback provider')
 
-    home.getControl(200).position = 1
-    home.onFocus(200)
-    print('focused %s meta %s' % (home.getProperty('HeroTitle'), home.getProperty('HeroMeta')))
-    check(home.getProperty('HeroTitle') == 'THE MIDNIGHT LIBRARY', 'focused card becomes the hero')
-    check('2024' in home.getProperty('HeroMeta') and 'secret schedule' not in home.getProperty('HeroSynopsis'),
-          'focus replaces the hero metadata and synopsis')
-    check('lives she did not live' in home.getProperty('HeroSynopsis'), 'hero synopsis follows the focused title')
-    check(home.getControl(101).color == _SCRIM, 'the scrim stays matte slate while the art changes')
+    writes = []
+    gets = []
+    original_set = home.setProperty
+    original_get = home.getControl
 
-    home.getControl(200).position = 0
+    def spy_set(key, value):
+        writes.append(key)
+        return original_set(key, value)
+
+    def spy_get(control_id):
+        gets.append(control_id)
+        return original_get(control_id)
+
+    home.setProperty = spy_set
+    home.getControl = spy_get
+    home.onAction(Action(1))
     home.onAction(Action(2))
-    print('stepped %s meta %s' % (home.getProperty('HeroTitle'), home.getProperty('HeroMeta')))
-    check(home.getProperty('HeroTitle') == 'THE MIDNIGHT LIBRARY', 'right moves the hero to the next title')
-    check('TV-MA' in home.getProperty('HeroMeta'), 'right updates the metadata strip')
-    check(home.getProperty('HeroFanart') == SHOW['info']['fanart'], 'right updates the hero backdrop')
+    home.setProperty = original_set
+    home.getControl = original_get
+    print('lateral writes %s gets %s' % (writes, gets))
+    check(writes == [] and gets == [], 'left and right do no window or control work')
 
     home.onClick(302)
     ready = wait_until(lambda: home.path == '__prime_movies__' and home.getControl(200).size() >= 2)
@@ -769,36 +908,53 @@ def main():
     check(any(item.getLabel() == 'HARBOR LIGHTS' for item in home.getControl(200).items), 'movies row lists the film')
 
     WindowXML.opened = []
+    Player().played.clear()
     home.getControl(200).position = 0
     home.onClick(200)
-    title = WindowXML.opened[-1]
     print('')
-    print('=== title ===')
-    print('xml %s kicker %s title %s' % (title.xml, title.getProperty('Kicker'), title.getProperty('HeroTitle')))
-    print('synopsis %s related %s' % (title.getProperty('Synopsis'), title.getControl(210).size()))
-    check(title.xml == 'PrimeSceneTitle.xml', 'detail view loads PrimeSceneTitle.xml')
-    check(title.getProperty('Kicker') == 'FILM', 'film kicker')
-    check(title.getProperty('HeroTitle') == 'HARBOR LIGHTS', 'detail title')
-    check('2021' in title.getProperty('Meta') and '1H 42M' in title.getProperty('Meta')
-          and '16+' in title.getProperty('Meta'), 'detail metadata strip')
-    check('secret schedule' in title.getProperty('Synopsis'), 'synopsis is on the detail view')
-    check(title.getControl(210).size() == 1, 'detail row lists the other title')
-
-    title.onClick(310)
-    print('play %s' % Player.shared.played)
-    check(Player.shared.played == [FILM_URL], 'watch now hands the existing playback URL to the player')
+    print('=== play ===')
+    print('played %s opened %s' % (Player.shared.played, [getattr(window, 'xml', '') for window in WindowXML.opened]))
+    check(Player.shared.played == [FILM_URL], 'card click hands the existing playback URL to the player')
+    check(not WindowXML.opened, 'card click does not open another screen')
     note = (Path(PROFILE) / 'aurora-playback.json').read_text(encoding='utf-8')
     check('Harbor Lights' in note, 'playback note carries the title for the overlay')
 
-    title.onClick(210)
-    check(Player.shared.played[-1] == SHOW_URL, 'a related card uses the same playback handoff')
-    home.getControl(200).position = 0
-    home.onClick(320)
-    check(Player.shared.played[-1] == FILM_URL, 'the hero watch button plays the focused title')
-
     home.onAction(Action(10))
-    ready = wait_until(lambda: home.path == 'root' and home.getProperty('Section') == 'HOME')
+    ready = wait_until(lambda: home.path == 'root' and not home.busy and home.getControl(200).size() == 2
+                       and any(item.getLabel() == 'HARBOR LIGHTS' for item in home.getControl(200).items))
     check(ready, 'back returns from the category to home')
+
+    with home.lock:
+        home.rows.append(dict(SERIES_NEXT))
+    home.getControl(200).position = len(home.rows) - 1
+    path_before = home.path
+    home.onClick(200)
+    print('next episode %s path %s' % (Player.shared.played[-1], home.path))
+    check(Player.shared.played[-1] == EPISODE_A_URL, 'a series card plays its next episode')
+    check(home.path == path_before, 'playing the next episode stays on this row')
+
+    with home.lock:
+        home.rows.append(dict(SERIES_LIST))
+    home.getControl(200).position = len(home.rows) - 1
+    played_before = len(Player.shared.played)
+    home.onClick(200)
+    ready = wait_until(lambda: home.path.endswith('B003SERIES') and not home.busy
+                       and home.getControl(200).size() == 2)
+    print('series path %s cards %s played %s' % (home.path, home.getControl(200).size(), len(Player.shared.played)))
+    check(ready, 'a series without one episode opens its episode list')
+    check(len(Player.shared.played) == played_before, 'an episode list does not start playback by itself')
+    labels = [item.getLabel() for item in home.getControl(200).items]
+    check(labels == ['THE BREAKING', 'TO THE EDGE'], 'the episode list shows the episodes')
+    check(not any(getattr(window, 'xml', '') == 'PrimeSceneTitle.xml' for window in WindowXML.opened),
+          'the episode list is the home row')
+
+    with home.lock:
+        home.rows.append(dict(STORE_MOVIE))
+    home.getControl(200).position = len(home.rows) - 1
+    home.onClick(200)
+    ready = wait_until(lambda: home.path.endswith('B009MOVIE') and Player.shared.played[-1] == FILM_URL and not home.busy)
+    print('movie detail %s played %s' % (home.path, Player.shared.played[-1]))
+    check(ready, 'a movie detail with one playable item starts that PlayVideo url')
 
     dialog.inputs = ['Harbor']
     home.onClick(304)
@@ -856,9 +1012,19 @@ def main():
               and harbor.mediatype == 'movie' and 'Drama' in harbor.genres
               and harbor.plot.startswith('A coastal town'),
               'storefront card keeps year, runtime, rating, genre and synopsis')
+        check(harbor.seasons == '', 'a movie card leaves the season count blank')
     if quiet is not None:
         check(quiet.year == '' and quiet.plot == '' and quiet.rating == '' and quiet.fanart_url == '',
               'a card without those fields leaves them blank')
+    series_cards = {card.title: card for card in parse_cards(
+        '<script type="application/json">'
+        '{"title":"The North Water","detailUrl":"https://www.primevideo.com/detail/B003TEST",'
+        '"titleType":"tv show","seasonCount":1,"releaseYear":2021,'
+        '"images":{"packshot":"https://m.media-amazon.com/images/I/north.jpg"}}'
+        '</script>')}
+    north = series_cards.get('The North Water')
+    check(north is not None and north.seasons == '1' and north.mediatype == 'tvshow',
+          'storefront reader keeps a series season count')
 
     settings = Settings()
     settings.data_source = 1

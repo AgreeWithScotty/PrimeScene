@@ -72,6 +72,8 @@ def _card_info(card):
         info['season'] = card.season
     if card.episode:
         info['episode'] = card.episode
+    if card.seasons:
+        info['seasons'] = card.seasons
     return info
 
 

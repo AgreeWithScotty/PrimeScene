@@ -24,7 +24,13 @@
         <font>
             <name>Hero</name>
             <filename>BebasNeue-Regular.ttf</filename>
-            <size>118</size>
+            <size>168</size>
+            <linespacing>0.78</linespacing>
+        </font>
+        <font>
+            <name>HeroMeta</name>
+            <filename>Inter-Medium.ttf</filename>
+            <size>22</size>
         </font>
         <font>
             <name>Tag</name>
@@ -49,7 +55,7 @@
         <font>
             <name>Body</name>
             <filename>Inter-Regular.ttf</filename>
-            <size>22</size>
+            <size>24</size>
         </font>
         <font>
             <name>Button</name>
