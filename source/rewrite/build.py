@@ -220,7 +220,7 @@ def writeConfig(cfile, value):
     web_api_path.write_text(web_api, encoding='utf-8', newline='\n')
     skin_xml = addon/'resources/skins/Default/1080i'
     skin_xml.mkdir(parents=True, exist_ok=True)
-    for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeSceneTitle.xml', 'PrimeScenePlayer.xml'):
+    for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeScenePlayer.xml'):
         shutil.copyfile(ROOT/'skins/Default/1080i'/name, skin_xml/name)
     legacy_window = skin_xml/'PrimeStreaming.xml'
     if legacy_window.exists():

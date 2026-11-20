@@ -16,19 +16,19 @@
             <left>0</left>
             <top>0</top>
             <width>1920</width>
-            <height>820</height>
-            <fadetime>80</fadetime>
-            <aspectratio align="center" aligny="top">scale</aspectratio>
+            <height>720</height>
+            <fadetime>0</fadetime>
+            <aspectratio align="center" aligny="center">scale</aspectratio>
             <texture background="true">$INFO[Container(200).ListItem.Art(thumb)]</texture>
-            <visible>!String.IsEmpty(Container(200).ListItem.Art(thumb))</visible>
+            <visible>!String.IsEmpty(Container(200).ListItem.Art(thumb)) + String.IsEmpty(Container(200).ListItem.Art(fanart))</visible>
         </control>
         <control type="image" id="100">
             <left>0</left>
             <top>0</top>
             <width>1920</width>
-            <height>820</height>
-            <fadetime>80</fadetime>
-            <aspectratio align="center" aligny="top">scale</aspectratio>
+            <height>720</height>
+            <fadetime>0</fadetime>
+            <aspectratio align="center" aligny="center">scale</aspectratio>
             <texture background="true">$INFO[Container(200).ListItem.Art(fanart)]</texture>
             <visible>!String.IsEmpty(Container(200).ListItem.Art(fanart))</visible>
         </control>
@@ -36,22 +36,22 @@
             <left>0</left>
             <top>0</top>
             <width>1920</width>
-            <height>820</height>
+            <height>720</height>
             <texture>white.png</texture>
             <colordiffuse>99141A20</colordiffuse>
         </control>
         <control type="image">
             <left>0</left>
-            <top>460</top>
+            <top>420</top>
             <width>1920</width>
-            <height>380</height>
+            <height>320</height>
             <texture>vignette.png</texture>
         </control>
         <control type="image">
             <left>0</left>
-            <top>760</top>
+            <top>680</top>
             <width>1920</width>
-            <height>320</height>
+            <height>400</height>
             <texture>white.png</texture>
             <colordiffuse>FF171C21</colordiffuse>
         </control>
@@ -194,128 +194,68 @@
             <ondown>200</ondown>
         </control>
         <control type="label">
-            <left>76</left>
-            <top>188</top>
-            <width>1200</width>
-            <height>28</height>
-            <font>Kicker</font>
-            <textcolor>FFD5DAE0</textcolor>
-            <label>$INFO[Container(200).ListItem.Property(Kicker)]</label>
-            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
-        </control>
-        <control type="label">
-            <left>76</left>
-            <top>188</top>
-            <width>1200</width>
-            <height>28</height>
-            <font>Kicker</font>
-            <textcolor>FFD5DAE0</textcolor>
-            <label>$INFO[Window.Property(HeroKicker)]</label>
-            <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
-        </control>
-        <control type="label">
             <left>72</left>
-            <top>214</top>
-            <width>1400</width>
-            <height>130</height>
+            <top>148</top>
+            <width>1280</width>
+            <height>268</height>
             <font>Hero</font>
             <textcolor>FFF7F8F8</textcolor>
+            <align>left</align>
+            <aligny>top</aligny>
+            <wrap>true</wrap>
+            <scroll>false</scroll>
             <label>$INFO[Container(200).ListItem.Label]</label>
             <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">
             <left>72</left>
-            <top>214</top>
-            <width>1400</width>
-            <height>130</height>
+            <top>148</top>
+            <width>1280</width>
+            <height>268</height>
             <font>Hero</font>
             <textcolor>FFF7F8F8</textcolor>
+            <align>left</align>
+            <aligny>top</aligny>
+            <wrap>true</wrap>
+            <scroll>false</scroll>
             <label>$INFO[Window.Property(HeroTitle)]</label>
             <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">
             <left>76</left>
-            <top>348</top>
+            <top>424</top>
             <width>1200</width>
-            <height>32</height>
-            <font>Tag</font>
-            <textcolor>FFE4E7EB</textcolor>
+            <height>36</height>
+            <font>HeroMeta</font>
+            <textcolor>FFC5CCD3</textcolor>
             <label>$INFO[Container(200).ListItem.Property(Meta)]</label>
             <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">
             <left>76</left>
-            <top>348</top>
+            <top>424</top>
             <width>1200</width>
-            <height>32</height>
-            <font>Tag</font>
-            <textcolor>FFE4E7EB</textcolor>
+            <height>36</height>
+            <font>HeroMeta</font>
+            <textcolor>FFC5CCD3</textcolor>
             <label>$INFO[Window.Property(HeroMeta)]</label>
             <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
         </control>
-        <control type="label">
+        <control type="textbox" id="330">
             <left>76</left>
-            <top>388</top>
-            <width>980</width>
-            <height>72</height>
+            <top>468</top>
+            <width>1080</width>
+            <height>156</height>
             <font>Body</font>
-            <textcolor>FFC9D0D6</textcolor>
-            <wrap>true</wrap>
+            <textcolor>FFD5DAE0</textcolor>
+            <align>left</align>
+            <autoscroll delay="2000" time="1500" repeat="3000">true</autoscroll>
             <label>$INFO[Container(200).ListItem.Property(Plot)]</label>
             <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">
             <left>76</left>
-            <top>388</top>
-            <width>980</width>
-            <height>72</height>
-            <font>Body</font>
-            <textcolor>FFC9D0D6</textcolor>
-            <wrap>true</wrap>
-            <label>$INFO[Window.Property(HeroSynopsis)]</label>
-            <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
-        </control>
-        <control type="button" id="320">
-            <left>72</left>
-            <top>476</top>
-            <width>220</width>
-            <height>56</height>
-            <font>Button</font>
-            <label>WATCH</label>
-            <align>center</align>
-            <textoffsetx>0</textoffsetx>
-            <textcolor>FFE8EAED</textcolor>
-            <focusedcolor>FF14181C</focusedcolor>
-            <texturefocus border="14">button-focus.png</texturefocus>
-            <texturenofocus border="14">button-idle.png</texturenofocus>
-            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
-            <onleft>321</onleft>
-            <onright>321</onright>
-            <onup>301</onup>
-            <ondown>200</ondown>
-        </control>
-        <control type="button" id="321">
-            <left>308</left>
-            <top>476</top>
-            <width>240</width>
-            <height>56</height>
-            <font>Button</font>
-            <label>DETAILS</label>
-            <align>center</align>
-            <textoffsetx>0</textoffsetx>
-            <textcolor>FFE8EAED</textcolor>
-            <focusedcolor>FF14181C</focusedcolor>
-            <texturefocus border="14">button-focus.png</texturefocus>
-            <texturenofocus border="14">button-idle.png</texturenofocus>
-            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
-            <onleft>320</onleft>
-            <onright>320</onright>
-            <onup>301</onup>
-            <ondown>200</ondown>
-        </control>
-        <control type="label">
-            <left>76</left>
-            <top>628</top>
+            <top>648</top>
             <width>600</width>
             <height>28</height>
             <font>Section</font>
@@ -324,13 +264,14 @@
         </control>
         <control type="fixedlist" id="200">
             <left>64</left>
-            <top>668</top>
+            <top>688</top>
             <width>1820</width>
-            <height>380</height>
+            <height>372</height>
             <orientation>horizontal</orientation>
             <focusposition>0</focusposition>
-            <scrolltime>160</scrolltime>
-            <onup>320</onup>
+            <scrolltime>0</scrolltime>
+            <preloaditems>2</preloaditems>
+            <onup>301</onup>
             <onleft>301</onleft>
             <onright>306</onright>
             <itemlayout width="420" height="360">
@@ -375,47 +316,43 @@
                 </control>
             </itemlayout>
             <focusedlayout width="420" height="360">
-                <control type="group">
-                    <animation effect="zoom" start="100" end="106" center="204,126" time="160" tween="quadratic" easing="out" reversible="false">Focus</animation>
-                    <animation effect="slide" end="0,-12" time="160" tween="quadratic" easing="out" reversible="false">Focus</animation>
-                    <control type="image">
-                        <left>8</left>
-                        <top>16</top>
-                        <width>392</width>
-                        <height>220</height>
-                        <aspectratio>scale</aspectratio>
-                        <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
-                        <bordertexture>white.png</bordertexture>
-                        <bordersize>4</bordersize>
-                    </control>
-                    <control type="label">
-                        <left>10</left>
-                        <top>246</top>
-                        <width>388</width>
-                        <height>32</height>
-                        <font>Card</font>
-                        <textcolor>FFFFFFFF</textcolor>
-                        <label>$INFO[ListItem.Label]</label>
-                    </control>
-                    <control type="label">
-                        <left>10</left>
-                        <top>278</top>
-                        <width>388</width>
-                        <height>28</height>
-                        <font>Meta</font>
-                        <textcolor>FFE6E8EB</textcolor>
-                        <label>$INFO[ListItem.Property(Meta)]</label>
-                    </control>
-                    <control type="progress">
-                        <left>10</left>
-                        <top>314</top>
-                        <width>388</width>
-                        <height>3</height>
-                        <info>ListItem.PercentPlayed</info>
-                        <visible>Integer.IsGreater(ListItem.PercentPlayed,0)</visible>
-                        <texturebg>grey.png</texturebg>
-                        <midtexture>white.png</midtexture>
-                    </control>
+                <control type="image">
+                    <left>8</left>
+                    <top>16</top>
+                    <width>392</width>
+                    <height>220</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                    <bordertexture>white.png</bordertexture>
+                    <bordersize>4</bordersize>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>246</top>
+                    <width>388</width>
+                    <height>32</height>
+                    <font>Card</font>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>278</top>
+                    <width>388</width>
+                    <height>28</height>
+                    <font>Meta</font>
+                    <textcolor>FFE6E8EB</textcolor>
+                    <label>$INFO[ListItem.Property(Meta)]</label>
+                </control>
+                <control type="progress">
+                    <left>10</left>
+                    <top>314</top>
+                    <width>388</width>
+                    <height>3</height>
+                    <info>ListItem.PercentPlayed</info>
+                    <visible>Integer.IsGreater(ListItem.PercentPlayed,0)</visible>
+                    <texturebg>grey.png</texturebg>
+                    <midtexture>white.png</midtexture>
                 </control>
             </focusedlayout>
         </control>

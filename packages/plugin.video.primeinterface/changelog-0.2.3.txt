@@ -1,0 +1,4 @@
+0.2.3
+- Show the focused title in large condensed type, with its year, runtime or seasons, rating, genres and the full synopsis on the home screen. The synopsis scrolls when it does not fit.
+- Choosing a card plays it through the existing PlayVideo path. A series plays its next or first episode when that episode is already on the card; otherwise the episode list opens.
+- Moving across the row no longer runs Python. The hero is drawn from the focused card.
