@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<window>
+    <defaultcontrol always="true">310</defaultcontrol>
+    <animation effect="fade" start="0" end="100" time="420">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="240">WindowClose</animation>
+    <controls>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF0A0A0A</colordiffuse>
+        </control>
+        <control type="image" id="100">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>700</height>
+            <fadetime>500</fadetime>
+            <aspectratio>scale</aspectratio>
+            <texture background="true">$INFO[Window.Property(HeroFanart)]</texture>
+        </control>
+        <control type="image" id="101">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>700</height>
+            <texture>white.png</texture>
+            <colordiffuse>77141618</colordiffuse>
+        </control>
+        <control type="image">
+            <left>0</left>
+            <top>380</top>
+            <width>1920</width>
+            <height>340</height>
+            <texture>vignette.png</texture>
+        </control>
+        <control type="label">
+            <left>72</left>
+            <top>36</top>
+            <width>640</width>
+            <height>28</height>
+            <font>Wordmark</font>
+            <textcolor>FFF4F1EA</textcolor>
+            <label>P R I M E   S C E N E</label>
+        </control>
+        <control type="label">
+            <left>1280</left>
+            <top>40</top>
+            <width>140</width>
+            <height>24</height>
+            <font>Nav</font>
+            <align>right</align>
+            <textcolor>FFF4F1EA</textcolor>
+            <label>HOME</label>
+        </control>
+        <control type="image">
+            <left>1390</left>
+            <top>66</top>
+            <width>52</width>
+            <height>2</height>
+            <texture>white.png</texture>
+        </control>
+        <control type="label">
+            <left>1480</left>
+            <top>40</top>
+            <width>140</width>
+            <height>24</height>
+            <font>Nav</font>
+            <textcolor>FF8A8A8A</textcolor>
+            <label>MOVIES</label>
+        </control>
+        <control type="label">
+            <left>1660</left>
+            <top>40</top>
+            <width>160</width>
+            <height>24</height>
+            <font>Nav</font>
+            <textcolor>FF8A8A8A</textcolor>
+            <label>TV</label>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>250</top>
+            <width>1200</width>
+            <height>24</height>
+            <font>Kicker</font>
+            <textcolor>FFBDBDBD</textcolor>
+            <label>$INFO[Window.Property(Kicker)]</label>
+        </control>
+        <control type="label">
+            <left>72</left>
+            <top>274</top>
+            <width>1500</width>
+            <height>130</height>
+            <font>Hero</font>
+            <textcolor>FFF4F1EA</textcolor>
+            <label>$INFO[Window.Property(HeroTitle)]</label>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>410</top>
+            <width>1100</width>
+            <height>28</height>
+            <font>Tag</font>
+            <textcolor>FF8A8A8A</textcolor>
+            <label>$INFO[Window.Property(Meta)]</label>
+        </control>
+        <control type="image">
+            <left>76</left>
+            <top>452</top>
+            <width>72</width>
+            <height>1</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF8A8A8A</colordiffuse>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>468</top>
+            <width>820</width>
+            <height>64</height>
+            <font>Body</font>
+            <textcolor>FFBDBDBD</textcolor>
+            <label>$INFO[Window.Property(Synopsis)]</label>
+            <wrap>true</wrap>
+        </control>
+        <control type="button" id="310">
+            <left>72</left>
+            <top>548</top>
+            <width>220</width>
+            <height>40</height>
+            <font>Button</font>
+            <label>WATCH NOW</label>
+            <textcolor>FFF4F1EA</textcolor>
+            <focusedcolor>FFF4F1EA</focusedcolor>
+            <align>left</align>
+            <texturefocus>blank.png</texturefocus>
+            <texturenofocus>blank.png</texturenofocus>
+        </control>
+        <control type="image">
+            <left>76</left>
+            <top>586</top>
+            <width>132</width>
+            <height>1</height>
+            <texture>white.png</texture>
+        </control>
+        <control type="image">
+            <left>72</left>
+            <top>660</top>
+            <width>1776</width>
+            <height>1</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF2A2A2A</colordiffuse>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>684</top>
+            <width>600</width>
+            <height>24</height>
+            <font>Section</font>
+            <textcolor>FFBDBDBD</textcolor>
+            <label>MORE TO WATCH</label>
+            <visible>Integer.IsGreater(Container(210).NumItems,0)</visible>
+        </control>
+        <control type="fixedlist" id="210">
+            <left>72</left>
+            <top>724</top>
+            <width>1848</width>
+            <height>300</height>
+            <orientation>horizontal</orientation>
+            <focusposition>0</focusposition>
+            <scrolltime>200</scrolltime>
+            <itemlayout width="560" height="300">
+                <control type="image">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>520</width>
+                    <height>220</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                    <bordertexture>grey.png</bordertexture>
+                    <bordersize>1</bordersize>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>228</top>
+                    <width>520</width>
+                    <height>26</height>
+                    <font>Card</font>
+                    <textcolor>FFF4F1EA</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>254</top>
+                    <width>520</width>
+                    <height>22</height>
+                    <font>Meta</font>
+                    <textcolor>FF8A8A8A</textcolor>
+                    <label>$INFO[ListItem.Property(Watched)]</label>
+                </control>
+                <control type="progress">
+                    <left>0</left>
+                    <top>282</top>
+                    <width>520</width>
+                    <height>2</height>
+                    <info>ListItem.PercentPlayed</info>
+                    <texturebg>grey.png</texturebg>
+                    <midtexture>white.png</midtexture>
+                </control>
+            </itemlayout>
+            <focusedlayout width="560" height="300">
+                <control type="image">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>520</width>
+                    <height>220</height>
+                    <aspectratio>scale</aspectratio>
+                    <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                    <bordertexture>white.png</bordertexture>
+                    <bordersize>1</bordersize>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>228</top>
+                    <width>520</width>
+                    <height>26</height>
+                    <font>Card</font>
+                    <textcolor>FFF4F1EA</textcolor>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>254</top>
+                    <width>520</width>
+                    <height>22</height>
+                    <font>Meta</font>
+                    <textcolor>FF8A8A8A</textcolor>
+                    <label>$INFO[ListItem.Property(Watched)]</label>
+                </control>
+                <control type="progress">
+                    <left>0</left>
+                    <top>282</top>
+                    <width>520</width>
+                    <height>2</height>
+                    <info>ListItem.PercentPlayed</info>
+                    <texturebg>grey.png</texturebg>
+                    <midtexture>white.png</midtexture>
+                </control>
+            </focusedlayout>
+        </control>
+    </controls>
+</window>
