@@ -58,6 +58,33 @@ class DiagnosticLog:
         self.sequence = 0
         self.values = set()
         self.lock = RLock()
+        self.lines = []
+
+    def replay_current(self):
+        """Restore this redacted attempt after replacing an account's profile."""
+        with self.lock:
+            if not self.active():
+                return
+            try:
+                for name in self._files():
+                    path = self.profile / name
+                    if not path.exists():
+                        path.write_text(''.join(self.lines), encoding='utf-8')
+            except OSError as error:
+                self._write_failure(error)
+
+    def _files(self):
+        return ('prime-scene-diagnostics.jsonl', 'prime-scene-signin.jsonl') if self.operation == 'signin' else (
+            'prime-scene-diagnostics.jsonl',)
+
+    def _write_failure(self, error, line=''):
+        try:
+            import xbmc
+            xbmc.log('[Prime Scene] diagnostic_write_failed ' + type(error).__name__, xbmc.LOGERROR)
+            if line:
+                xbmc.log('[Prime Scene] ' + line, xbmc.LOGERROR)
+        except ImportError:
+            sys.stderr.write('Prime Scene diagnostic_write_failed ' + type(error).__name__ + '\n')
 
     def secret(self, value):
         if value:
@@ -85,24 +112,25 @@ class DiagnosticLog:
             event = dict(event, diagnostic_state_check_error=type(error).__name__)
         with self.lock:
             self.sequence += 1
+            if self.sequence == 1:
+                environment = {'python': sys.version.split()[0], 'platform': sys.platform}
+                try:
+                    import xbmc
+                    environment['kodi'] = xbmc.getInfoLabel('System.BuildVersion')
+                except ImportError:
+                    pass
+                event = dict(event, environment=environment)
             record = self.redact(dict(event, schema=2, operation=self.operation, attempt=self.attempt, sequence=self.sequence,
                                       version=self.version, time=datetime.now(timezone.utc).isoformat(),
                                       elapsed_ms=round((monotonic() - self.started) * 1000)))
             line = json.dumps(record, ensure_ascii=True) + '\n'
+            self.lines.append(line)
             try:
                 self.profile.mkdir(parents=True, exist_ok=True)
-                files = ('prime-scene-diagnostics.jsonl',)
-                if self.operation == 'signin':
-                    files += ('prime-scene-signin.jsonl',)
-                for name in files:
+                for name in self._files():
                     with (self.profile / name).open('a', encoding='utf-8') as output:
                         output.write(line)
                         output.flush()
             except OSError as error:
                 # A missing report must be visible rather than silently ignored.
-                try:
-                    import xbmc
-                    xbmc.log('[Prime Scene] diagnostic_write_failed ' + type(error).__name__, xbmc.LOGERROR)
-                    xbmc.log('[Prime Scene] ' + line, xbmc.LOGERROR)
-                except ImportError:
-                    sys.stderr.write('Prime Scene diagnostic_write_failed ' + type(error).__name__ + '\n')
+                self._write_failure(error, line)

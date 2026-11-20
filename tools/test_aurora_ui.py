@@ -347,8 +347,9 @@ def wait_until(predicate, timeout=2.0):
 class FakeBridge(object):
     calls = []
 
-    def __init__(self, provider, g):
+    def __init__(self, provider, g, initialize_provider=None):
         self.provider = provider
+        self.initialize_provider = initialize_provider
 
     def browse_progressive(self, path, publish, active, query=None):
         FakeBridge.calls.append((path, query))
@@ -455,7 +456,7 @@ def main():
     check(home.getControl(200).size() == 3, 'home row lists categories and a title')
     check(home.getProperty('HeroTitle') == 'MOVIES', 'first card is the hero')
     check(home.getControl(101).color == _TINTS[0], 'initial tint is the first charcoal wash')
-    check('provider' in started, 'provider initialises before the catalogue request')
+    check('provider' not in started, 'the home dashboard does not start the playback provider')
 
     home.getControl(200).position = 2
     home.onFocus(200)
@@ -535,7 +536,9 @@ def main():
 
     settings = Settings()
     settings.data_source = 1
-    check(open_interface(g, settings) == 'classic', 'a non-website source still opens the classic list')
+    check(open_interface(g, settings) is False, 'a non-website source asks for the website data source')
+    check(any('Website' in message for _heading, message in dialog.messages),
+          'the website data source message is shown')
 
     overlay = PlayerOverlay('Player.xml', str(ADDON), 'Default', '1080i')
     overlay.info = {'title': 'Harbor Lights', 'meta': '2021  •  FILM', 'position': 754, 'duration': 9360, 'volume': 35}

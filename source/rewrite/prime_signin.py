@@ -198,11 +198,19 @@ class SignInDocument(HTMLParser):
         self.country_select = None
         self.embedded = []
         self.markers = set()
+        self.profile_name = ''
+        self._profile_depth = 0
+        self._profile_text = []
         self.feed(html)
         self.close()
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if self._profile_depth and tag not in ('input', 'img', 'br', 'hr', 'meta', 'link', 'source', 'wbr'):
+            self._profile_depth += 1
+        if attrs.get('data-automation-id') == 'nav-active-profile-name':
+            self._profile_depth = 1
+            self._profile_text = []
         name = attrs.get('name') or ''
         element_id = attrs.get('id') or ''
         if tag == 'iframe':
@@ -294,6 +302,10 @@ class SignInDocument(HTMLParser):
             self.form.unsupported.append({'tag': tag, 'name': name, 'type': input_type, 'id': element_id})
 
     def handle_endtag(self, tag):
+        if self._profile_depth:
+            self._profile_depth -= 1
+            if self._profile_depth == 0:
+                self.profile_name = ' '.join(''.join(self._profile_text).split())
         if tag == 'select' and self.country_select is not None:
             value = self.country_select['selected'] or self.country_select['first']
             if self.form is not None and value is not None:
@@ -317,6 +329,8 @@ class SignInDocument(HTMLParser):
                 customer = context.get('customerID') if isinstance(context, dict) else None
                 if isinstance(customer, str) and customer.strip().lower() not in ('', '0', 'null', 'undefined'):
                     self.authenticated_context = True
+                    if not self.profile_name and isinstance(context.get('customerName'), str):
+                        self.profile_name = context['customerName'].strip()
             except ValueError:
                 pass
             self.script_data = None
@@ -325,6 +339,8 @@ class SignInDocument(HTMLParser):
             self.form = None
 
     def handle_data(self, data):
+        if self._profile_depth:
+            self._profile_text.append(data)
         if self.script_data is not None:
             self.script_data.append(data)
         else:
@@ -411,7 +427,7 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
 
 
 def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, captcha=None, state=None,
-                 entry_url=None, completion=None, headers=None):
+                 entry_url=None, completion=None, headers=None, success=None):
     """Return true after Prime Video shows signed-in navigation. False means canceled."""
     opener = build_opener(SignInRedirect(observer, capture_authorization=completion is not None), HTTPCookieProcessor(cookies))
     state = {} if state is None else state
@@ -442,6 +458,8 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
             if observer:
                 observer({'event': 'session_check', 'authentication_cookie_present': authenticated})
             if authenticated:
+                if success is not None:
+                    success(url, page, cookies)
                 state.clear()
                 return True
             raise SignInError('Amazon identified the account, but a complete sign-in session has not been confirmed.')
@@ -548,7 +566,7 @@ def save_cookies(jar, path):
         temporary.unlink(missing_ok=True)
 
 
-def catalog_opener(jar):
-    opener = build_opener(StorefrontRedirect(), HTTPCookieProcessor(jar))
-    opener.addheaders = list(HEADERS.items())
+def catalog_opener(jar, *, observer=None, headers=None):
+    opener = build_opener(StorefrontRedirect(observer=observer), HTTPCookieProcessor(jar))
+    opener.addheaders = list(dict(HEADERS, **(headers or {})).items())
     return opener

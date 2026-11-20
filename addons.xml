@@ -25,9 +25,9 @@
         <fanart>fanart.jpg</fanart>
       </assets>
       <summary lang="en_GB">Prime Video in the Aurora Cinema interface</summary>
-      <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home, title and player screen. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
+      <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home, title and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
       <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-      <news>0.2.0[CR]- Aurora Cinema home, title page and player overlay.[CR]- Sign-in, catalogue, search, settings and playback stay in place.</news>
+      <news>0.2.0[CR]- Aurora Cinema home, title page and player overlay.[CR]- Includes the 0.1.28 website session and storefront catalogue.[CR]- Sign-in, search, settings and playback stay in place.</news>
     </extension>
   </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

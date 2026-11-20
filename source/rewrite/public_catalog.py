@@ -1,19 +1,52 @@
-"""Read public Prime Video storefront cards without an account or backend imports."""
+"""Read Prime Video storefront pages using caller-owned authentication cookies."""
 
 import argparse
 from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 import json
+import logging
 import re
 from time import perf_counter
+from urllib.error import HTTPError
 from urllib.parse import urljoin, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+try:
+    from .prime_diagnostics import exception_details, route
+except ImportError:
+    from prime_diagnostics import exception_details, route
 
 
 ORIGIN = 'https://www.primevideo.com'
 PAGES = {'home': '/storefront', 'movies': '/movie', 'tv': '/tv'}
 STOREFRONT_HOSTS = {'www.primevideo.com', 'primevideo.com', 'na.primevideo.com'}
+IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
 MAX_PAGE_BYTES = 8 * 1024 * 1024
+MAX_JSON_NODES = 100000
+MAX_JSON_DEPTH = 40
+
+
+def _protocol_shape(document):
+    """Report structure without serializing arbitrary account or content keys."""
+    known = set(('props pageProps state widgets collections items titles results result data content '
+                 'viewOutput page pagination paginator nextPage nextPageUrl paginationTargetUrl '
+                 'paginationToken paginationServiceToken nextToken error errors message code '
+                 'status statusCode body components resources entities').split())
+    stack, result = [('$', document, 0)], []
+    while stack and len(result) < 60:
+        path, value, depth = stack.pop()
+        if isinstance(value, dict):
+            keys = sorted(key for key in value if key in known)
+            result.append({'path': path, 'type': 'object', 'known_fields': keys,
+                           'other_field_count': len(value) - len(keys)})
+            if depth < 3:
+                stack.extend((path + '.' + key, value[key], depth + 1) for key in reversed(keys)
+                             if isinstance(value[key], (dict, list)))
+        elif isinstance(value, list):
+            result.append({'path': path, 'type': 'array', 'length': len(value)})
+            if value and depth < 3 and isinstance(value[0], (dict, list)):
+                stack.append((path + '[]', value[0], depth + 1))
+    return result
 
 
 @dataclass(frozen=True)
@@ -23,19 +56,26 @@ class Card:
     artwork_url: str
 
 
+@dataclass(frozen=True)
+class CatalogPage:
+    cards: list
+    next_url: str = None
+
+
 class PublicCatalogError(RuntimeError):
     pass
 
 
 def safe_url(value, host, base_url=ORIGIN):
-    if '\\' in value or any(ord(character) <= 32 or ord(character) == 127 for character in value):
+    if not isinstance(value, str) or not value or '\\' in value or any(
+            ord(character) <= 32 or ord(character) == 127 for character in value):
         return ''
     try:
         url = urljoin(base_url, value)
         parsed = urlsplit(url)
         hosts = {host} if isinstance(host, str) else host
         if (parsed.scheme == 'https' and parsed.hostname in hosts and parsed.port in (None, 443)
-                and parsed.username is None):
+                and parsed.username is None and parsed.password is None):
             return url
     except ValueError:
         return ''
@@ -43,8 +83,181 @@ def safe_url(value, host, base_url=ORIGIN):
 
 
 def detail_id(url):
-    match = re.search(r'/detail/([A-Za-z0-9_-]{1,128})(?:/|$)', urlsplit(url).path)
+    match = re.search(r'/(?:detail|dp)/([A-Za-z0-9][A-Za-z0-9_.:-]{0,127})(?:/|$)', urlsplit(url).path)
     return match.group(1) if match else None
+
+
+def _emit(observer, event):
+    if observer is not None:
+        try:
+            observer(event)
+        except Exception as error:
+            # A failed diagnostic sink must be visible without exposing its arguments.
+            logging.getLogger(__name__).error('catalog_diagnostic_write_failed %s', type(error).__name__)
+
+
+def _text(value):
+    if isinstance(value, str):
+        return ' '.join(value.split())
+    if isinstance(value, dict):
+        for key in ('text', 'value', 'title', 'label'):
+            if isinstance(value.get(key), str):
+                return ' '.join(value[key].split())
+    return ''
+
+
+def _link(value, page_url):
+    if isinstance(value, dict):
+        if value.get('disabled') is True or value.get('isEnabled') is False:
+            return ''
+        value = value.get('href') or value.get('url')
+    return safe_url(value, STOREFRONT_HOSTS, page_url)
+
+
+def _continuation_link(value, page_url):
+    # Some responses call an opaque pagination token "nextPage". Only an explicit
+    # href/url object or a recognizable URL reference is safe to request.
+    if isinstance(value, str) and not (value.startswith(('https://', '/', '?', './', '../'))
+                                       or '/' in value or '?' in value):
+        return ''
+    return _link(value, page_url)
+
+
+def _image(value, depth=0):
+    if depth > 6:
+        return ''
+    if isinstance(value, str):
+        return safe_url(value, IMAGE_HOSTS)
+    if isinstance(value, dict):
+        for key in ('url', 'src', 'imageUrl', 'imageURL', 'packshot', 'poster',
+                    'thumbnail', 'cover', 'wide', 'tall', 'square'):
+            found = _image(value.get(key), depth + 1)
+            if found:
+                return found
+        # Image dimension/locale maps contain image values, never title-card subtrees.
+        for child in value.values():
+            if isinstance(child, str):
+                found = safe_url(child, IMAGE_HOSTS)
+                if found:
+                    return found
+    elif isinstance(value, list):
+        for child in value:
+            found = _image(child, depth + 1)
+            if found:
+                return found
+    return ''
+
+
+def _json_card(node, page_url):
+    detail = ''
+    for key in ('detailUrl', 'detailURL', 'detailPageUrl', 'href', 'url', 'link', 'titleLink'):
+        candidate = _link(node.get(key), page_url)
+        if candidate and detail_id(candidate):
+            detail = candidate
+            break
+    if not detail:
+        return None
+    title = ''
+    for key in ('title', 'displayTitle', 'heading', 'name', 'label'):
+        title = _text(node.get(key))
+        if title:
+            break
+    artwork = ''
+    for key in ('image', 'images', 'imageUrl', 'imageURL', 'imageUrls', 'imageURLs',
+                'packshot', 'poster', 'thumbnail', 'thumb', 'cover', 'artwork', 'artmeta'):
+        artwork = _image(node.get(key))
+        if artwork:
+            break
+    if title and artwork:
+        return Card(title, detail, artwork)
+    return None
+
+
+def _direct_next_links(node, page_url):
+    """Only explicit links: a token alone is not an endpoint specification."""
+    candidates = []
+    if not isinstance(node, dict):
+        return candidates
+    if node.get('disabled') is True or node.get('isEnabled') is False:
+        return candidates
+    for key in ('nextPage', 'nextPageUrl', 'nextPageURL', 'paginationTargetUrl'):
+        found = _continuation_link(node.get(key), page_url)
+        if found:
+            candidates.append(found)
+    for key in ('links', '_links'):
+        links = node.get(key)
+        if isinstance(links, dict):
+            found = _continuation_link(links.get('next'), page_url)
+            if found:
+                candidates.append(found)
+    pagination = node.get('pagination')
+    if isinstance(pagination, dict):
+        for key in ('nextPage', 'nextPageUrl', 'nextPageURL', 'next', 'paginationTargetUrl'):
+            found = _continuation_link(pagination.get(key), page_url)
+            if found:
+                candidates.append(found)
+    for owner in (node, pagination):
+        if not isinstance(owner, dict):
+            continue
+        paginator = owner.get('paginator')
+        if isinstance(paginator, dict):
+            paginator = paginator.get('items') or paginator.get('pages') or [paginator]
+        if isinstance(paginator, list):
+            for item in paginator:
+                if not isinstance(item, dict):
+                    continue
+                relation = item.get('type') or item.get('rel') or item.get('direction')
+                if isinstance(relation, str) and relation.lower() in ('next', 'nextpage', 'next-page'):
+                    found = _link(item, page_url)
+                    if found:
+                        candidates.append(found)
+    return candidates
+
+
+def _json_content(document, page_url, *, page_continuation=True):
+    cards, all_links, page_links = {}, set(), set()
+
+    def page_scope(node, depth=0):
+        if not isinstance(node, dict) or depth > 4:
+            return
+        page_links.update(_direct_next_links(node, page_url))
+        # Do not descend into lists of collections/widgets: those page independently.
+        for key in ('result', 'results', 'data', 'content', 'viewOutput', 'page'):
+            child = node.get(key)
+            if isinstance(child, dict):
+                page_scope(child, depth + 1)
+
+    if page_continuation:
+        page_scope(document)
+    stack = [(document, 0)]
+    nodes, limited, card_candidates, token_only = 0, False, 0, 0
+    while stack:
+        node, depth = stack.pop()
+        nodes += 1
+        if nodes > MAX_JSON_NODES:
+            limited = True
+            break
+        if depth > MAX_JSON_DEPTH:
+            limited = True
+            continue
+        if isinstance(node, dict):
+            all_links.update(_direct_next_links(node, page_url))
+            token_only += sum(1 for key in ('nextPage', 'paginationToken', 'paginationServiceToken', 'nextToken')
+                              if isinstance(node.get(key), str) and node[key]
+                              and not _continuation_link(node[key], page_url))
+            card = _json_card(node, page_url)
+            if card:
+                card_candidates += 1
+                cards.setdefault(detail_id(card.detail_url), card)
+            stack.extend((child, depth + 1) for child in reversed(list(node.values()))
+                         if isinstance(child, (dict, list)))
+        elif isinstance(node, list):
+            stack.extend((child, depth + 1) for child in reversed(node) if isinstance(child, (dict, list)))
+    return cards, page_links, {'json_nodes': nodes, 'json_traversal_limited': limited,
+                              'json_card_candidates': card_candidates,
+                              'ignored_nested_continuations': len(all_links - page_links),
+                              'unsupported_token_continuations': token_only,
+                              'json_root_type': type(document).__name__, 'protocol_structure': _protocol_shape(document)}
 
 
 class StorefrontParser(HTMLParser):
@@ -58,14 +271,37 @@ class StorefrontParser(HTMLParser):
         self.label = ''
         self.anchor = False
         self.text = []
+        self.scopes = []
+        self.next_links = set()
+        self.ignored_next_links = set()
+        self.json_scripts = []
+        self.script = None
+        self.script_text = []
+        self.article_candidates = 0
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        scope = tag == 'article' or any(re.search(r'carousel|collection|widget|rail|shelf|(?:^|[-_ ])card(?:$|[-_ ])',
+                                                attrs.get(key) or '', re.I)
+                                      for key in ('data-testid', 'id', 'class'))
+        if tag in ('link', 'a') and 'next' in (attrs.get('rel') or '').lower().split():
+            found = _link(attrs.get('href'), self.page_url)
+            if found:
+                (self.ignored_next_links if scope or any(value for _, value in self.scopes)
+                 else self.next_links).add(found)
+        if tag not in {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param',
+                       'source', 'track', 'wbr'}:
+            self.scopes.append((tag, scope))
+        if tag == 'script' and (attrs.get('type') or '').split(';')[0].lower() in {
+                'application/json', 'application/ld+json', 'text/template'}:
+            self.script = True
+            self.script_text = []
         if tag == 'article':
             if self.depth:
                 self.depth += 1
             elif attrs.get('data-testid') in {'card', 'super-carousel-card', 'top-hero-card'}:
                 self.depth = 1
+                self.article_candidates += 1
                 self.detail = self.artwork = self.label = ''
         if not self.depth:
             return
@@ -78,15 +314,25 @@ class StorefrontParser(HTMLParser):
                 self.text = []
                 self.label = attrs.get('aria-label') or self.label
         elif tag == 'img' and not self.artwork:
-            self.artwork = safe_url(attrs.get('src') or '', 'm.media-amazon.com')
+            self.artwork = safe_url(attrs.get('src') or attrs.get('data-src') or '', IMAGE_HOSTS)
             if not self.label and self.artwork:
                 self.label = attrs.get('alt') or ''
 
     def handle_data(self, data):
+        if self.script:
+            self.script_text.append(data)
         if self.anchor:
             self.text.append(data)
 
     def handle_endtag(self, tag):
+        for index in range(len(self.scopes) - 1, -1, -1):
+            if self.scopes[index][0] == tag:
+                del self.scopes[index:]
+                break
+        if tag == 'script' and self.script:
+            self.json_scripts.append(''.join(self.script_text))
+            self.script = None
+            self.script_text = []
         if tag == 'a' and self.anchor:
             self.label = self.label or ''.join(self.text)
             self.anchor = False
@@ -105,32 +351,148 @@ def parse_cards(html, *, page_url=ORIGIN):
     parser = StorefrontParser(page_url)
     parser.feed(html)
     parser.close()
+    for script in parser.json_scripts:
+        try:
+            document = json.loads(script)
+        except (ValueError, RecursionError):
+            continue
+        cards, _, _ = _json_content(document, page_url, page_continuation=False)
+        for key, card in cards.items():
+            parser.cards.setdefault(key, card)
     return list(parser.cards.values())
 
 
 class StorefrontRedirect(HTTPRedirectHandler):
+    def __init__(self, observer=None):
+        self.observer = observer
+
     def redirect_request(self, req, fp, code, msg, headers, newurl):
+        newurl = urljoin(req.full_url, newurl)
         sso = safe_url(newurl, {'www.amazon.com', 'amazon.com'})
         is_sso = bool(sso) and urlsplit(sso).path == '/ax/sso/redirect'
-        if not safe_url(newurl, STOREFRONT_HOSTS) and not is_sso:
+        allowed = bool(safe_url(newurl, STOREFRONT_HOSTS)) or is_sso
+        _emit(self.observer, {'event': 'catalog_redirect', 'status': code,
+                              'from': route(req.full_url), 'to': route(newurl), 'allowed': allowed})
+        if not allowed:
             raise PublicCatalogError('Prime Video redirected outside its storefront. The session may need sign-in again.')
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is not None:
+            for name in ('Cookie', 'Host', 'Authorization', 'Proxy-Authorization'):
+                redirected.remove_header(name.capitalize())
+            if urlsplit(req.full_url).hostname != urlsplit(newurl).hostname:
+                for name in ('Referer', 'Origin'):
+                    redirected.remove_header(name)
+        return redirected
+
+
+def _next_url(candidates, current_url):
+    current = urlsplit(current_url)._replace(fragment='')
+    links = sorted(link for link in candidates if urlsplit(link)._replace(fragment='') != current)
+    return (links[0] if len(links) == 1 else None), len(links)
+
+
+def _read_page(data, content_type, page_url):
+    if content_type == 'application/json' or content_type.endswith('+json'):
+        document = json.loads(data)
+        cards, links, details = _json_content(document, page_url)
+        details['format'] = 'json'
+    elif content_type in ('text/html', 'application/xhtml+xml'):
+        parser = StorefrontParser(page_url)
+        parser.feed(data)
+        parser.close()
+        cards, links = parser.cards, parser.next_links
+        details = {'format': 'html', 'html_card_candidates': parser.article_candidates,
+                   'embedded_json_documents': len(parser.json_scripts), 'embedded_json_failures': 0,
+                   'ignored_nested_continuations': len(parser.ignored_next_links),
+                   'unsupported_token_continuations': 0}
+        for script in parser.json_scripts:
+            try:
+                document = json.loads(script)
+            except (ValueError, RecursionError):
+                details['embedded_json_failures'] += 1
+                continue
+            found, _, structure = _json_content(document, page_url, page_continuation=False)
+            for key, card in found.items():
+                cards.setdefault(key, card)
+            details['ignored_nested_continuations'] += structure['ignored_nested_continuations']
+            details['unsupported_token_continuations'] += structure['unsupported_token_continuations']
+            details['json_traversal_limited'] = details.get('json_traversal_limited', False) or structure['json_traversal_limited']
+            shapes = details.setdefault('embedded_protocol_structures', [])
+            if len(shapes) < 5:
+                shapes.append(structure['protocol_structure'])
+        details['sign_in_form_present'] = bool(re.search(r'<input\b[^>]*\btype\s*=\s*[\"\']password[\"\']', data, re.I))
+        details['verification_form_present'] = bool(re.search(r'<input\b[^>]*\b(?:name|id)\s*=\s*[\"\'][^\"\']*(?:otp|verificationCode)', data, re.I))
+    else:
+        raise PublicCatalogError('Prime Video returned an unsupported catalog content type.')
+    next_url, count = _next_url(links, page_url)
+    details.update(cards=len(cards), continuation_candidates=count, continuation_ambiguous=count > 1,
+                   unknown_structure=not cards, next_address=route(next_url) if next_url else None)
+    return CatalogPage(list(cards.values()), next_url), details
+
+
+def fetch_page(page, opener=None, continuation=None, observer=None):
+    """Fetch one server page; continuation must be an actual link from its predecessor."""
+    started = perf_counter()
+    address, stage = '', 'validate_request'
+    try:
+        if page not in PAGES:
+            raise PublicCatalogError('Unknown Prime Video catalog section.')
+        address = safe_url(continuation, STOREFRONT_HOSTS) if continuation is not None else ORIGIN + PAGES[page]
+        if not address:
+            raise PublicCatalogError('The catalog continuation is outside the trusted storefront.')
+        _emit(observer, {'event': 'catalog_request_started', 'stage': 'fetch', 'page': page,
+                         'continuation': continuation is not None, 'address': route(address), 'method': 'GET'})
+        request = Request(address, headers={'Accept': 'text/html, application/json;q=0.9'})
+        opener = opener if opener is not None else build_opener(StorefrontRedirect(observer))
+        stage = 'fetch'
+        with opener.open(request, timeout=15) as response:
+            final_url = response.geturl()
+            status = response.getcode()
+            content_type = response.headers.get_content_type()
+            _emit(observer, {'event': 'catalog_response_received', 'stage': stage, 'status': status,
+                             'address': route(final_url), 'content_type': content_type,
+                             'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid'),
+                             'elapsed_ms': round((perf_counter() - started) * 1000)})
+            if not safe_url(final_url, STOREFRONT_HOSTS):
+                raise PublicCatalogError('Prime Video did not return to its storefront.')
+            stage = 'read_response'
+            raw = response.read(MAX_PAGE_BYTES + 1)
+            if len(raw) > MAX_PAGE_BYTES:
+                raise PublicCatalogError('Prime Video returned more storefront data than expected.')
+            data = raw.decode(response.headers.get_content_charset() or 'utf-8', errors='replace')
+        stage = 'parse_response'
+        result, details = _read_page(data, content_type, final_url)
+        _emit(observer, dict(details, event='catalog_page_parsed', stage=stage, bytes=len(raw),
+                             status=status, address=route(final_url),
+                             elapsed_ms=round((perf_counter() - started) * 1000)))
+        if not result.cards and result.next_url is None:
+            raise PublicCatalogError('No title cards or page continuation were found in the catalog response.')
+        _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'success',
+                         'cards': len(result.cards), 'has_next': result.next_url is not None,
+                         'elapsed_ms': round((perf_counter() - started) * 1000)})
+        return result
+    except Exception as error:
+        details = {'event': 'catalog_request_failed', 'stage': stage, 'result': 'failure',
+                   'address': route(address), 'exception': exception_details(error),
+                   'elapsed_ms': round((perf_counter() - started) * 1000)}
+        if isinstance(error, HTTPError):
+            details.update(status=error.code, response_address=route(error.geturl()),
+                           content_type=error.headers.get_content_type() if error.headers else None)
+            details['server_request_id'] = (error.headers.get('x-amzn-requestid') or error.headers.get('x-amz-rid')) if error.headers else None
+            try:
+                body = error.read(MAX_PAGE_BYTES + 1)
+                details['response_bytes'] = len(body)
+                if len(body) <= MAX_PAGE_BYTES and details['content_type'] == 'application/json':
+                    details['protocol_structure'] = _protocol_shape(json.loads(body))
+            except Exception as reading_error:
+                details['error_response_read_failure'] = exception_details(reading_error)
+            error.close()
+        _emit(observer, details)
+        raise
 
 
 def fetch_cards(page, *, opener=None):
-    request = Request(ORIGIN + PAGES[page], headers={'Accept': 'text/html'})
-    opener = opener if opener is not None else build_opener(StorefrontRedirect())
-    with opener.open(request, timeout=8) as response:
-        if response.headers.get_content_type() != 'text/html':
-            raise PublicCatalogError('Prime Video did not return a storefront page.')
-        data = response.read(MAX_PAGE_BYTES + 1)
-        if len(data) > MAX_PAGE_BYTES:
-            raise PublicCatalogError('Prime Video returned more storefront data than expected.')
-        html = data.decode(response.headers.get_content_charset() or 'utf-8', errors='replace')
-    cards = parse_cards(html, page_url=response.url)
-    if not cards:
-        raise PublicCatalogError('No public title cards were found on this page.')
-    return cards
+    return fetch_page(page, opener=opener).cards
 
 
 def main():

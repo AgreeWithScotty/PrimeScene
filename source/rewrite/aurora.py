@@ -16,7 +16,7 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
-from .dedicated_bridge import ProviderBridge, is_title_card
+from .dedicated_bridge import CatalogSigninRequired, ProviderBridge, is_title_card
 from .interface_diagnostics import record
 
 _BACK = (9, 10, 92)
@@ -315,10 +315,10 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroTag', tag)
         self.setProperty('HeroFanart', '')
 
-    def pause_catalog(self):
+    def pause_catalog(self, status='Signing out...'):
         self.stop.set()
-        self.setProperty('AccountLabel', 'Signing out')
-        self.setProperty('HeroTag', 'SIGNING OUT')
+        self.setProperty('AccountLabel', status)
+        self.setProperty('HeroTag', ' '.join(status.upper().split()))
         with self.lock:
             self.generation += 1
             self.rows = []
@@ -436,11 +436,10 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _work(self):
         try:
-            record(self.g, 'provider_initializing')
-            if self.initialize_provider is not None:
-                self.initialize_provider()
-            bridge = ProviderBridge(self.g.pv, self.g)
-            record(self.g, 'provider_ready')
+            # The landing dashboard does not need the playback provider. Movies,
+            # TV and legacy sections ask the bridge for it when they are opened.
+            bridge = ProviderBridge(None, self.g, initialize_provider=self.initialize_provider)
+            record(self.g, 'catalog_worker_ready')
         except Exception as error:
             record(self.g, 'provider_init_failed', error)
             if not self.stop.is_set():
@@ -475,8 +474,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
                 with self.lock:
                     if token == self.generation and not self.stop.is_set():
-                        self._set_hero_status((self.heading or 'Prime Scene').upper(),
-                                              'UNABLE TO FINISH LOADING. RETURN HOME TO RETRY.')
+                        message = ('USE THE ACCOUNT BUTTON AND CHOOSE SIGN IN AGAIN.'
+                                   if isinstance(error, CatalogSigninRequired) else
+                                   'UNABLE TO FINISH LOADING. RETURN HOME OR OPEN DIAGNOSTICS.')
+                        self._set_hero_status((self.heading or 'Prime Scene').upper(), message)
             finally:
                 with self.lock:
                     if token == self.generation:
@@ -774,8 +775,8 @@ def watch_playback(profile):
 def open_interface(globals_instance, settings_instance, initialize_provider=None, account_name=None,
                    account_action=None, offer_signin=False, launch_diagnostics=None):
     if settings_instance.data_source != 0:
-        globals_instance.dialog.ok('Prime Scene', 'This screen supports the Website data source. Opening the classic list.')
-        return 'classic'
+        globals_instance.dialog.ok('Prime Scene', 'Choose Website under Settings > Data Source to browse Prime Scene.')
+        return False
     record(globals_instance, 'window_creating')
     window = AuroraHome('Home.xml', globals_instance.PLUGIN_PATH, 'Default', '1080i',
                         globals_instance=globals_instance, initialize_provider=initialize_provider,
