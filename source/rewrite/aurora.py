@@ -23,6 +23,7 @@ from .interface_diagnostics import record
 from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
+from .description_cache import DescriptionCache
 from .prime_diagnostics import DiagnosticLog, exception_details
 
 _BACK = (9, 10, 92)
@@ -47,6 +48,8 @@ _AMAZON_IMAGE = compile_re(
     IGNORECASE)
 _CARD_ART = 720
 _HERO_ART = 1280
+_DESCRIPTION_AHEAD = 10
+_DESCRIPTION_BEHIND = 2
 
 
 def _addon_path():
@@ -534,6 +537,9 @@ class AuroraHome(xbmcgui.WindowXML):
         self._focus_signature, self._focus_since, self._enriched_focus = None, 0, None
         self._painted_details = set()
         self._navigation_started = monotonic()
+        self.description_cache = None
+        self.description_attempts = set()
+        self._description_window = None
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
 
@@ -605,6 +611,9 @@ class AuroraHome(xbmcgui.WindowXML):
             self.items, self.row_keys = [], set()
             self.title_cache.clear()
             self.known_details.clear()
+            self.description_attempts.clear()
+            self.description_cache = None
+            self.detail_cache.clear()
             self.path, self.query, self.next_path = 'root', None, None
             self.busy = False
             self.nav = ''
@@ -655,6 +664,9 @@ class AuroraHome(xbmcgui.WindowXML):
         self.known_details.clear()
         self.artwork.clear()
         self.views.clear()
+        self.description_cache = None
+        self.description_attempts.clear()
+        self._description_window = None
 
     def _save_view(self):
         if self.rows:
@@ -800,6 +812,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.bridge = bridge
             self.loader = StorefrontLoader(self.g)
             self.image_cache = ImageCache(self.g, self.loader.epoch)
+            self.description_cache = DescriptionCache(self.g, self.loader.epoch, self.performance)
             self.loader.warm()
             record(self.g, 'catalog_worker_ready')
             self._catalog_loop(bridge)
@@ -959,7 +972,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _detail_loop(self):
         while not self.stop.is_set():
             try:
-                job = self.detail_jobs.get(timeout=0.15)
+                job = self.detail_jobs.get(timeout=0.05)
             except Empty:
                 if self._allow_enrich and not self.stop.is_set():
                     self._queue_enrich()
@@ -974,6 +987,68 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._play_resolved(job[1], job[2], job[3], job[4])
 
     def _queue_enrich(self):
+        """Read the focused title and next ten descriptions before selection."""
+        if self.bridge is None or self.stop.is_set():
+            return
+        with self.lock:
+            selected = self._selected_index()
+            generation = self.generation
+            order = (list(range(selected, min(selected + _DESCRIPTION_AHEAD + 1, len(self.rows))))
+                     + list(range(max(0, selected - _DESCRIPTION_BEHIND), selected)))
+            candidates = [(index, dict(self.rows[index])) for index in order]
+        window = (generation, selected, len(candidates))
+        if window != self._description_window:
+            self._description_window = window
+            self.performance({'event': 'description_window_started', 'stage': 'read_ahead',
+                              'generation': generation, 'selected_index': selected,
+                              'candidate_count': len(candidates), 'ahead': _DESCRIPTION_AHEAD})
+        for index, row in candidates:
+            if self.stop.is_set() or generation != self.generation:
+                return
+            path = _detail_path(self.g.pluginid, row)
+            if not path or _plain((row.get('info') or {}).get('plot') or ''):
+                continue
+            cached = self.detail_cache.get(path)
+            if cached and _plain((cached.get('info') or {}).get('plot') or ''):
+                if (generation, path) not in self._painted_details:
+                    self._paint_cached(path)
+                continue
+            if path in self.description_attempts:
+                continue
+            if not self.detail_jobs.empty():
+                return
+            self.description_attempts.add(path)
+            saved = self.description_cache.load(path) if self.description_cache is not None else None
+            if saved:
+                if cached is None:
+                    cached = {'playable': None, 'how': 'metadata', 'info': saved}
+                    self.detail_cache[path] = cached
+                else:
+                    cached.setdefault('info', {}).update(saved)
+                self._paint_cached(path)
+                continue
+            started = monotonic()
+            self.performance({'event': 'description_prefetch_started', 'stage': 'detail_metadata',
+                              'generation': generation, 'index': index, 'offset': index - selected})
+            try:
+                self._enrich(path, description=True)
+                info = (self.detail_cache.get(path) or {}).get('info') or {}
+                available = bool(_plain(info.get('plot') or ''))
+                self.performance({'event': 'description_prefetch_completed', 'stage': 'detail_metadata',
+                    'generation': generation, 'index': index, 'description_present': available,
+                    'elapsed_ms': round((monotonic() - started) * 1000),
+                    'result': 'cancelled' if self.stop.is_set() else 'success' if available else 'unavailable'})
+            except Exception as error:
+                self.performance({'event': 'description_prefetch_failed', 'stage': 'detail_metadata',
+                    'generation': generation, 'index': index,
+                    'elapsed_ms': round((monotonic() - started) * 1000),
+                    'exception': exception_details(error), 'result': 'failure'})
+            # Check explicit Play jobs between requests; there is never a queue
+            # of ten old hover lookups in front of a user's action.
+            return
+        self._queue_focus_metadata()
+
+    def _queue_focus_metadata(self):
         row = self._selected_row()
         path = _detail_path(self.g.pluginid, row)
         signature = (self.generation, path)
@@ -994,13 +1069,14 @@ class AuroraHome(xbmcgui.WindowXML):
         if cached and cached.get('how') == 'error':
             return
         self._enriched_focus = signature
-        self.detail_jobs.put(('enrich', path, self.generation))
+        if self.detail_jobs.empty():
+            self._enrich(path)
 
-    def _enrich(self, path):
+    def _enrich(self, path, description=False):
         if self.stop.is_set():
             return
         cached = self.detail_cache.get(path)
-        if cached and cached.get('how') != 'error':
+        if cached and cached.get('how') != 'error' and (not description or (cached.get('info') or {}).get('plot')):
             self._paint_cached(path)
             return
         packet = self._fetch_detail(path)
@@ -1058,8 +1134,14 @@ class AuroraHome(xbmcgui.WindowXML):
         return None, 'picker', packet
 
     def _remember(self, path, playable, how, packet):
+        if self.account_generation is not None:
+            from .account_state import current_account
+            if not current_account(self.g.DATA_PATH, self.account_generation):
+                return
         info = _richer((packet or {}).get('rows'))
         self.detail_cache[path] = {'playable': playable, 'how': how, 'info': info}
+        if self.description_cache is not None:
+            self.description_cache.save(path, info)
         xbmc.log('[Prime Scene] Playback choice for %s: %s' % (path, how), xbmc.LOGINFO)
         self._paint_cached(path)
 
@@ -1077,7 +1159,8 @@ class AuroraHome(xbmcgui.WindowXML):
         for index, row in matches:
             current = dict(row.get('info') or {})
             for key, value in info.items():
-                if current.get(key) in (None, '', [], {}) and value not in (None, '', [], {}):
+                if value not in (None, '', [], {}) and (current.get(key) in (None, '', [], {})
+                        or key == 'plot' and len(_plain(str(value))) > len(_plain(str(current.get(key) or '')))):
                     current[key] = value
             with self.lock:
                 if index < len(self.rows) and _detail_path(self.g.pluginid, self.rows[index]) == path:

@@ -1,0 +1,7 @@
+0.2.6
+- Preload missing descriptions for the focused card, the next ten cards and two previous cards.
+- Keep descriptions already delivered in Amazon's HTML/JSON when duplicate title cards are merged.
+- Reuse account-scoped descriptions across navigation and openings; clear them on sign-out.
+- Process one background metadata request at a time and check explicit Play jobs between requests.
+- Preserve page prefetching, card selection, artwork read-ahead, Aurora styling and playback.
+- Record description coverage, cache hits, prefetch timing and unavailable/failure outcomes in Diagnostics.

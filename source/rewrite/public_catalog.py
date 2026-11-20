@@ -1,7 +1,7 @@
 """Read Prime Video storefront pages using caller-owned authentication cookies."""
 
 import argparse
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields, replace
 from html.parser import HTMLParser
 import json
 import logging
@@ -71,6 +71,21 @@ class Card:
 class CatalogPage:
     cards: list
     next_url: str = None
+
+
+def _remember_card(cards, key, card):
+    """Keep richer metadata for the same title when HTML and JSON overlap."""
+    previous = cards.get(key)
+    if previous is None:
+        cards[key] = card
+        return
+    updates = {}
+    for field in fields(Card):
+        old, new = getattr(previous, field.name), getattr(card, field.name)
+        if new and (not old or field.name == 'plot' and len(new) > len(old)):
+            updates[field.name] = new
+    if updates:
+        cards[key] = replace(previous, **updates)
 
 
 class PublicCatalogError(RuntimeError):
@@ -294,11 +309,12 @@ def _count_value(value):
 
 
 def _plot_value(node):
+    found = []
     for key in ('synopsis', 'plot', 'synopsisText', 'shortSynopsis', 'description'):
         text = _text(node.get(key))
         if text:
-            return text
-    return ''
+            found.append(text)
+    return max(found, key=len) if found else ''
 
 
 def _json_card(node, page_url):
@@ -418,7 +434,7 @@ def _json_content(document, page_url, *, page_continuation=True):
             card = _json_card(node, page_url)
             if card:
                 card_candidates += 1
-                cards.setdefault(detail_id(card.detail_url), card)
+                _remember_card(cards, detail_id(card.detail_url), card)
             stack.extend((child, depth + 1) for child in reversed(list(node.values()))
                          if isinstance(child, (dict, list)))
         elif isinstance(node, list):
@@ -514,7 +530,7 @@ class StorefrontParser(HTMLParser):
             title = ' '.join(self.label.split())
             if title and self.detail and self.artwork:
                 # Deduplicate tracking variants. Keep the exact storefront link and image URL.
-                self.cards.setdefault(detail_id(self.detail), Card(title, self.detail, self.artwork))
+                _remember_card(self.cards, detail_id(self.detail), Card(title, self.detail, self.artwork))
 
 
 def parse_cards(html, *, page_url=ORIGIN):
@@ -528,7 +544,7 @@ def parse_cards(html, *, page_url=ORIGIN):
             continue
         cards, _, _ = _json_content(document, page_url, page_continuation=False)
         for key, card in cards.items():
-            parser.cards.setdefault(key, card)
+            _remember_card(parser.cards, key, card)
     return list(parser.cards.values())
 
 
@@ -583,7 +599,7 @@ def _read_page(data, content_type, page_url):
                 continue
             found, _, structure = _json_content(document, page_url, page_continuation=False)
             for key, card in found.items():
-                cards.setdefault(key, card)
+                _remember_card(cards, key, card)
             details['ignored_nested_continuations'] += structure['ignored_nested_continuations']
             details['unsupported_token_continuations'] += structure['unsupported_token_continuations']
             details['json_traversal_limited'] = details.get('json_traversal_limited', False) or structure['json_traversal_limited']
@@ -595,7 +611,9 @@ def _read_page(data, content_type, page_url):
     else:
         raise PublicCatalogError('Prime Video returned an unsupported catalog content type.')
     next_url, count = _next_url(links, page_url)
-    details.update(cards=len(cards), continuation_candidates=count, continuation_ambiguous=count > 1,
+    details.update(cards=len(cards), descriptions_ready=sum(bool(card.plot) for card in cards.values()),
+                   descriptions_missing=sum(not card.plot for card in cards.values()),
+                   continuation_candidates=count, continuation_ambiguous=count > 1,
                    unknown_structure=not cards, next_address=route(next_url) if next_url else None)
     return CatalogPage(list(cards.values()), next_url), details
 

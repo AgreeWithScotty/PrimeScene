@@ -1,26 +1,22 @@
-# Prime Scene 0.2.5 navigation
+# Prime Scene 0.2.6
 
-The active runtime is the existing plugin.video.primeinterface application, based
-on published 0.2.4 Aurora Cinema. Its playback and overlay components are preserved.
-Rebuild this package using tools/package_navigation_release.py and the verified
-published 0.2.4 ZIP. All six source overlays are in source/rewrite; the full ZIP
-contains the remaining source and required licenses. No extra add-on is created.
+This updates the existing Aurora Cinema add-on. Missing descriptions are loaded
+for the current card, ten upcoming cards and two previous cards, before they
+are selected. Descriptions already supplied by Amazon's catalog HTML/JSON are
+merged into the matching title instead of discarded when duplicate cards occur.
+Available longer descriptions replace shorter versions of the same title text.
 
-Screens retain their card objects and selection while navigating back or between
-visited tabs. Home/Movies/TV share bounded in-flight storefront work, warm their
-first two actual server pages, and cache first pages inside the active account
-profile. A cached page displays before a stale refresh completes. Explicit sign-out
-invalidates the account generation, closes workers and clears account-owned caches.
+One background metadata request runs at a time. Explicit Play jobs are checked
+between requests; primary page readers and native scrolling stay independent.
+Each card lookup is attempted once per window, with explicit unavailable/failure
+diagnostics when Amazon returns no usable text. Saved descriptions are scoped
+to the account generation, expire after 24 hours and are erased on sign-out.
 
-Cards bind once per page through WindowXML rather than one complete rebind per
-ControlList.addItem. Expensive title rasterization is performed for focused/nearby
-cards after the rail is usable. Public image read-ahead uses exact existing sized
-URLs and bounded background workers. Metadata lookup waits for settled focus and
-cannot hold the primary catalog lane. Explicit playback still uses the prior
-resolution and overlay scheme.
+Settings > Diagnostics reports catalog description coverage, read-ahead position,
+cache hits/writes, real request timing and outcomes. It excludes description text,
+credentials and private account identifiers. No simulated provider/Kodi tests
+were run. Syntax and package checks do not establish real provider success.
 
-Settings > Diagnostics records real navigation generations and stage timings for
-cache hits, requests, card building/binding, title drawing and image downloads.
-Syntax, actual archive/source preservation and published bytes are concrete checks;
-they are not claims about measured device latency or live provider success. No
-simulated provider or Kodi tests were run for this release.
+Rebuild using tools/package_description_release.py and the verified 0.2.5 ZIP.
+Source overlays are aurora.py, public_catalog.py and description_cache.py.
+Playback selection, resolution and overlay source are preserved.
