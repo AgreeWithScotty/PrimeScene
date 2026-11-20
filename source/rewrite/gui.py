@@ -37,17 +37,19 @@ def main(launch_diagnostics=None):
         from resources.lib.account_state import sign_out
         name = account_name()
         if name:
-            if g.dialog.select(name, ['Sign out', 'Cancel']) == 0:
+            choice = g.dialog.select(name, ['Sign out', 'Sign in again', 'Cancel'])
+            if choice == 0:
                 before_sign_out()
                 sign_out(g)
                 return True
-            return False
-        else:
-            from resources.lib.configs import getConfig
-            if not getConfig('UserAgent'):
-                from resources.lib.network import getUA
-                getUA()
-            return LogIn() is not False
+            if choice != 1:
+                return False
+            before_sign_out('Signing in...')
+        from resources.lib.configs import getConfig
+        if not getConfig('UserAgent'):
+            from resources.lib.network import getUA
+            getUA()
+        return LogIn() is not False
 
     try:
         result = open_interface(g, settings, initialize_provider=initialize_provider,
@@ -55,8 +57,6 @@ def main(launch_diagnostics=None):
                                 offer_signin=offer_signin, launch_diagnostics=launch_diagnostics)
         if result is False:
             return False
-        if result == 'classic':
-            xbmc.executebuiltin('ActivateWindow(Videos,"plugin://' + ID + '/?mode=ClassicUI",return)')
     except Exception as error:
         record(g, 'window_open_failed', error)
         if launch_diagnostics is not None:

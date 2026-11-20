@@ -56,7 +56,7 @@ def persist_if_current(profile, expected, callback, allow_signed_out=False):
         return True
 
 
-def store_account(profile, expected, account, addon):
+def store_account(profile, expected, account, addon, cookie_session=None, session_headers=None):
     """Commit a fully authorized account; a signed-out attempt cannot restore it."""
     with state_db(profile) as db:
         epoch = db.execute('SELECT epoch FROM session WHERE id=1').fetchone()[0]
@@ -71,6 +71,15 @@ def store_account(profile, expected, account, addon):
         temporary = config / 'accounts.new'
         temporary.write_text(json.dumps([account]), encoding='utf-8')
         temporary.replace(target)
+        if cookie_session is not None:
+            from .session_store import COOKIE_FILE, copy_cookie_session
+            from .prime_signin import save_cookies
+            save_cookies(copy_cookie_session(cookie_session), Path(profile) / COOKIE_FILE)
+            (Path(profile) / 'prime-video-session.headers.json').write_text(
+                json.dumps(session_headers or {}), encoding='utf-8')
+            agent = (session_headers or {}).get('User-Agent')
+            if isinstance(agent, str) and agent:
+                (config / 'UserAgent').write_text(agent, encoding='utf-8')
         addon.setSetting('login_acc', account['name'])
         db.execute('UPDATE session SET epoch=?, signed_out=0 WHERE id=1', (next_epoch,))
     # Let this invocation's config helpers write in the newly authorized session.
@@ -118,6 +127,7 @@ def clear_profile(profile):
     if proxy:
         proxy_path.parent.mkdir(parents=True, exist_ok=True)
         proxy_path.write_text(proxy, encoding='utf-8')
+    (root / 'log').mkdir(exist_ok=True)
     if failures:
         raise RuntimeError('Signed out, but some local account files are still in use. Close Prime Scene and retry cleanup.')
 
@@ -134,6 +144,9 @@ def _artwork_urls(value):
 
 
 def clear_runtime(g):
+    sessions = sys.modules.get(__package__ + '.session_store')
+    if sessions is not None:
+        sessions.clear_all_pending()
     network = sys.modules.get(__package__ + '.network')
     if network is not None:
         session = getattr(network, '_session', None)

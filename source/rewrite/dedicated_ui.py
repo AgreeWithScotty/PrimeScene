@@ -5,7 +5,7 @@ from threading import Event, RLock, Thread
 import xbmc
 import xbmcgui
 
-from .dedicated_bridge import ProviderBridge, is_title_card
+from .dedicated_bridge import ProviderBridge, is_title_card, dashboard_packet, CatalogSigninRequired
 from .interface_diagnostics import record
 
 
@@ -107,10 +107,10 @@ class StreamingWindow(xbmcgui.WindowXML):
             self.setProperty('status', 'Sign in to Prime Video to browse and watch.')
             self.setFocusId(104)
 
-    def pause_catalog(self):
+    def pause_catalog(self, status='Signing out...'):
         self.stop.set()
-        self.setProperty('accountlabel', 'Signing out...')
-        self.setProperty('status', 'Signing out...')
+        self.setProperty('accountlabel', status)
+        self.setProperty('status', status)
         with self.lock:
             self.generation += 1
             self.rows, self.items, self.lookup, self.identities = [], [], {}, {}
@@ -151,7 +151,12 @@ class StreamingWindow(xbmcgui.WindowXML):
             self.next_path = None
             self.prefetch_at = 0
             self.busy = True
-            self.jobs.put((self.generation, path, query, selection))
+            if path == 'root' and query is None:
+                name = self.account_name() if self.account_name is not None else ''
+                self._publish(self.generation, dashboard_packet(self.g, name))
+                self.busy = False
+            else:
+                self.jobs.put((self.generation, path, query, selection))
 
     def _publish(self, token, packet):
         with self.lock:
@@ -231,11 +236,8 @@ class StreamingWindow(xbmcgui.WindowXML):
 
     def _work(self):
         try:
-            record(self.g, 'provider_initializing')
-            if self.initialize_provider is not None:
-                self.initialize_provider()
-            bridge = ProviderBridge(self.g.pv, self.g)
-            record(self.g, 'provider_ready')
+            bridge = ProviderBridge(None, self.g, initialize_provider=self.initialize_provider)
+            record(self.g, 'catalog_worker_ready')
         except Exception as error:
             record(self.g, 'provider_init_failed', error)
             if not self.stop.is_set():
@@ -268,10 +270,12 @@ class StreamingWindow(xbmcgui.WindowXML):
             except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
                 # No request URLs, tokens or exception bodies enter this log.
-                xbmc.log('[Prime Interface] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
+                xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
                 with self.lock:
                     if token == self.generation and not self.stop.is_set():
-                        self.setProperty('status', 'Unable to finish loading. Return Home to retry.')
+                        self.setProperty('status', 'Use your account button to sign in again and reconnect the catalog.'
+                                         if isinstance(error, CatalogSigninRequired) else
+                                         'Unable to finish loading. Return Home to retry. Open Settings > Diagnostics for the report.')
             finally:
                 with self.lock:
                     if token == self.generation:
@@ -320,7 +324,7 @@ class StreamingWindow(xbmcgui.WindowXML):
             finally:
                 self.stop = Event()
                 self.update_account_button()
-                if self.account_name() and changed:
+                if self.account_name() and (changed or self.worker is None):
                     self._initialize_controls()
                 elif not self.account_name():
                     self.show_signed_out()
@@ -361,8 +365,8 @@ class StreamingWindow(xbmcgui.WindowXML):
 def open_interface(globals_instance, settings_instance, initialize_provider=None, account_name=None, account_action=None,
                    offer_signin=False, launch_diagnostics=None):
     if settings_instance.data_source != 0:
-        globals_instance.dialog.ok('Prime Video', 'This preview currently supports the Website data source. Opening Classic view.')
-        return 'classic'
+        globals_instance.dialog.ok('Prime Scene', 'Choose Website under Settings > Data Source to browse Prime Scene.')
+        return False
     record(globals_instance, 'window_creating')
     window = StreamingWindow('PrimeStreaming.xml', globals_instance.PLUGIN_PATH,
                              'Default', '1080i', globals_instance=globals_instance,
