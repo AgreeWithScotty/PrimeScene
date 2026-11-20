@@ -78,7 +78,7 @@ class DeviceAuthorization:
             raise SignInError('Amazon returned an unsupported account region.')
         serial = self.account.get('deviceid', '')
         if len(serial) != 32 or not all(c in '0123456789abcdef' for c in serial.lower()):
-            raise SignInError('The Prime Scene device identifier is invalid.')
+            raise SignInError('The Smooth Prime device identifier is invalid.')
         self.client = (serial + '#A1MPSLFC7L5AFK').encode('ascii').hex()
 
     @property

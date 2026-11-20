@@ -17,7 +17,7 @@ from .public_catalog import ORIGIN
 from .session_store import begin_signin, discard_pending, retain_challenge
 
 
-TITLE = 'Prime Scene'
+TITLE = 'Smooth Prime'
 
 
 def ask(label, masked):
@@ -67,7 +67,7 @@ def LogIn(retToken=False):
             claimed = True
         except sqlite3.OperationalError:
             observe({'event': 'signin_blocked', 'reason': 'another_signin_is_open'})
-            g.dialog.ok(TITLE, 'Another Prime Scene sign-in is already open.')
+            g.dialog.ok(TITLE, 'Another Smooth Prime sign-in is already open.')
             return False
 
         cookies, signin_state, resumed = begin_signin(profile, generation)
@@ -158,7 +158,7 @@ def LogIn(retToken=False):
             account.update(name=identity.get('name') or 'Prime Video', cookie={}, token='',
                            baseurl=ORIGIN, pv=True)
         if settings.multiuser:
-            name = g.dialog.input('Name this Prime Scene account', account['name'])
+            name = g.dialog.input('Name this Smooth Prime account', account['name'])
             if not name:
                 discard_pending(profile)
                 observe({'event': 'signin_cancelled', 'stage': 'account_name', 'challenge_retained': False})

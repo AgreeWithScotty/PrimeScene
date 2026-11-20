@@ -64,7 +64,7 @@ def main(launch_diagnostics=None):
         if launch_diagnostics is not None:
             from resources.lib.prime_diagnostics import exception_details
             launch_diagnostics({'event': 'window_open_failed', 'exception': exception_details(error)})
-        xbmcgui.Dialog().ok('Prime Scene', 'The interface could not open (' +
+        xbmcgui.Dialog().ok('Smooth Prime', 'The interface could not open (' +
                            failure_detail(error) + '). Your sign-in is saved.')
         return False
 

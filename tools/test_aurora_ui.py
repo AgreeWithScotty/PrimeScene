@@ -17,7 +17,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.4.zip'
+ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.7.zip'
 PROFILE = tempfile.mkdtemp(prefix='primescene-aurora-')
 
 FILM_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B001'
@@ -220,8 +220,8 @@ class Addon(object):
             'id': 'plugin.video.primeinterface',
             'path': str(ADDON),
             'profile': PROFILE,
-            'name': 'Prime Scene',
-            'version': '0.2.4',
+            'name': 'Smooth Prime',
+            'version': '0.2.7',
             'icon': str(ADDON / 'icon.png'),
             'fanart': str(ADDON / 'fanart.png'),
         }[key]
@@ -295,6 +295,23 @@ class WindowXML(object):
 
     def getFocusId(self):
         return getattr(self, 'focus', 0)
+
+    def getCurrentContainerId(self):
+        return 200
+
+    def clearList(self):
+        self.getControl(200).reset()
+
+    def addItems(self, items):
+        control = self.getControl(200)
+        for item in items:
+            control.addItem(item)
+
+    def getCurrentListPosition(self):
+        return self.getControl(200).getSelectedPosition()
+
+    def setCurrentListPosition(self, position):
+        self.getControl(200).selectItem(position)
 
     def doModal(self):
         WindowXML.opened.append(self)
@@ -481,6 +498,8 @@ class FakeBridge(object):
     def __init__(self, provider, g, initialize_provider=None):
         self.provider = provider
         self.initialize_provider = initialize_provider
+        self.details = {}
+        self.continuations = {}
 
     def browse_progressive(self, path, publish, active, query=None):
         FakeBridge.calls.append((path, query))
@@ -778,7 +797,8 @@ def main():
     check(not any('prime-nav-' in name or 'prime-card-gold' in name for name in names),
           'old sidebar textures are not packaged')
     addon_xml = (ADDON / 'addon.xml').read_text(encoding='utf-8')
-    check('version="0.2.4"' in addon_xml, 'addon.xml version is 0.2.4')
+    check('version="0.2.7"' in addon_xml, 'addon.xml version is 0.2.7')
+    check('name="Smooth Prime"' in addon_xml, 'addon.xml name is Smooth Prime')
     check('Aurora Cinema' in addon_xml, 'addon.xml describes Aurora Cinema')
     source = (ROOT / 'source' / 'rewrite' / 'aurora.py').read_bytes()
     packaged = (ADDON / 'resources' / 'lib' / 'aurora.py').read_bytes()
@@ -872,6 +892,9 @@ def main():
     from resources.lib.public_catalog import parse_cards
 
     import resources.lib.aurora as aurora
+    import resources.lib.navigation as navigation
+    # Home, Movies and TV go through StorefrontLoader, which constructs its own bridge.
+    navigation.ProviderBridge = FakeBridge
     aurora.ProviderBridge = FakeBridge
     PlayerOverlay.automatic = False
 
@@ -1003,9 +1026,14 @@ def main():
 
     home.getControl(200).position = 2
     check(wait_until(lambda: bare_filled(home)), 'home fills metadata and synopsis for a card that had neither')
-    madea = bare_item(home)
-    madea_plate = png_size(madea.properties.get('TitleArt', ''))
+    check(wait_until(lambda: bool((bare_item(home).properties.get('TitleArt') if bare_item(home) else ''))),
+          'the focused long title is drawn')
+    madea_plate = png_size(bare_item(home).properties.get('TitleArt', ''))
+    home.getControl(200).position = 0
+    check(wait_until(lambda: bool(home.getControl(200).items[0].properties.get('TitleArt'))),
+          'the focused one-line title is drawn')
     harbor_plate = png_size(home.getControl(200).items[0].properties.get('TitleArt', ''))
+    home.getControl(200).position = 2
     print('plates harbor %s madea %s' % (harbor_plate, madea_plate))
     check(harbor_plate[1] >= 120 and harbor_plate[0] >= 400, 'a one-line title is the large Bebas plate')
     check(madea_plate[1] > harbor_plate[1] and madea_plate[1] >= 200,
@@ -1050,18 +1078,22 @@ def main():
                        and any(item.getLabel() == 'HARBOR LIGHTS' for item in home.getControl(200).items))
     check(ready, 'back returns from the category to home')
 
-    with home.lock:
-        home.rows.append(dict(SERIES_NEXT))
-    home.getControl(200).position = len(home.rows) - 1
+    def stage_row(window, row):
+        item = ListItem(label=(row.get('title') or '').upper())
+        with window.lock:
+            window.rows.append(dict(row))
+            window.items.append(item)
+        window.getControl(200).addItem(item)
+        window.getControl(200).position = len(window.rows) - 1
+
+    stage_row(home, SERIES_NEXT)
     path_before = home.path
     home.onClick(200)
     print('next episode %s path %s' % (Player.shared.played[-1], home.path))
     check(Player.shared.played[-1] == EPISODE_A_URL, 'a series card plays its next episode')
     check(home.path == path_before, 'playing the next episode stays on this row')
 
-    with home.lock:
-        home.rows.append(dict(SERIES_LIST))
-    home.getControl(200).position = len(home.rows) - 1
+    stage_row(home, SERIES_LIST)
     path_before = home.path
     played_before = len(Player.shared.played)
     WindowXML.opened = []
@@ -1080,9 +1112,7 @@ def main():
     ])
     check(why == 'resume' and resumed['url'] == EPISODE_B_URL, 'an in-progress episode is the one that plays')
 
-    with home.lock:
-        home.rows.append(dict(STORE_MOVIE))
-    home.getControl(200).position = len(home.rows) - 1
+    stage_row(home, STORE_MOVIE)
     path_before = home.path
     home.onClick(200)
     ready = wait_until(lambda: home.path == path_before and Player.shared.played[-1] == FILM_URL and not home.getProperty('Busy'))
@@ -1092,9 +1122,7 @@ def main():
           'resolving an ASIN shows a busy indicator')
     check(home.path == path_before, 'the movie never opens an intermediate listing')
 
-    with home.lock:
-        home.rows.append(dict(SERIES_SEASONS))
-    home.getControl(200).position = len(home.rows) - 1
+    stage_row(home, SERIES_SEASONS)
     played_before = len(Player.shared.played)
     home.onClick(200)
     ready = wait_until(lambda: home.path.endswith('B007SEASONS') and not home.busy

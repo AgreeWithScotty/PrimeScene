@@ -114,7 +114,7 @@ def _remove_child(path, root):
             path.unlink()
         return
     if root not in path.resolve().parents:
-        raise ValueError('Refusing to remove a file outside the Prime Scene profile')
+        raise ValueError('Refusing to remove a file outside the Smooth Prime profile')
     if path.is_dir():
         for child in path.iterdir():
             _remove_child(child, root)
@@ -126,7 +126,7 @@ def _remove_child(path, root):
 def clear_profile(profile):
     root = Path(profile).resolve()
     if root.name != ADDON_ID or root == root.parent:
-        raise ValueError('The Prime Scene profile path is invalid')
+        raise ValueError('The Smooth Prime profile path is invalid')
     # This loopback address belongs to the running playback service, not to an
     # Amazon account. Keep it usable after signing into a different account.
     proxy_path = root / 'config/proxyaddress'
@@ -144,7 +144,7 @@ def clear_profile(profile):
         proxy_path.write_text(proxy, encoding='utf-8')
     (root / 'log').mkdir(exist_ok=True)
     if failures:
-        raise RuntimeError('Signed out, but some local account files are still in use. Close Prime Scene and retry cleanup.')
+        raise RuntimeError('Signed out, but some local account files are still in use. Close Smooth Prime and retry cleanup.')
 
 
 def _artwork_urls(value):
@@ -205,7 +205,7 @@ def _sign_out(g, artwork=()):
     import xbmc
     profile = Path(g.DATA_PATH)
     if profile.resolve().name != ADDON_ID:
-        raise ValueError('The Prime Scene profile path is invalid')
+        raise ValueError('The Smooth Prime profile path is invalid')
     # Invalidate other invocations first. Their account/config writes are guarded
     # by this generation and cannot recreate the previous account after cleanup.
     with state_db(profile) as db:

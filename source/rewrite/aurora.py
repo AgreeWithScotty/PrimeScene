@@ -281,7 +281,7 @@ def _nested_playable(value, row):
     if isinstance(value, str):
         if not _play_url(value):
             return None
-        return {'title': row.get('title') or 'Prime Scene', 'url': value, 'video': True,
+        return {'title': row.get('title') or 'Smooth Prime', 'url': value, 'video': True,
                 'info': dict(row.get('info') or {})}
     if isinstance(value, dict) and value.get('video', True) and _play_url(value.get('url')):
         return value
@@ -423,7 +423,7 @@ def note_playback(profile, title, meta=''):
     path = _note_path(profile)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(dumps({
-        'title': title or 'Prime Scene',
+        'title': title or 'Smooth Prime',
         'meta': meta or '',
         'armed': time(),
     }), encoding='utf-8')
@@ -460,7 +460,7 @@ def overlay_due(playing, note, now, latched):
 
 
 def play_row(row, profile):
-    note_playback(profile, row.get('title') or 'Prime Scene', _detail_meta(row))
+    note_playback(profile, row.get('title') or 'Smooth Prime', _detail_meta(row))
     xbmc.Player().play(row.get('url') or '')
 
 
@@ -565,7 +565,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.getCurrentContainerId() != 200:
             xbmc.executebuiltin('Container.SetViewMode(200)', True)
         if self.getCurrentContainerId() != 200:
-            raise RuntimeError('Kodi did not activate the Prime Scene catalog rail')
+            raise RuntimeError('Kodi did not activate the Smooth Prime catalog rail')
         self.update_account_button()
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
@@ -574,7 +574,7 @@ class AuroraHome(xbmcgui.WindowXML):
                                          'current_window_id': xbmcgui.getCurrentWindowId()})
             if self.offer_signin:
                 self.offer_signin = False
-                if self.g.dialog.yesno('Prime Scene', 'Sign in to Amazon Prime Video to start watching.',
+                if self.g.dialog.yesno('Smooth Prime', 'Sign in to Amazon Prime Video to start watching.',
                                        nolabel='Cancel', yeslabel='Sign in'):
                     self.onClick(306)
             return
@@ -583,7 +583,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.account_name is not None:
             from .account_state import account_epoch
             self.account_generation = account_epoch(self.g.DATA_PATH)
-        self._set_hero_status('PRIME SCENE', 'LOADING YOUR HOME')
+        self._set_hero_status('SMOOTH PRIME', 'LOADING YOUR HOME')
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
@@ -720,7 +720,7 @@ class AuroraHome(xbmcgui.WindowXML):
                               'generation': token,
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
             return
-        self._set_hero_status((self.heading or 'Prime Scene').upper(), 'LOADING TITLES')
+        self._set_hero_status((self.heading or 'Smooth Prime').upper(), 'LOADING TITLES')
         # Drop queued obsolete work. In-flight public requests continue only to
         # warm their cache; the worker stops waiting when generation changes.
         while True:
@@ -819,7 +819,7 @@ class AuroraHome(xbmcgui.WindowXML):
         except Exception as error:
             record(self.g, 'provider_init_failed', error)
             if not self.stop.is_set():
-                self._set_hero_status('PRIME SCENE', 'COULD NOT OPEN THE CATALOG. YOUR SIGN-IN IS SAVED.')
+                self._set_hero_status('SMOOTH PRIME', 'COULD NOT OPEN THE CATALOG. YOUR SIGN-IN IS SAVED.')
             self.busy = False
             self.stop.set()
         finally:
@@ -871,7 +871,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         if path.endswith('/nextPage') and len(self.rows) > page_start:
                             self.prefetch_at = page_start
                         if not self.rows:
-                            self._set_hero_status((self.heading or 'Prime Scene').upper(),
+                            self._set_hero_status((self.heading or 'Smooth Prime').upper(),
                                                   'NO TITLES WERE RETURNED. TRY HOME OR SEARCH.')
             except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
@@ -881,7 +881,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         message = ('USE THE ACCOUNT BUTTON AND CHOOSE SIGN IN AGAIN.'
                                    if isinstance(error, CatalogSigninRequired) else
                                    'UNABLE TO FINISH LOADING. RETURN HOME OR OPEN DIAGNOSTICS.')
-                        self._set_hero_status((self.heading or 'Prime Scene').upper(), message)
+                        self._set_hero_status((self.heading or 'Smooth Prime').upper(), message)
             finally:
                 with self.lock:
                     if token == self.generation:
@@ -910,7 +910,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _open_browse(self, row):
         path = _browse_path(self.g.pluginid, row.get('url'))
         if path:
-            self.navigate(path, heading=row.get('title') or 'Prime Scene')
+            self.navigate(path, heading=row.get('title') or 'Smooth Prime')
             return True
         if '?mode=Search' in (row.get('url') or ''):
             self._search()
@@ -1192,7 +1192,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if cached is None or cached.get('how') in ('error', 'wait', 'metadata'):
                 playable, how, packet = self._resolve_playable(path)
                 if how == 'wait':
-                    self.g.dialog.ok('Prime Scene', 'The catalogue is still opening. Try this title again.')
+                    self.g.dialog.ok('Smooth Prime', 'The catalogue is still opening. Try this title again.')
                     return
                 if packet is not None:
                     self._remember(path, playable, how, packet)
@@ -1209,9 +1209,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 play_row(playable, self.g.DATA_PATH)
                 return
             if how == 'picker':
-                self.navigate(path, heading=title or 'Prime Scene')
+                self.navigate(path, heading=title or 'Smooth Prime')
                 return
-            self.g.dialog.ok('Prime Scene', 'This title did not return a video to play.')
+            self.g.dialog.ok('Smooth Prime', 'This title did not return a video to play.')
         finally:
             if token == self._play_token:
                 self.setProperty('Busy', '')
@@ -1255,7 +1255,7 @@ class AuroraHome(xbmcgui.WindowXML):
             try:
                 changed = self.account_action(self.pause_catalog)
             except Exception as error:
-                self.g.dialog.ok('Prime Scene', str(error) if isinstance(error, RuntimeError)
+                self.g.dialog.ok('Smooth Prime', str(error) if isinstance(error, RuntimeError)
                                  else 'Account controls could not finish (' + type(error).__name__ + ').')
             finally:
                 self.stop = Event()
@@ -1278,7 +1278,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 play_row(target, self.g.DATA_PATH)
                 return
             if not path:
-                self.g.dialog.ok('Prime Scene', 'This menu item is unavailable here. Open Settings for account options.')
+                self.g.dialog.ok('Smooth Prime', 'This menu item is unavailable here. Open Settings for account options.')
                 return
             # The rail card has no ASIN. Resolve it away from this click and
             # hand the result to PlayVideo. The listing stays where it is.
@@ -1286,7 +1286,7 @@ class AuroraHome(xbmcgui.WindowXML):
             token = self._play_token
             self.setProperty('Busy', '1')
             xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
-            self.detail_jobs.put(('play', token, self.generation, path, row.get('title') or 'Prime Scene'))
+            self.detail_jobs.put(('play', token, self.generation, path, row.get('title') or 'Smooth Prime'))
 
     def onAction(self, action):
         # Left and right belong to the list. The hero reads Container(200),
@@ -1353,7 +1353,7 @@ class PlayerOverlay(xbmcgui.WindowXMLDialog):
             return
         self._ready_player = True
         info = self.info or {}
-        self.setProperty('Title', (info.get('title') or 'PRIME SCENE').upper())
+        self.setProperty('Title', (info.get('title') or 'SMOOTH PRIME').upper())
         self.setProperty('Meta', info.get('meta') or '')
         self.apply_times(info.get('position') or 0, info.get('duration') or 0)
         volume = self.getControl(520)
@@ -1605,7 +1605,7 @@ def watch_playback(profile):
 def open_interface(globals_instance, settings_instance, initialize_provider=None, account_name=None,
                    account_action=None, offer_signin=False, launch_diagnostics=None):
     if settings_instance.data_source != 0:
-        globals_instance.dialog.ok('Prime Scene', 'Choose Website under Settings > Data Source to browse Prime Scene.')
+        globals_instance.dialog.ok('Smooth Prime', 'Choose Website under Settings > Data Source to browse Smooth Prime.')
         return False
     record(globals_instance, 'window_creating')
     window = AuroraHome(_HOME_XML, globals_instance.PLUGIN_PATH, 'Default', '1080i',
@@ -1626,7 +1626,7 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
                                 'error_type': getattr(window, 'init_error_type', None) or window.init_error,
                                 'error': window.init_error,
                                 'current_window_id': xbmcgui.getCurrentWindowId()})
-        globals_instance.dialog.ok('Prime Scene', 'The interface could not initialize (' +
+        globals_instance.dialog.ok('Smooth Prime', 'The interface could not initialize (' +
                                    window.init_error + '). Your sign-in is saved.')
         return False
     return window.result

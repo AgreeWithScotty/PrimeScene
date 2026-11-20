@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.2.6" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.7" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -24,10 +24,10 @@
       <icon>icon.png</icon>
       <fanart>fanart.jpg</fanart>
     </assets>
-    <summary lang="en_GB">Prime Video in the Aurora Cinema interface</summary>
-    <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
+    <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
+    <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.6[CR]- Preload missing descriptions for the focused card, the next ten cards and two previous cards.[CR]- Keep descriptions already delivered in Amazon's HTML/JSON when duplicate title cards are merged.[CR]- Reuse account-scoped descriptions across navigation and openings; clear them on sign-out.[CR]- Process one background metadata request at a time and check explicit Play jobs between requests.[CR]- Preserve page prefetching, card selection, artwork read-ahead, Aurora styling and playback.[CR]- Record description coverage, cache hits, prefetch timing and unavailable/failure outcomes in Diagnostics.</news>
+    <news>0.2.7[CR]- Rebranded to Smooth Prime; new icon; removed Amazon logo asset.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

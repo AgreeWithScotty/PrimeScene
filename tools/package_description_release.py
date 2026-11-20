@@ -1,4 +1,4 @@
-"""Build Prime Scene's description-preload update from the verified 0.2.5 ZIP."""
+"""Build Smooth Prime's description-preload update from the verified 0.2.5 ZIP."""
 import argparse
 import ast
 import hashlib
