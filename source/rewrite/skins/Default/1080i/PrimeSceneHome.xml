@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <window>
     <defaultcontrol always="true">200</defaultcontrol>
-    <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation>
-    <animation effect="fade" start="100" end="0" time="280">WindowClose</animation>
+    <animation effect="fade" start="0" end="100" time="280">WindowOpen</animation>
+    <animation effect="fade" start="100" end="0" time="200">WindowClose</animation>
     <controls>
         <control type="image">
             <left>0</left>
@@ -10,158 +10,184 @@
             <width>1920</width>
             <height>1080</height>
             <texture>white.png</texture>
-            <colordiffuse>FF0A0A0A</colordiffuse>
+            <colordiffuse>FF171C21</colordiffuse>
+        </control>
+        <control type="image" id="102">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>820</height>
+            <fadetime>80</fadetime>
+            <aspectratio align="center" aligny="top">scale</aspectratio>
+            <texture background="true">$INFO[Container(200).ListItem.Art(thumb)]</texture>
+            <visible>!String.IsEmpty(Container(200).ListItem.Art(thumb))</visible>
         </control>
         <control type="image" id="100">
             <left>0</left>
             <top>0</top>
             <width>1920</width>
-            <height>760</height>
-            <fadetime>500</fadetime>
-            <aspectratio>scale</aspectratio>
-            <texture background="true">$INFO[Window.Property(HeroFanart)]</texture>
-            <animation effect="fade" start="0" end="100" time="500">WindowOpen</animation>
+            <height>820</height>
+            <fadetime>80</fadetime>
+            <aspectratio align="center" aligny="top">scale</aspectratio>
+            <texture background="true">$INFO[Container(200).ListItem.Art(fanart)]</texture>
+            <visible>!String.IsEmpty(Container(200).ListItem.Art(fanart))</visible>
         </control>
         <control type="image" id="101">
             <left>0</left>
             <top>0</top>
             <width>1920</width>
-            <height>760</height>
+            <height>820</height>
             <texture>white.png</texture>
-            <colordiffuse>6614181C</colordiffuse>
-            <animation effect="fade" start="60" end="100" time="400">VisibleChange</animation>
+            <colordiffuse>99141A20</colordiffuse>
         </control>
         <control type="image">
             <left>0</left>
-            <top>420</top>
+            <top>460</top>
             <width>1920</width>
-            <height>360</height>
+            <height>380</height>
             <texture>vignette.png</texture>
+        </control>
+        <control type="image">
+            <left>0</left>
+            <top>760</top>
+            <width>1920</width>
+            <height>320</height>
+            <texture>white.png</texture>
+            <colordiffuse>FF171C21</colordiffuse>
         </control>
         <control type="label">
             <left>72</left>
-            <top>36</top>
-            <width>640</width>
+            <top>34</top>
+            <width>560</width>
             <height>28</height>
             <font>Wordmark</font>
-            <textcolor>FFF4F1EA</textcolor>
+            <textcolor>FFE6E8EB</textcolor>
             <label>P R I M E   S C E N E</label>
         </control>
         <control type="button" id="301">
-            <left>760</left>
-            <top>32</top>
-            <width>120</width>
-            <height>36</height>
+            <left>700</left>
+            <top>26</top>
+            <width>140</width>
+            <height>44</height>
             <font>Nav</font>
             <label>HOME</label>
-            <textcolor>FFBDBDBD</textcolor>
-            <focusedcolor>FFF4F1EA</focusedcolor>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
-            <texturefocus>blank.png</texturefocus>
+            <textoffsetx>0</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
             <texturenofocus>blank.png</texturenofocus>
             <onleft>306</onleft>
             <onright>302</onright>
             <ondown>200</ondown>
         </control>
         <control type="image">
-            <left>792</left>
-            <top>68</top>
-            <width>56</width>
-            <height>2</height>
+            <left>738</left>
+            <top>74</top>
+            <width>64</width>
+            <height>3</height>
             <texture>white.png</texture>
+            <colordiffuse>FFC5CCD3</colordiffuse>
             <visible>String.IsEqual(Window.Property(Nav),home)</visible>
         </control>
         <control type="button" id="302">
-            <left>880</left>
-            <top>32</top>
-            <width>150</width>
-            <height>36</height>
+            <left>848</left>
+            <top>26</top>
+            <width>170</width>
+            <height>44</height>
             <font>Nav</font>
             <label>MOVIES</label>
-            <textcolor>FFBDBDBD</textcolor>
-            <focusedcolor>FFF4F1EA</focusedcolor>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
-            <texturefocus>blank.png</texturefocus>
+            <textoffsetx>0</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
             <texturenofocus>blank.png</texturenofocus>
             <onleft>301</onleft>
             <onright>303</onright>
             <ondown>200</ondown>
         </control>
         <control type="image">
-            <left>916</left>
-            <top>68</top>
-            <width>78</width>
-            <height>2</height>
+            <left>885</left>
+            <top>74</top>
+            <width>96</width>
+            <height>3</height>
             <texture>white.png</texture>
+            <colordiffuse>FFC5CCD3</colordiffuse>
             <visible>String.IsEqual(Window.Property(Nav),movies)</visible>
         </control>
         <control type="button" id="303">
-            <left>1030</left>
-            <top>32</top>
-            <width>100</width>
-            <height>36</height>
+            <left>1026</left>
+            <top>26</top>
+            <width>110</width>
+            <height>44</height>
             <font>Nav</font>
             <label>TV</label>
-            <textcolor>FFBDBDBD</textcolor>
-            <focusedcolor>FFF4F1EA</focusedcolor>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
-            <texturefocus>blank.png</texturefocus>
+            <textoffsetx>0</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
             <texturenofocus>blank.png</texturenofocus>
             <onleft>302</onleft>
             <onright>304</onright>
             <ondown>200</ondown>
         </control>
         <control type="image">
-            <left>1062</left>
-            <top>68</top>
-            <width>36</width>
-            <height>2</height>
+            <left>1061</left>
+            <top>74</top>
+            <width>40</width>
+            <height>3</height>
             <texture>white.png</texture>
+            <colordiffuse>FFC5CCD3</colordiffuse>
             <visible>String.IsEqual(Window.Property(Nav),tv)</visible>
         </control>
         <control type="button" id="304">
-            <left>1130</left>
-            <top>32</top>
-            <width>150</width>
-            <height>36</height>
+            <left>1144</left>
+            <top>26</top>
+            <width>160</width>
+            <height>44</height>
             <font>Nav</font>
             <label>SEARCH</label>
-            <textcolor>FFBDBDBD</textcolor>
-            <focusedcolor>FFF4F1EA</focusedcolor>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
-            <texturefocus>blank.png</texturefocus>
+            <textoffsetx>0</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
             <texturenofocus>blank.png</texturenofocus>
             <onleft>303</onleft>
             <onright>305</onright>
             <ondown>200</ondown>
         </control>
         <control type="button" id="305">
-            <left>1280</left>
-            <top>32</top>
-            <width>180</width>
-            <height>36</height>
+            <left>1312</left>
+            <top>26</top>
+            <width>190</width>
+            <height>44</height>
             <font>Nav</font>
             <label>SETTINGS</label>
-            <textcolor>FFBDBDBD</textcolor>
-            <focusedcolor>FFF4F1EA</focusedcolor>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
-            <texturefocus>blank.png</texturefocus>
+            <textoffsetx>0</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
             <texturenofocus>blank.png</texturenofocus>
             <onleft>304</onleft>
             <onright>306</onright>
             <ondown>200</ondown>
         </control>
         <control type="button" id="306">
-            <left>1480</left>
-            <top>32</top>
-            <width>380</width>
-            <height>36</height>
+            <left>1520</left>
+            <top>26</top>
+            <width>340</width>
+            <height>44</height>
             <font>Nav</font>
             <label>$INFO[Window.Property(AccountLabel)]</label>
-            <textcolor>FFBDBDBD</textcolor>
-            <focusedcolor>FFF4F1EA</focusedcolor>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
             <align>right</align>
-            <texturefocus>blank.png</texturefocus>
+            <textoffsetx>18</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
             <texturenofocus>blank.png</texturenofocus>
             <onleft>305</onleft>
             <onright>301</onright>
@@ -169,127 +195,227 @@
         </control>
         <control type="label">
             <left>76</left>
-            <top>390</top>
-            <width>1100</width>
-            <height>36</height>
-            <font>HeroSmall</font>
-            <textcolor>FFF4F1EA</textcolor>
+            <top>188</top>
+            <width>1200</width>
+            <height>28</height>
+            <font>Kicker</font>
+            <textcolor>FFD5DAE0</textcolor>
+            <label>$INFO[Container(200).ListItem.Property(Kicker)]</label>
+            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>188</top>
+            <width>1200</width>
+            <height>28</height>
+            <font>Kicker</font>
+            <textcolor>FFD5DAE0</textcolor>
             <label>$INFO[Window.Property(HeroKicker)]</label>
+            <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">
             <left>72</left>
-            <top>418</top>
+            <top>214</top>
             <width>1400</width>
             <height>130</height>
             <font>Hero</font>
-            <textcolor>FFF4F1EA</textcolor>
+            <textcolor>FFF7F8F8</textcolor>
+            <label>$INFO[Container(200).ListItem.Label]</label>
+            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
+        </control>
+        <control type="label">
+            <left>72</left>
+            <top>214</top>
+            <width>1400</width>
+            <height>130</height>
+            <font>Hero</font>
+            <textcolor>FFF7F8F8</textcolor>
             <label>$INFO[Window.Property(HeroTitle)]</label>
+            <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">
             <left>76</left>
-            <top>556</top>
+            <top>348</top>
             <width>1200</width>
-            <height>28</height>
+            <height>32</height>
             <font>Tag</font>
-            <textcolor>FF8A8A8A</textcolor>
-            <label>$INFO[Window.Property(HeroTag)]</label>
+            <textcolor>FFE4E7EB</textcolor>
+            <label>$INFO[Container(200).ListItem.Property(Meta)]</label>
+            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">
             <left>76</left>
-            <top>700</top>
+            <top>348</top>
+            <width>1200</width>
+            <height>32</height>
+            <font>Tag</font>
+            <textcolor>FFE4E7EB</textcolor>
+            <label>$INFO[Window.Property(HeroMeta)]</label>
+            <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>388</top>
+            <width>980</width>
+            <height>72</height>
+            <font>Body</font>
+            <textcolor>FFC9D0D6</textcolor>
+            <wrap>true</wrap>
+            <label>$INFO[Container(200).ListItem.Property(Plot)]</label>
+            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>388</top>
+            <width>980</width>
+            <height>72</height>
+            <font>Body</font>
+            <textcolor>FFC9D0D6</textcolor>
+            <wrap>true</wrap>
+            <label>$INFO[Window.Property(HeroSynopsis)]</label>
+            <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
+        </control>
+        <control type="button" id="320">
+            <left>72</left>
+            <top>476</top>
+            <width>220</width>
+            <height>56</height>
+            <font>Button</font>
+            <label>WATCH</label>
+            <align>center</align>
+            <textoffsetx>0</textoffsetx>
+            <textcolor>FFE8EAED</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
+            <texturefocus border="14">button-focus.png</texturefocus>
+            <texturenofocus border="14">button-idle.png</texturenofocus>
+            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
+            <onleft>321</onleft>
+            <onright>321</onright>
+            <onup>301</onup>
+            <ondown>200</ondown>
+        </control>
+        <control type="button" id="321">
+            <left>308</left>
+            <top>476</top>
+            <width>240</width>
+            <height>56</height>
+            <font>Button</font>
+            <label>DETAILS</label>
+            <align>center</align>
+            <textoffsetx>0</textoffsetx>
+            <textcolor>FFE8EAED</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
+            <texturefocus border="14">button-focus.png</texturefocus>
+            <texturenofocus border="14">button-idle.png</texturenofocus>
+            <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
+            <onleft>320</onleft>
+            <onright>320</onright>
+            <onup>301</onup>
+            <ondown>200</ondown>
+        </control>
+        <control type="label">
+            <left>76</left>
+            <top>628</top>
             <width>600</width>
-            <height>24</height>
+            <height>28</height>
             <font>Section</font>
-            <textcolor>FFBDBDBD</textcolor>
+            <textcolor>FFC5CCD3</textcolor>
             <label>$INFO[Window.Property(Section)]</label>
         </control>
         <control type="fixedlist" id="200">
-            <left>72</left>
-            <top>742</top>
-            <width>1848</width>
-            <height>300</height>
+            <left>64</left>
+            <top>668</top>
+            <width>1820</width>
+            <height>380</height>
             <orientation>horizontal</orientation>
             <focusposition>0</focusposition>
-            <scrolltime>200</scrolltime>
-            <onup>301</onup>
+            <scrolltime>160</scrolltime>
+            <onup>320</onup>
             <onleft>301</onleft>
-            <onright>301</onright>
-            <itemlayout width="400" height="300">
+            <onright>306</onright>
+            <itemlayout width="420" height="360">
                 <control type="image">
-                    <left>0</left>
-                    <top>0</top>
-                    <width>376</width>
-                    <height>212</height>
+                    <left>8</left>
+                    <top>16</top>
+                    <width>392</width>
+                    <height>220</height>
                     <aspectratio>scale</aspectratio>
-                    <texture background="true" border="1">$INFO[ListItem.Art(thumb)]</texture>
+                    <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
                     <bordertexture>grey.png</bordertexture>
                     <bordersize>1</bordersize>
+                    <colordiffuse>A6FFFFFF</colordiffuse>
                 </control>
                 <control type="label">
-                    <left>0</left>
-                    <top>220</top>
-                    <width>376</width>
-                    <height>26</height>
+                    <left>10</left>
+                    <top>246</top>
+                    <width>388</width>
+                    <height>32</height>
                     <font>Card</font>
-                    <textcolor>FFF4F1EA</textcolor>
+                    <textcolor>FFB7BEC6</textcolor>
                     <label>$INFO[ListItem.Label]</label>
                 </control>
                 <control type="label">
-                    <left>0</left>
-                    <top>246</top>
-                    <width>376</width>
-                    <height>22</height>
+                    <left>10</left>
+                    <top>278</top>
+                    <width>388</width>
+                    <height>28</height>
                     <font>Meta</font>
-                    <textcolor>FF8A8A8A</textcolor>
+                    <textcolor>FF8E979F</textcolor>
                     <label>$INFO[ListItem.Property(Meta)]</label>
                 </control>
                 <control type="progress">
-                    <left>0</left>
-                    <top>276</top>
-                    <width>376</width>
-                    <height>2</height>
+                    <left>10</left>
+                    <top>314</top>
+                    <width>388</width>
+                    <height>3</height>
                     <info>ListItem.PercentPlayed</info>
+                    <visible>Integer.IsGreater(ListItem.PercentPlayed,0)</visible>
                     <texturebg>grey.png</texturebg>
                     <midtexture>white.png</midtexture>
                 </control>
             </itemlayout>
-            <focusedlayout width="400" height="300">
-                <control type="image">
-                    <left>0</left>
-                    <top>0</top>
-                    <width>376</width>
-                    <height>212</height>
-                    <aspectratio>scale</aspectratio>
-                    <texture background="true" border="1">$INFO[ListItem.Art(thumb)]</texture>
-                    <bordertexture>white.png</bordertexture>
-                    <bordersize>1</bordersize>
-                </control>
-                <control type="label">
-                    <left>0</left>
-                    <top>220</top>
-                    <width>376</width>
-                    <height>26</height>
-                    <font>Card</font>
-                    <textcolor>FFF4F1EA</textcolor>
-                    <label>$INFO[ListItem.Label]</label>
-                </control>
-                <control type="label">
-                    <left>0</left>
-                    <top>246</top>
-                    <width>376</width>
-                    <height>22</height>
-                    <font>Meta</font>
-                    <textcolor>FF8A8A8A</textcolor>
-                    <label>$INFO[ListItem.Property(Meta)]</label>
-                </control>
-                <control type="progress">
-                    <left>0</left>
-                    <top>276</top>
-                    <width>376</width>
-                    <height>2</height>
-                    <info>ListItem.PercentPlayed</info>
-                    <texturebg>grey.png</texturebg>
-                    <midtexture>white.png</midtexture>
+            <focusedlayout width="420" height="360">
+                <control type="group">
+                    <animation effect="zoom" start="100" end="106" center="204,126" time="160" tween="quadratic" easing="out" reversible="false">Focus</animation>
+                    <animation effect="slide" end="0,-12" time="160" tween="quadratic" easing="out" reversible="false">Focus</animation>
+                    <control type="image">
+                        <left>8</left>
+                        <top>16</top>
+                        <width>392</width>
+                        <height>220</height>
+                        <aspectratio>scale</aspectratio>
+                        <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                        <bordertexture>white.png</bordertexture>
+                        <bordersize>4</bordersize>
+                    </control>
+                    <control type="label">
+                        <left>10</left>
+                        <top>246</top>
+                        <width>388</width>
+                        <height>32</height>
+                        <font>Card</font>
+                        <textcolor>FFFFFFFF</textcolor>
+                        <label>$INFO[ListItem.Label]</label>
+                    </control>
+                    <control type="label">
+                        <left>10</left>
+                        <top>278</top>
+                        <width>388</width>
+                        <height>28</height>
+                        <font>Meta</font>
+                        <textcolor>FFE6E8EB</textcolor>
+                        <label>$INFO[ListItem.Property(Meta)]</label>
+                    </control>
+                    <control type="progress">
+                        <left>10</left>
+                        <top>314</top>
+                        <width>388</width>
+                        <height>3</height>
+                        <info>ListItem.PercentPlayed</info>
+                        <visible>Integer.IsGreater(ListItem.PercentPlayed,0)</visible>
+                        <texturebg>grey.png</texturebg>
+                        <midtexture>white.png</midtexture>
+                    </control>
                 </control>
             </focusedlayout>
         </control>

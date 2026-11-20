@@ -1,14 +1,15 @@
 # Prime Scene for Prime Video
 
 Standalone Kodi application with permanent ID `plugin.video.primeinterface`.
-Current release: 0.2.1. Install updates through the ScottyWins repository; do not
+Current release: 0.2.2. Install updates through the ScottyWins repository; do not
 uninstall between versions. Account data belongs only to this add-on.
 
-The Aurora Cinema window opens directly from Video add-ons: a full-bleed hero,
-horizontal cards, and a charcoal tint that follows focus. No separate Kodi skin
-is required. Home shows eight category tiles from bundled artwork without a
-catalog request. Movies and TV use Prime Scene's independent reader with the
-authenticated website session. Results append as each server page arrives.
+The Aurora Cinema window opens directly from Video add-ons: a matte charcoal
+and cool slate hero, horizontal title cards, and a focus state you can read
+from the couch. No separate Kodi skin is required. Home, Movies and TV load
+real Prime Video titles from the signed-in storefront reader. The focused
+title's artwork, metadata and synopsis are bound to that card, so the hero
+updates as you move. Results append as each server page arrives.
 When Amazon provides a page continuation, the next page starts as you reach
 the newest cards.
 

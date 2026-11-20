@@ -16,7 +16,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.1.zip'
+ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.2.zip'
 PROFILE = tempfile.mkdtemp(prefix='primescene-aurora-')
 
 FILM_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B001'
@@ -30,6 +30,9 @@ FILM = {
     'info': {
         'plot': 'A coastal town keeps a secret schedule.',
         'year': 2021,
+        'duration': 6120,
+        'mpaa': '16+',
+        'genre': ['Drama'],
         'mediatype': 'movie',
         'fanart': 'https://example.com/art/harbor-fan.jpg',
         'poster': 'https://example.com/art/harbor-poster.jpg',
@@ -43,7 +46,10 @@ SHOW = {
     'info': {
         'plot': 'A librarian walks through the lives she did not live.',
         'year': 2024,
-        'mediatype': 'movie',
+        'duration': 2700,
+        'mpaa': 'TV-MA',
+        'genre': 'Mystery',
+        'mediatype': 'tvshow',
         'fanart': 'https://example.com/art/midnight.jpg',
         'thumb': 'https://example.com/art/midnight.jpg',
         'progress': 32,
@@ -125,7 +131,7 @@ class Addon(object):
             'path': str(ADDON),
             'profile': PROFILE,
             'name': 'Prime Scene',
-            'version': '0.2.1',
+            'version': '0.2.2',
             'icon': str(ADDON / 'icon.png'),
             'fanart': str(ADDON / 'fanart.png'),
         }[key]
@@ -360,10 +366,10 @@ class FakeBridge(object):
             publish({'rows': [SHOW], 'next': None})
             return
         if path == 'root':
-            publish({'rows': [MOVIES, TV, FILM], 'next': None})
-        elif path == 'root/movies':
+            publish({'rows': [FILM, SHOW], 'next': None})
+        elif path in ('__prime_movies__', 'root/movies'):
             publish({'rows': [FILM, SHOW], 'next': 'root/movies/nextPage'})
-        elif path == 'root/tv':
+        elif path in ('__prime_tv__', 'root/tv'):
             publish({'rows': [SHOW], 'next': None})
         elif str(path).endswith('/nextPage'):
             publish({'rows': [], 'next': None})
@@ -612,13 +618,44 @@ def main():
     check(not any('prime-nav-' in name or 'prime-card-gold' in name for name in names),
           'old sidebar textures are not packaged')
     addon_xml = (ADDON / 'addon.xml').read_text(encoding='utf-8')
-    check('version="0.2.1"' in addon_xml, 'addon.xml version is 0.2.1')
+    check('version="0.2.2"' in addon_xml, 'addon.xml version is 0.2.2')
     check('Aurora Cinema' in addon_xml, 'addon.xml describes Aurora Cinema')
     source = (ROOT / 'source' / 'rewrite' / 'aurora.py').read_bytes()
     packaged = (ADDON / 'resources' / 'lib' / 'aurora.py').read_bytes()
     check(source == packaged, 'packaged aurora.py matches source/rewrite/aurora.py')
     check((ROOT / 'source' / 'rewrite' / 'gui.py').read_bytes() == (ADDON / 'gui.py').read_bytes(),
           'packaged gui.py matches source/rewrite/gui.py')
+    for packaged_name, source_name in (
+            ('resources/lib/public_catalog.py', 'public_catalog.py'),
+            ('resources/lib/dedicated_bridge.py', 'dedicated_bridge.py'),
+            ('resources/skins/Default/1080i/PrimeSceneHome.xml', 'skins/Default/1080i/PrimeSceneHome.xml'),
+            ('resources/skins/Default/1080i/PrimeSceneTitle.xml', 'skins/Default/1080i/PrimeSceneTitle.xml'),
+            ('resources/skins/Default/1080i/PrimeScenePlayer.xml', 'skins/Default/1080i/PrimeScenePlayer.xml'),
+            ('resources/skins/Default/1080i/Font.xml', 'skins/Default/1080i/Font.xml')):
+        check((ROOT / 'source' / 'rewrite' / source_name).read_bytes() == (ADDON / packaged_name).read_bytes(),
+              'packaged %s matches source' % source_name)
+    home_xml = (ADDON / 'resources/skins/Default/1080i/PrimeSceneHome.xml').read_text(encoding='utf-8')
+    title_xml = (ADDON / 'resources/skins/Default/1080i/PrimeSceneTitle.xml').read_text(encoding='utf-8')
+    aurora_text = packaged.decode('utf-8')
+    check('EXPLORE' not in aurora_text and 'EXPLORE' not in home_xml and 'EXPLORE' not in title_xml,
+          'EXPLORE filler is gone from the window and the catalogue labels')
+    check('category-cinema' not in aurora_text and 'category-' not in home_xml and 'fanart.jpg' not in home_xml,
+          'home does not use the gold theater art or category icons')
+    for binding in (
+            'Container(200).ListItem.Art(fanart)',
+            'Container(200).ListItem.Art(thumb)',
+            'Container(200).ListItem.Label',
+            'Container(200).ListItem.Property(Meta)',
+            'Container(200).ListItem.Property(Plot)',
+            'Container(200).ListItem.Property(Kicker)'):
+        check(binding in home_xml, 'hero binds %s' % binding)
+    check('bordersize>4<' in home_xml and 'effect="zoom"' in home_xml, 'focused card has a 4px border and a lift')
+    check('focus-pill.png' in home_xml and 'button-focus.png' in home_xml,
+          'nav and hero buttons use a high-contrast focus texture')
+    bridge_text = (ADDON / 'resources/lib/dedicated_bridge.py').read_text(encoding='utf-8')
+    home_branch = bridge_text.split('def _browse_progressive', 1)[1].split('\n    def browse', 1)[0]
+    check("public_packet('home'" in home_branch, 'home loads the signed-in storefront')
+    check('dashboard_packet' not in home_branch, 'home does not open the category-tile dashboard')
     contract = windowxml_contract(ADDON, packaged.decode('utf-8'), names)
     for problem in contract:
         check(False, problem)
@@ -633,8 +670,9 @@ def main():
 
     xbmc = install_stubs()
     sys.path.insert(0, str(ADDON))
-    from resources.lib.aurora import (AuroraHome, PlayerOverlay, _TINTS, note_playback,
+    from resources.lib.aurora import (AuroraHome, PlayerOverlay, _SCRIM, _meta, note_playback,
                                       open_interface, overlay_due, watch_playback)
+    from resources.lib.public_catalog import parse_cards
 
     import resources.lib.aurora as aurora
     aurora.ProviderBridge = FakeBridge
@@ -670,38 +708,59 @@ def main():
                       globals_instance=g, initialize_provider=lambda: started.append('provider'),
                       account_name=account_name, account_action=account_action)
     home.doModal()
-    ready = wait_until(lambda: len(home.rows) == 3 and home.getProperty('Section') == 'HOME')
+    ready = wait_until(lambda: len(home.rows) == 2 and home.getProperty('Section') == 'HOME')
     print('')
     print('=== aurora home ===')
     print('xml %s' % home.xml)
     print('section %s' % home.getProperty('Section'))
     print('nav %s' % home.getProperty('Nav'))
     print('title %s' % home.getProperty('HeroTitle'))
+    print('meta %s' % home.getProperty('HeroMeta'))
     print('tint %s' % home.getControl(101).color)
     print('cards %s' % home.getControl(200).size())
     check(ready, 'home row finished loading')
     check(home.xml == 'PrimeSceneHome.xml', 'home loads PrimeSceneHome.xml')
     check(home.getProperty('Nav') == 'home', 'home nav underline')
-    check(home.getControl(200).size() == 3, 'home row lists categories and a title')
-    check(home.getProperty('HeroTitle') == 'MOVIES', 'first card is the hero')
-    check(home.getControl(101).color == _TINTS[0], 'initial tint is the first charcoal wash')
-    check('provider' not in started, 'the home dashboard does not start the playback provider')
+    check(home.getControl(200).size() == 2, 'home row lists real titles')
+    check(home.getProperty('HeroTitle') == 'HARBOR LIGHTS', 'first title is the hero')
+    check(home.getControl(101).color == _SCRIM, 'hero scrim is the matte slate wash')
+    first = home.getControl(200).items[0]
+    print('card meta %s art %s' % (first.properties.get('Meta'), sorted(first.art)))
+    check('2021' in first.properties.get('Meta', '') and '1H 42M' in first.properties.get('Meta', '')
+          and '16+' in first.properties.get('Meta', '') and 'DRAMA' in first.properties.get('Meta', ''),
+          'card sublabel uses year, runtime, rating and genre')
+    check(not any('EXPLORE' in (item.getLabel() + item.properties.get('Meta', '') + item.properties.get('Kicker', ''))
+                  for item in home.getControl(200).items),
+          'no card label is EXPLORE')
+    check(first.art.get('fanart') == FILM['info']['fanart'] and first.art.get('thumb') == FILM['info']['thumb']
+          and first.art.get('poster') == FILM['info']['poster'],
+          'each title sets fanart, thumb and poster')
+    check(first.properties.get('Plot', '').startswith('A coastal town'), 'card carries the synopsis')
+    check(_meta({'title': 'Shelf', 'video': False, 'info': {}}) == '', 'a missing field stays blank')
+    check('2024' in home.getControl(200).items[1].properties.get('Meta', '')
+          and 'TV-MA' in home.getControl(200).items[1].properties.get('Meta', '')
+          and 'MYSTERY' in home.getControl(200).items[1].properties.get('Meta', ''),
+          'a series card shows its own metadata')
+    check('provider' not in started, 'the home screen does not start the playback provider')
 
-    home.getControl(200).position = 2
+    home.getControl(200).position = 1
     home.onFocus(200)
-    print('focused %s tint %s' % (home.getProperty('HeroTitle'), home.getControl(101).color))
-    check(home.getProperty('HeroTitle') == 'HARBOR LIGHTS', 'focused card becomes the hero')
-    check(home.getControl(101).color == _TINTS[2], 'focus moves the ambient tint')
-    check('SECRET SCHEDULE' in home.getProperty('HeroTag'), 'hero tag uses the synopsis')
+    print('focused %s meta %s' % (home.getProperty('HeroTitle'), home.getProperty('HeroMeta')))
+    check(home.getProperty('HeroTitle') == 'THE MIDNIGHT LIBRARY', 'focused card becomes the hero')
+    check('2024' in home.getProperty('HeroMeta') and 'secret schedule' not in home.getProperty('HeroSynopsis'),
+          'focus replaces the hero metadata and synopsis')
+    check('lives she did not live' in home.getProperty('HeroSynopsis'), 'hero synopsis follows the focused title')
+    check(home.getControl(101).color == _SCRIM, 'the scrim stays matte slate while the art changes')
 
     home.getControl(200).position = 0
     home.onAction(Action(2))
-    print('stepped %s tint %s' % (home.getProperty('HeroTitle'), home.getControl(101).color))
-    check(home.getProperty('HeroTitle') == 'TV', 'right moves the hero to the next card')
-    check(home.getControl(101).color == _TINTS[1], 'right updates the ambient tint')
+    print('stepped %s meta %s' % (home.getProperty('HeroTitle'), home.getProperty('HeroMeta')))
+    check(home.getProperty('HeroTitle') == 'THE MIDNIGHT LIBRARY', 'right moves the hero to the next title')
+    check('TV-MA' in home.getProperty('HeroMeta'), 'right updates the metadata strip')
+    check(home.getProperty('HeroFanart') == SHOW['info']['fanart'], 'right updates the hero backdrop')
 
     home.onClick(302)
-    ready = wait_until(lambda: home.path == 'root/movies' and home.getControl(200).size() >= 2)
+    ready = wait_until(lambda: home.path == '__prime_movies__' and home.getControl(200).size() >= 2)
     print('')
     print('=== movies ===')
     print('path %s section %s nav %s' % (home.path, home.getProperty('Section'), home.getProperty('Nav')))
@@ -718,8 +777,10 @@ def main():
     print('xml %s kicker %s title %s' % (title.xml, title.getProperty('Kicker'), title.getProperty('HeroTitle')))
     print('synopsis %s related %s' % (title.getProperty('Synopsis'), title.getControl(210).size()))
     check(title.xml == 'PrimeSceneTitle.xml', 'detail view loads PrimeSceneTitle.xml')
-    check(title.getProperty('Kicker') == 'A FILM', 'film kicker')
+    check(title.getProperty('Kicker') == 'FILM', 'film kicker')
     check(title.getProperty('HeroTitle') == 'HARBOR LIGHTS', 'detail title')
+    check('2021' in title.getProperty('Meta') and '1H 42M' in title.getProperty('Meta')
+          and '16+' in title.getProperty('Meta'), 'detail metadata strip')
     check('secret schedule' in title.getProperty('Synopsis'), 'synopsis is on the detail view')
     check(title.getControl(210).size() == 1, 'detail row lists the other title')
 
@@ -731,6 +792,9 @@ def main():
 
     title.onClick(210)
     check(Player.shared.played[-1] == SHOW_URL, 'a related card uses the same playback handoff')
+    home.getControl(200).position = 0
+    home.onClick(320)
+    check(Player.shared.played[-1] == FILM_URL, 'the hero watch button plays the focused title')
 
     home.onAction(Action(10))
     ready = wait_until(lambda: home.path == 'root' and home.getProperty('Section') == 'HOME')
@@ -752,7 +816,7 @@ def main():
     check(len(started) > before, 'account button reaches the sign-in and sign-out action')
 
     home.onClick(303)
-    ready = wait_until(lambda: home.path == 'root/tv')
+    ready = wait_until(lambda: home.path == '__prime_tv__')
     check(ready, 'tv shortcut opens that category')
 
     signed = AuroraHome('PrimeSceneHome.xml', str(ADDON), 'Default', '1080i',
@@ -761,7 +825,40 @@ def main():
     print('signed out focus %s tag %s' % (getattr(signed, 'focus', None), signed.getProperty('HeroTag')))
     check(getattr(signed, 'focus', None) == 306, 'signed-out screen focuses sign in')
     check('SIGN IN' in signed.getProperty('HeroTitle'), 'signed-out hero asks for sign in')
+    check('EXPLORE' not in signed.getProperty('HeroTitle') and 'EXPLORE' not in signed.getProperty('HeroMeta'),
+          'signed-out hero has no filler label')
+    check(signed.getProperty('HeroFanart') == '', 'signed-out hero has no theater backdrop')
     signed.stop.set()
+
+    catalog_html = (
+        '<script type="application/json">'
+        '{"title":"Harbor Lights","detailUrl":"https://www.primevideo.com/detail/B001TEST",'
+        '"synopsis":"A coastal town keeps a secret schedule.","releaseYear":2021,"duration":6120,'
+        '"titleType":"movie","ratingBadge":{"displayText":"16+"},'
+        '"genres":[{"text":"Drama"},{"text":"Mystery"}],'
+        '"images":{"packshot":"https://m.media-amazon.com/images/I/pack.jpg",'
+        '"heroshot":"https://m.media-amazon.com/images/I/hero.jpg",'
+        '"titleshot":"https://m.media-amazon.com/images/I/poster.jpg"}}'
+        '</script>'
+        '<article data-testid="card"><a href="/detail/B002TEST" aria-label="Quiet Title">'
+        '<img src="https://m.media-amazon.com/images/I/quiet.jpg" alt="Quiet Title"></a></article>'
+    )
+    parsed = {card.title: card for card in parse_cards(catalog_html)}
+    harbor = parsed.get('Harbor Lights')
+    quiet = parsed.get('Quiet Title')
+    check(harbor is not None and quiet is not None, 'storefront reader keeps title cards')
+    if harbor is not None:
+        print('parsed %s %s %s %s' % (harbor.year, harbor.duration, harbor.rating, harbor.mediatype))
+        check(harbor.artwork_url.endswith('/pack.jpg') and harbor.fanart_url.endswith('/hero.jpg')
+              and harbor.poster_url.endswith('/poster.jpg'),
+              'storefront card keeps landscape, hero and poster art')
+        check(harbor.year == '2021' and harbor.duration == '6120' and harbor.rating == '16+'
+              and harbor.mediatype == 'movie' and 'Drama' in harbor.genres
+              and harbor.plot.startswith('A coastal town'),
+              'storefront card keeps year, runtime, rating, genre and synopsis')
+    if quiet is not None:
+        check(quiet.year == '' and quiet.plot == '' and quiet.rating == '' and quiet.fanart_url == '',
+              'a card without those fields leaves them blank')
 
     settings = Settings()
     settings.data_source = 1

@@ -22,7 +22,7 @@ class CatalogSigninRequired(PublicCatalogError):
 
 
 def dashboard_packet(g, account_name=''):
-    """Build the complete landing screen without provider or network access."""
+    """Legacy category tiles. Aurora home loads the signed-in storefront instead."""
     profile_name = g.addon.getSetting('ProfileName') or account_name or 'Profiles'
     tiles = ((profile_name, '__legacy_profile__', 'profile'),
              ('My Stuff', '__legacy_mystuff__', 'my-stuff'),
@@ -41,8 +41,38 @@ def dashboard_packet(g, account_name=''):
     return {'rows': rows, 'next': None}
 
 
+_TITLE_TYPES = ('tvshow', 'season', 'episode', 'movie', 'video', 'event', 'live',
+                'storefront', 'film', 'show', 'series')
+
+
 def is_title_card(info, playable=False):
-    return playable or info.get('mediatype') in ('tvshow', 'season', 'storefront')
+    return playable or (info or {}).get('mediatype') in _TITLE_TYPES
+
+
+def _card_info(card):
+    """Listing fields the storefront actually returned. Missing fields stay absent."""
+    info = {
+        'thumb': card.artwork_url,
+        'poster': card.poster_url or card.artwork_url,
+        'mediatype': card.mediatype or 'storefront',
+    }
+    if card.fanart_url:
+        info['fanart'] = card.fanart_url
+    if card.plot:
+        info['plot'] = card.plot
+    if card.year:
+        info['year'] = card.year
+    if card.duration:
+        info['duration'] = card.duration
+    if card.rating:
+        info['mpaa'] = card.rating
+    if card.genres:
+        info['genre'] = [part.strip() for part in card.genres.split(',') if part.strip()]
+    if card.season:
+        info['season'] = card.season
+    if card.episode:
+        info['episode'] = card.episode
+    return info
 
 
 class DirectorySink:
@@ -177,7 +207,7 @@ class ProviderBridge:
             rows.append({'title': card.title,
                          'url': self.g.pluginid + 'pv/browse/__storefront__/' + identity,
                          'video': False, 'identity': identity,
-                         'info': {'poster': card.artwork_url, 'mediatype': 'storefront'}})
+                         'info': _card_info(card)})
         visited = previous_urls + ((continuation,) if continuation else ())
         next_path = self._continuation(page, result.next_url, visited)
         observe({'event': 'catalog_packet_ready', 'section': page, 'rows': len(rows),
@@ -254,7 +284,10 @@ class ProviderBridge:
         if not self._active(active):
             return
         if path == 'root' and query is None:
-            publish(dashboard_packet(self.g, self.g.addon.getSetting('login_acc')))
+            # The landing screen is the signed-in storefront, not category tiles.
+            packet = self.public_packet('home', active)
+            if packet is not None and self._active(active):
+                publish(packet)
             return
         if query is None and path in STOREFRONT_PAGES:
             packet = self.public_packet(STOREFRONT_PAGES[path], active)
