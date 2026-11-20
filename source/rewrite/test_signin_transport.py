@@ -259,7 +259,12 @@ class SignInTransportTests(unittest.TestCase):
         with patch.object(prime_signin, 'build_opener', side_effect=fixture_opener(fixture)):
             self.assertTrue(prime_signin.authenticate(LWPCookieJar(), Mock(side_effect=(EMAIL, PASSWORD)), observer=events.append))
         self.assertIn({'event': 'redirect', 'status': 302, 'method': 'POST',
-                       'from_host': 'www.amazon.com', 'to_host': 'na.primevideo.com'}, events)
+                       'from_host': 'www.amazon.com', 'to_host': 'na.primevideo.com',
+                       'source': {'host': 'www.amazon.com', 'route': '/ap/signin/password',
+                                  'query_keys': [], 'authorization_code_present': False},
+                       'destination': {'host': 'na.primevideo.com', 'route': '/auth-redirect',
+                                       'query_keys': ['signin'], 'authorization_code_present': False},
+                       'preserves_submission': False}, events)
         self.assertEqual(fixture.requests[-1].get_method(), 'GET')
         self.assertIsNone(fixture.requests[-1].data)
 
@@ -284,6 +289,8 @@ class SignInTransportTests(unittest.TestCase):
 
     def test_reproduces_deployed_preview_failure_at_post_redirect(self):
         archive_path = Path(__file__).parent / 'dist/script.primescene.rewrite-0.0.3.zip'
+        if not archive_path.is_file():
+            self.skipTest('Removed preview add-on archive is not part of Prime Scene')
         with ZipFile(archive_path) as archive:
             deployed_source = archive.read('script.primescene.rewrite/prime_signin.py')
         module = ModuleType('deployed_prime_signin')

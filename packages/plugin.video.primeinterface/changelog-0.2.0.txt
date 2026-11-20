@@ -1,0 +1,5 @@
+0.2.0
+- Aurora Cinema home, title page and player overlay, drawn by the add-on.
+- Focus changes the hero art and the charcoal tint.
+- Home, Movies, TV, search, settings and the account button stay on the minimal nav.
+- Sign-in, catalogue browsing, search and the existing playback path are unchanged.
