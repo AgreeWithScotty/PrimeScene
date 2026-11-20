@@ -193,32 +193,22 @@
             <onright>301</onright>
             <ondown>200</ondown>
         </control>
-        <control type="label">
+        <control type="image" id="110">
             <left>72</left>
             <top>148</top>
             <width>1280</width>
             <height>268</height>
-            <font>Hero</font>
-            <textcolor>FFF7F8F8</textcolor>
-            <align>left</align>
-            <aligny>top</aligny>
-            <wrap>true</wrap>
-            <scroll>false</scroll>
-            <label>$INFO[Container(200).ListItem.Label]</label>
+            <aspectratio align="left" aligny="top">center</aspectratio>
+            <texture background="true">$INFO[Container(200).ListItem.Property(TitleArt)]</texture>
             <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
         </control>
-        <control type="label">
+        <control type="image" id="111">
             <left>72</left>
             <top>148</top>
             <width>1280</width>
             <height>268</height>
-            <font>Hero</font>
-            <textcolor>FFF7F8F8</textcolor>
-            <align>left</align>
-            <aligny>top</aligny>
-            <wrap>true</wrap>
-            <scroll>false</scroll>
-            <label>$INFO[Window.Property(HeroTitle)]</label>
+            <aspectratio align="left" aligny="top">center</aspectratio>
+            <texture background="true">$INFO[Window.Property(HeroTitleArt)]</texture>
             <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
         </control>
         <control type="label">

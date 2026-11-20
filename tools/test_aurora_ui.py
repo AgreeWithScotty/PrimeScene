@@ -8,6 +8,7 @@ account and no network are used.
 """
 import ast
 import os
+import struct
 import sys
 import tempfile
 import time
@@ -16,7 +17,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.3.zip'
+ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.4.zip'
 PROFILE = tempfile.mkdtemp(prefix='primescene-aurora-')
 
 FILM_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B001'
@@ -118,6 +119,42 @@ STORE_MOVIE = {
     'video': False,
     'info': {'mediatype': 'movie', 'plot': 'A new blade runner.', 'year': 2017},
 }
+MADEA_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B010ASIN'
+             '&name=Tyler+Perry%27s+A+Madea+Christmas&adult=0&trailer=0&selbitrate=0')
+BARE = {
+    'title': "Tyler Perry's A Madea Christmas",
+    'url': 'plugin://plugin.video.primeinterface/pv/browse/__storefront__/B010MADEA',
+    'video': False,
+    'identity': 'B010MADEA',
+    'info': {'thumb': 'https://example.com/art/madea.jpg', 'mediatype': 'movie'},
+}
+MADEA = {
+    'title': "Tyler Perry's A Madea Christmas",
+    'url': MADEA_URL,
+    'video': True,
+    'info': {
+        'plot': 'Madea (Tyler Perry) dishes out her own brand of Christmas spirit in a small, rural town.',
+        'year': 2013,
+        'duration': 5940,
+        'mpaa': 'PG-13',
+        'genre': ['Comedy', 'Drama', 'Romance'],
+        'mediatype': 'movie',
+        'fanart': 'https://example.com/art/madea-fan.jpg',
+        'thumb': 'https://example.com/art/madea.jpg',
+    },
+}
+SEASON_ROW = {
+    'title': 'Season 1',
+    'url': 'plugin://plugin.video.primeinterface/pv/browse/__storefront__/B007SEASONS/s1',
+    'video': False,
+    'info': {'mediatype': 'season', 'season': 1, 'plot': 'The first winter.'},
+}
+SERIES_SEASONS = {
+    'title': 'Unpicked',
+    'url': 'plugin://plugin.video.primeinterface/pv/browse/__storefront__/B007SEASONS',
+    'video': False,
+    'info': {'mediatype': 'tvshow', 'plot': 'Several seasons, no episode yet.', 'year': 2019, 'seasons': '2'},
+}
 
 
 class InfoTag(object):
@@ -153,6 +190,7 @@ class ListItem(object):
 
 
 class Dialog(object):
+    choices = []
     def __init__(self):
         self.inputs = []
         self.messages = []
@@ -168,6 +206,7 @@ class Dialog(object):
         return False
 
     def select(self, heading, options):
+        Dialog.choices.append((heading, list(options)))
         return -1
 
 
@@ -182,7 +221,7 @@ class Addon(object):
             'path': str(ADDON),
             'profile': PROFILE,
             'name': 'Prime Scene',
-            'version': '0.2.3',
+            'version': '0.2.4',
             'icon': str(ADDON / 'icon.png'),
             'fanart': str(ADDON / 'fanart.png'),
         }[key]
@@ -220,6 +259,12 @@ class FakeControl(object):
     def selectItem(self, position):
         self.position = position
 
+    def getListItem(self, index):
+        return self.items[index]
+
+    def getPercent(self):
+        return self.percent
+
     def setPercent(self, value):
         self.percent = value
 
@@ -247,6 +292,9 @@ class WindowXML(object):
 
     def setFocusId(self, control_id):
         self.focus = control_id
+
+    def getFocusId(self):
+        return getattr(self, 'focus', 0)
 
     def doModal(self):
         WindowXML.opened.append(self)
@@ -312,6 +360,30 @@ class Player(object):
     def getPlayingFile(self):
         return self.played[-1] if self.played else ''
 
+    def seekTime(self, seconds):
+        self.time = float(seconds)
+
+    def stop(self):
+        self.playing = False
+
+    def pause(self):
+        self.paused = not getattr(self, 'paused', False)
+
+    def getAvailableSubtitleStreams(self):
+        return list(getattr(self, 'subs', []) or [])
+
+    def getAvailableAudioStreams(self):
+        return list(getattr(self, 'audios', []) or [])
+
+    def setSubtitleStream(self, index):
+        self.subtitle_stream = index
+
+    def setAudioStream(self, index):
+        self.audio_stream = index
+
+    def showSubtitles(self, enabled):
+        self.subtitles_on = bool(enabled)
+
 
 def install_stubs():
     xbmc = type(sys)('xbmc')
@@ -321,7 +393,8 @@ def install_stubs():
     xbmc.builtins = []
     xbmc.executebuiltin = lambda builtin: xbmc.builtins.append(builtin)
     xbmc.getInfoLabel = lambda key: '21.3 (21.3.0)'
-    xbmc.getCondVisibility = lambda key: False
+    xbmc.conditions = {}
+    xbmc.getCondVisibility = lambda key: bool(xbmc.conditions.get(key, False))
     xbmc.Monitor = Monitor
     xbmc.Player = Player
 
@@ -417,15 +490,21 @@ class FakeBridge(object):
             publish({'rows': [SHOW], 'next': None})
             return
         if path == 'root':
-            publish({'rows': [FILM, SHOW], 'next': None})
+            publish({'rows': [FILM, SHOW, BARE], 'next': None})
         elif path in ('__prime_movies__', 'root/movies'):
-            publish({'rows': [FILM, SHOW], 'next': 'root/movies/nextPage'})
+            publish({'rows': [FILM, SHOW, BARE], 'next': 'root/movies/nextPage'})
         elif path in ('__prime_tv__', 'root/tv'):
-            publish({'rows': [SHOW], 'next': None})
+            publish({'rows': [SHOW, BARE], 'next': None})
         elif str(path).endswith('B003SERIES'):
             publish({'rows': [EPISODE_A, EPISODE_B], 'next': None})
         elif str(path).endswith('B009MOVIE'):
             publish({'rows': [FILM], 'next': None})
+        elif str(path).endswith('B010MADEA'):
+            publish({'rows': [MADEA], 'next': None})
+        elif str(path).endswith('B007SEASONS/s1'):
+            publish({'rows': [], 'next': None})
+        elif str(path).endswith('B007SEASONS'):
+            publish({'rows': [SEASON_ROW], 'next': None})
         elif str(path).endswith('/nextPage'):
             publish({'rows': [], 'next': None})
         else:
@@ -699,7 +778,7 @@ def main():
     check(not any('prime-nav-' in name or 'prime-card-gold' in name for name in names),
           'old sidebar textures are not packaged')
     addon_xml = (ADDON / 'addon.xml').read_text(encoding='utf-8')
-    check('version="0.2.3"' in addon_xml, 'addon.xml version is 0.2.3')
+    check('version="0.2.4"' in addon_xml, 'addon.xml version is 0.2.4')
     check('Aurora Cinema' in addon_xml, 'addon.xml describes Aurora Cinema')
     source = (ROOT / 'source' / 'rewrite' / 'aurora.py').read_bytes()
     packaged = (ADDON / 'resources' / 'lib' / 'aurora.py').read_bytes()
@@ -711,7 +790,10 @@ def main():
             ('resources/lib/dedicated_bridge.py', 'dedicated_bridge.py'),
             ('resources/skins/Default/1080i/PrimeSceneHome.xml', 'skins/Default/1080i/PrimeSceneHome.xml'),
             ('resources/skins/Default/1080i/PrimeScenePlayer.xml', 'skins/Default/1080i/PrimeScenePlayer.xml'),
-            ('resources/skins/Default/1080i/Font.xml', 'skins/Default/1080i/Font.xml')):
+            ('resources/skins/Default/1080i/Font.xml', 'skins/Default/1080i/Font.xml'),
+            ('resources/lib/title_art.py', 'title_art.py'),
+            ('resources/lib/title_glyphs.json', 'title_glyphs.json'),
+            ('resources/lib/title_glyphs.py', 'title_glyphs.py')):
         check((ROOT / 'source' / 'rewrite' / source_name).read_bytes() == (ADDON / packaged_name).read_bytes(),
               'packaged %s matches source' % source_name)
     check('PrimeSceneTitle.xml' not in ''.join(names), 'the title window is not packaged')
@@ -724,7 +806,7 @@ def main():
     for binding in (
             'Container(200).ListItem.Art(fanart)',
             'Container(200).ListItem.Art(thumb)',
-            'Container(200).ListItem.Label',
+            'Container(200).ListItem.Property(TitleArt)',
             'Container(200).ListItem.Property(Meta)',
             'Container(200).ListItem.Property(Plot)'):
         check(binding in home_xml, 'hero binds %s' % binding)
@@ -752,12 +834,15 @@ def main():
     check('<fadetime>0</fadetime>' in home_xml, 'hero art swaps without a fade')
     check('focus-pill.png' in home_xml, 'navigation uses a high-contrast focus texture')
     check('button-focus.png' not in home_xml, 'hero buttons are gone')
-    fonts = ET.parse(ADDON / 'resources/skins/Default/1080i/Font.xml').getroot()
-    hero_font = next((font for font in fonts.iter('font') if font.findtext('name') == 'Hero'), None)
-    check(hero_font is not None and hero_font.findtext('filename') == 'BebasNeue-Regular.ttf'
-          and int(hero_font.findtext('size') or 0) >= 160
-          and float(hero_font.findtext('linespacing') or 1) < 1,
-          'hero title uses a large condensed Bebas Neue')
+    check('<font>Hero</font>' not in home_xml, 'the hero title is not the skin font13 fallback label')
+    title_art = [node for node in home_root.iter('control')
+                 if node.attrib.get('id') in ('110', '111')]
+    check(len(title_art) == 2, 'home has the large title plate and the empty-state plate')
+    for node in title_art:
+        check(node.attrib.get('type') == 'image', 'title plate is an image')
+        check(int(node.findtext('width') or 0) >= 1000 and int(node.findtext('height') or 0) >= 240,
+              'title plate is the large hero box')
+        check((node.findtext('aspectratio') or '').strip() == 'center', 'title plate is not scaled away from its pixels')
     check('<colordiffuse>99141A20</colordiffuse>' in home_xml, 'hero scrim is the matte slate wash')
     lateral = _lateral_work(aurora_text)
     for problem in lateral:
@@ -782,12 +867,18 @@ def main():
     xbmc = install_stubs()
     sys.path.insert(0, str(ADDON))
     from resources.lib.aurora import (AuroraHome, PlayerOverlay, _SCRIM, _fit_art, _item, _meta,
-                                      note_playback, open_interface, overlay_due, playback_row,
-                                      watch_playback)
+                                      choose_playback, note_playback, open_interface, overlay_due,
+                                      playback_row, watch_playback)
     from resources.lib.public_catalog import parse_cards
 
     import resources.lib.aurora as aurora
     aurora.ProviderBridge = FakeBridge
+    PlayerOverlay.automatic = False
+
+    def png_size(path):
+        data = Path(path).read_bytes()
+        assert data[12:16] == b'IHDR'
+        return struct.unpack('>II', data[16:24])
 
     dialog = Dialog()
     addon = Addon()
@@ -820,7 +911,7 @@ def main():
                       globals_instance=g, initialize_provider=lambda: started.append('provider'),
                       account_name=account_name, account_action=account_action)
     home.doModal()
-    ready = wait_until(lambda: len(home.rows) == 2 and home.getProperty('Section') == 'HOME')
+    ready = wait_until(lambda: len(home.rows) == 3 and home.getProperty('Section') == 'HOME')
     print('')
     print('=== aurora home ===')
     print('xml %s' % home.xml)
@@ -833,7 +924,7 @@ def main():
     check(ready, 'home row finished loading')
     check(home.xml == 'PrimeSceneHome.xml', 'home loads PrimeSceneHome.xml')
     check(home.getProperty('Nav') == 'home', 'home nav underline')
-    check(home.getControl(200).size() == 2, 'home row lists real titles')
+    check(home.getControl(200).size() == 3, 'home row lists real titles')
     check(_SCRIM == '99141A20', 'the scrim constant matches the skin')
     first = home.getControl(200).items[0]
     print('card meta %s art %s' % (first.properties.get('Meta'), sorted(first.art)))
@@ -898,6 +989,36 @@ def main():
     print('lateral writes %s gets %s' % (writes, gets))
     check(writes == [] and gets == [], 'left and right do no window or control work')
 
+    def bare_item(window):
+        for item in window.getControl(200).items:
+            if item.getLabel().startswith('TYLER PERRY'):
+                return item
+        return None
+
+    def bare_filled(window):
+        item = bare_item(window)
+        meta = item.properties.get('Meta', '') if item is not None else ''
+        plot = item.properties.get('Plot', '') if item is not None else ''
+        return '2013' in meta and '1H 39M' in meta and 'PG-13' in meta and 'COMEDY' in meta and plot.startswith('Madea')
+
+    home.getControl(200).position = 2
+    check(wait_until(lambda: bare_filled(home)), 'home fills metadata and synopsis for a card that had neither')
+    madea = bare_item(home)
+    madea_plate = png_size(madea.properties.get('TitleArt', ''))
+    harbor_plate = png_size(home.getControl(200).items[0].properties.get('TitleArt', ''))
+    print('plates harbor %s madea %s' % (harbor_plate, madea_plate))
+    check(harbor_plate[1] >= 120 and harbor_plate[0] >= 400, 'a one-line title is the large Bebas plate')
+    check(madea_plate[1] > harbor_plate[1] and madea_plate[1] >= 200,
+          'a long title uses the second line of the large plate')
+    home_path = home.path
+    WindowXML.opened = []
+    Player().played.clear()
+    home.onClick(200)
+    ready = wait_until(lambda: Player.shared.played[-1:] == [MADEA_URL] and home.path == home_path and not home.busy)
+    print('bare play %s path %s opened %s' % (Player.shared.played, home.path, WindowXML.opened))
+    check(ready, 'a card with no ASIN plays through PlayVideo')
+    check(not WindowXML.opened and home.path == home_path, 'that play does not open another directory or window')
+
     home.onClick(302)
     ready = wait_until(lambda: home.path == '__prime_movies__' and home.getControl(200).size() >= 2)
     print('')
@@ -906,6 +1027,11 @@ def main():
     check(ready, 'movies shortcut opens that category')
     check(home.getProperty('Nav') == 'movies', 'movies underline follows the shortcut')
     check(any(item.getLabel() == 'HARBOR LIGHTS' for item in home.getControl(200).items), 'movies row lists the film')
+    home.getControl(200).position = next(index for index, item in enumerate(home.getControl(200).items)
+                                         if item.getLabel().startswith('TYLER PERRY'))
+    check(wait_until(lambda: bare_filled(home)), 'movies fills metadata and synopsis for a card that had neither')
+    check(png_size(bare_item(home).properties.get('TitleArt', ''))[1] >= 200,
+          'movies uses the large title plate')
 
     WindowXML.opened = []
     Player().played.clear()
@@ -920,7 +1046,7 @@ def main():
     check('Harbor Lights' in note, 'playback note carries the title for the overlay')
 
     home.onAction(Action(10))
-    ready = wait_until(lambda: home.path == 'root' and not home.busy and home.getControl(200).size() == 2
+    ready = wait_until(lambda: home.path == 'root' and not home.busy and home.getControl(200).size() == 3
                        and any(item.getLabel() == 'HARBOR LIGHTS' for item in home.getControl(200).items))
     check(ready, 'back returns from the category to home')
 
@@ -936,25 +1062,46 @@ def main():
     with home.lock:
         home.rows.append(dict(SERIES_LIST))
     home.getControl(200).position = len(home.rows) - 1
+    path_before = home.path
     played_before = len(Player.shared.played)
+    WindowXML.opened = []
     home.onClick(200)
-    ready = wait_until(lambda: home.path.endswith('B003SERIES') and not home.busy
-                       and home.getControl(200).size() == 2)
-    print('series path %s cards %s played %s' % (home.path, home.getControl(200).size(), len(Player.shared.played)))
-    check(ready, 'a series without one episode opens its episode list')
-    check(len(Player.shared.played) == played_before, 'an episode list does not start playback by itself')
-    labels = [item.getLabel() for item in home.getControl(200).items]
-    check(labels == ['THE BREAKING', 'TO THE EDGE'], 'the episode list shows the episodes')
-    check(not any(getattr(window, 'xml', '') == 'PrimeSceneTitle.xml' for window in WindowXML.opened),
-          'the episode list is the home row')
+    ready = wait_until(lambda: len(Player.shared.played) > played_before and home.path == path_before and not home.busy)
+    print('series path %s played %s opened %s' % (home.path, Player.shared.played[-1:], WindowXML.opened))
+    check(ready and Player.shared.played[-1] == EPISODE_A_URL,
+          'a series with episodes plays the earliest one and does not open a list')
+    check(not WindowXML.opened, 'that episode does not open another window')
+
+    resumed, why = choose_playback([
+        {'title': 'Later', 'url': EPISODE_B_URL, 'video': True,
+         'info': {'mediatype': 'episode', 'season': 1, 'episode': 4, 'progress': 10}},
+        {'title': 'Earlier', 'url': EPISODE_A_URL, 'video': True,
+         'info': {'mediatype': 'episode', 'season': 1, 'episode': 1}},
+    ])
+    check(why == 'resume' and resumed['url'] == EPISODE_B_URL, 'an in-progress episode is the one that plays')
 
     with home.lock:
         home.rows.append(dict(STORE_MOVIE))
     home.getControl(200).position = len(home.rows) - 1
+    path_before = home.path
     home.onClick(200)
-    ready = wait_until(lambda: home.path.endswith('B009MOVIE') and Player.shared.played[-1] == FILM_URL and not home.busy)
-    print('movie detail %s played %s' % (home.path, Player.shared.played[-1]))
+    ready = wait_until(lambda: home.path == path_before and Player.shared.played[-1] == FILM_URL and not home.getProperty('Busy'))
+    print('movie detail %s played %s busy %s' % (home.path, Player.shared.played[-1], [item for item in xbmc.builtins if 'busy' in item.lower()]))
     check(ready, 'a movie detail with one playable item starts that PlayVideo url')
+    check(any(item == 'ActivateWindow(busydialognocancel)' for item in xbmc.builtins),
+          'resolving an ASIN shows a busy indicator')
+    check(home.path == path_before, 'the movie never opens an intermediate listing')
+
+    with home.lock:
+        home.rows.append(dict(SERIES_SEASONS))
+    home.getControl(200).position = len(home.rows) - 1
+    played_before = len(Player.shared.played)
+    home.onClick(200)
+    ready = wait_until(lambda: home.path.endswith('B007SEASONS') and not home.busy
+                       and any(item.getLabel() == 'SEASON 1' for item in home.getControl(200).items))
+    print('picker %s played %s' % (home.path, len(Player.shared.played)))
+    check(ready, 'a series with no playable episode opens the season list')
+    check(len(Player.shared.played) == played_before, 'the season list does not start playback')
 
     dialog.inputs = ['Harbor']
     home.onClick(304)
@@ -972,8 +1119,13 @@ def main():
     check(len(started) > before, 'account button reaches the sign-in and sign-out action')
 
     home.onClick(303)
-    ready = wait_until(lambda: home.path == '__prime_tv__')
+    ready = wait_until(lambda: home.path == '__prime_tv__' and any(
+        item.getLabel().startswith('TYLER PERRY') for item in home.getControl(200).items))
     check(ready, 'tv shortcut opens that category')
+    home.getControl(200).position = next(index for index, item in enumerate(home.getControl(200).items)
+                                         if item.getLabel().startswith('TYLER PERRY'))
+    check(wait_until(lambda: bare_filled(home)), 'tv fills metadata and synopsis for a card that had neither')
+    check(png_size(bare_item(home).properties.get('TitleArt', ''))[1] >= 200, 'tv uses the large title plate')
 
     signed = AuroraHome('PrimeSceneHome.xml', str(ADDON), 'Default', '1080i',
                         globals_instance=g, account_name=lambda: '')
@@ -1033,35 +1185,120 @@ def main():
           'the website data source message is shown')
 
     overlay = PlayerOverlay('PrimeScenePlayer.xml', str(ADDON), 'Default', '1080i')
+    overlay.player = Player()
     overlay.info = {'title': 'Harbor Lights', 'meta': '2021  •  FILM', 'position': 754, 'duration': 9360, 'volume': 35}
     overlay.doModal()
     print('')
     print('=== player ===')
-    print('elapsed %s total %s progress %s' % (
-        overlay.getProperty('Elapsed'), overlay.getProperty('Total'), overlay.getControl(400).percent))
+    print('elapsed %s total %s progress %s chrome %s' % (
+        overlay.getProperty('Elapsed'), overlay.getProperty('Total'), overlay.getControl(400).percent,
+        overlay.getProperty('Chrome')))
+    player_xml = (ADDON / 'resources/skins/Default/1080i/PrimeScenePlayer.xml').read_text(encoding='utf-8')
     check(overlay.xml == 'PrimeScenePlayer.xml', 'player overlay loads PrimeScenePlayer.xml')
+    check('Window.Property(Chrome)' in player_xml and 'stop.png' in player_xml,
+          'player chrome is one Aurora group with a stop control')
     check(overlay.getProperty('Title') == 'HARBOR LIGHTS', 'player title')
+    check(overlay.getProperty('Chrome') == '1', 'player chrome starts visible')
     check(overlay.getProperty('Elapsed') == '12:34', 'elapsed time')
     check(overlay.getProperty('Total') == '2:36:00', 'total time')
     check(overlay.getControl(400).percent == 8, 'progress percent')
+    xbmc.builtins.clear()
     overlay.onClick(501)
     check('PlayerControl(Play)' in xbmc.builtins, 'pause button uses Kodi player controls')
+    overlay.onAction(Action(10))
+    check(overlay.getProperty('Chrome') == '' and not getattr(overlay, 'closed', False),
+          'back hides the chrome and leaves the controls alive')
+    overlay.onAction(Action(12))
+    check(overlay.getProperty('Chrome') == '1', 'pause brings the same chrome back')
+    overlay.hide_chrome()
+    overlay.onAction(Action(11))
+    check(overlay.getProperty('Chrome') == '1', 'info brings the same chrome back')
+    overlay.hide_chrome()
+    overlay.onAction(Action(24))
+    check(overlay.getProperty('Chrome') == '1', 'the OSD key brings the same chrome back')
+    overlay.hide_chrome()
+    overlay.onAction(Action(7))
+    check(overlay.getProperty('Chrome') == '1', 'OK brings the same chrome back')
+    overlay.hide_chrome()
+    Player.shared.time = 100
+    Player.shared.total = 9360
+    overlay.onAction(Action(2))
+    check(Player.shared.time == 110 and overlay.getProperty('Chrome') == '1',
+          'a hidden right press seeks and shows the time bar')
+    overlay.onAction(Action(20))
+    check(Player.shared.time == 120, 'step forward seeks while the chrome is up')
+    xbmc.builtins.clear()
+    overlay.onAction(Action(13))
+    check('PlayerControl(Stop)' in xbmc.builtins and not Player.shared.playing and getattr(overlay, 'closed', False),
+          'stop ends playback and closes the chrome')
     check(overlay_due(True, {'armed': time.time()}, time.time(), False), 'fresh playback may show the overlay')
     check(not overlay_due(True, {'armed': time.time() - 500}, time.time(), False),
           'an old note does not cover someone else playing')
     check(overlay_due(True, {'armed': time.time() - 500}, time.time(), True), 'overlay stays for the title already shown')
     check(not overlay_due(False, {'armed': time.time()}, time.time(), True), 'overlay leaves when playback stops')
 
+    again = PlayerOverlay('PrimeScenePlayer.xml', str(ADDON), 'Default', '1080i')
+    again.player = Player()
+    Player.shared.playing = True
+    Player.shared.subs = ['English']
+    Player.shared.audios = ['English', 'Spanish']
+    again.info = {'title': 'Harbor Lights', 'meta': '2021  •  FILM', 'position': 10, 'duration': 100, 'volume': 40}
+    again.doModal()
+    xbmc.conditions['Window.IsActive(videoosd)'] = True
+    xbmc.conditions['Window.IsActive(seekbar)'] = True
+    xbmc.builtins.clear()
+    check(again.reclaim_skin_osd(), 'a skin OSD that appears during Prime Scene playback is closed')
+    check('Dialog.Close(videoosd,true)' in xbmc.builtins and 'Dialog.Close(seekbar,true)' in xbmc.builtins,
+          'Estuary video OSD and seek bar are dismissed')
+    check(again.getProperty('Chrome') == '1', 'dismissing the skin OSD shows the Aurora chrome')
+    again.refresh_streams()
+    check(again.getProperty('HasSubtitles') == '1' and again.getProperty('HasAudio') == '1',
+          'subtitle and audio controls follow the streams Prime provides')
+    Dialog.choices = []
+    again.onClick(504)
+    again.onClick(505)
+    check([item[0] for item in Dialog.choices] == ['Subtitles', 'Audio'],
+          'subtitle and audio choices use the Aurora dialog')
+    xbmc.conditions.clear()
+    again._chrome_at = 0
+    xbmc.conditions['Player.Paused'] = False
+    again.maintain()
+    check(again.getProperty('Chrome') == '' and not getattr(again, 'closed', False),
+          'the chrome hides on its own while playback continues')
+    xbmc.conditions['Player.Paused'] = True
+    again.reveal()
+    again._chrome_at = 0
+    again.maintain()
+    check(again.getProperty('Chrome') == '1', 'pause keeps the chrome on screen')
+    xbmc.conditions['Player.Paused'] = False
+    Player.shared.playing = False
+    again.maintain()
+    check(getattr(again, 'closed', False), 'the chrome closes when playback ends')
+
     note_playback(PROFILE, 'Harbor Lights', '2021  •  FILM')
     Player.shared.playing = True
+    WindowXML.opened = []
     Monitor.waits = 0
-    Monitor.limit = 3
+    Monitor.limit = 4
     watch_playback(PROFILE)
-    shown = [window for window in WindowXML.shown if getattr(window, 'xml', '') == 'PrimeScenePlayer.xml']
-    check(bool(shown), 'service overlay opens while the noted title is playing')
-    if shown:
-        print('service overlay %s %s' % (shown[-1].getProperty('Title'), shown[-1].getProperty('Elapsed')))
-        check(shown[-1].getProperty('Title') == 'HARBOR LIGHTS', 'service overlay uses the noted title')
+    opened = [window for window in WindowXML.opened if getattr(window, 'xml', '') == 'PrimeScenePlayer.xml']
+    print('service overlays %s' % len(opened))
+    check(len(opened) >= 2, 'the overlay is shown again for the whole playback after it closes')
+    check(all(window.getProperty('Title') == 'HARBOR LIGHTS' and window.getProperty('Chrome') == '1'
+              for window in opened), 'each return uses the Aurora title and chrome')
+    WindowXML.opened = []
+    (Path(PROFILE) / 'aurora-playback.json').unlink()
+    Monitor.waits = 0
+    Monitor.limit = 2
+    watch_playback(PROFILE)
+    check(not any(getattr(window, 'xml', '') == 'PrimeScenePlayer.xml' for window in WindowXML.opened),
+          'another video does not get the Aurora controls')
+    note_playback(PROFILE, 'Harbor Lights', '2021  •  FILM')
+    Player.shared.playing = False
+    Monitor.waits = 0
+    Monitor.limit = 2
+    watch_playback(PROFILE)
+    check(not (Path(PROFILE) / 'aurora-playback.json').exists(), 'ending playback clears the Aurora note')
 
     startup_calls = []
     gui_calls = []

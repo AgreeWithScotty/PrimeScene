@@ -10,7 +10,7 @@ from queue import Empty, Queue
 from re import IGNORECASE
 from re import compile as compile_re
 from re import fullmatch
-from threading import Event, RLock, Thread
+from threading import Event, Lock, RLock, Thread, current_thread
 from time import time
 from traceback import format_exc
 
@@ -20,6 +20,7 @@ import xbmcgui
 
 from .dedicated_bridge import CatalogSigninRequired, ProviderBridge
 from .interface_diagnostics import record
+from .title_art import render_title
 
 _BACK = (9, 10, 92)
 # The visible scrim stays on one matte tone. It does not cycle, and it never
@@ -188,6 +189,71 @@ def _browse_path(pluginid, url):
     return None
 
 
+_SECTION_PATHS = {'root', '__prime_home__', '__prime_movies__', '__prime_tv__'}
+_DETAIL_KEYS = ('plot', 'year', 'duration', 'runtime', 'mpaa', 'rating', 'genre', 'genres',
+                'seasons', 'season', 'episode', 'premiered', 'mediatype', 'fanart', 'thumb', 'poster')
+
+
+def _detail_path(pluginid, row):
+    path = _browse_path(pluginid, (row or {}).get('url'))
+    if not path or path in _SECTION_PATHS or path.startswith(('__prime_page__/', '__legacy')):
+        return None
+    return path
+
+
+def _needs_detail(row):
+    info = (row or {}).get('info') or {}
+    return not (_plain(info.get('plot') or '') and _meta(row))
+
+
+def _richer(rows):
+    """Prefer a present value, and the longer synopsis when several rows have one."""
+    info = {}
+    for row in rows or []:
+        current = row.get('info') or {}
+        for key in _DETAIL_KEYS:
+            value = current.get(key)
+            if value in (None, '', [], {}):
+                continue
+            if key == 'plot' and len(_plain(str(value))) <= len(_plain(str(info.get('plot') or ''))):
+                continue
+            if key == 'plot' or not info.get(key):
+                info[key] = value
+    return info
+
+
+def _is_season_row(row):
+    info = (row or {}).get('info') or {}
+    if _kind(info) == 'season':
+        return True
+    season = info.get('season')
+    return season not in (None, '', 0, '0') and _kind(info) != 'episode'
+
+
+def _season_number(row):
+    info = (row or {}).get('info') or {}
+    try:
+        return int(info.get('season') or 0)
+    except (TypeError, ValueError):
+        return 1 << 20
+
+
+def _season_folders(pluginid, rows):
+    folders = []
+    for row in rows or []:
+        if playback_row(row):
+            continue
+        path = _browse_path(pluginid, row.get('url'))
+        if path:
+            folders.append((path, row))
+    if not folders:
+        return []
+    if len(folders) == 1 or all(_is_season_row(row) for _path, row in folders):
+        folders.sort(key=lambda item: _season_number(item[1]))
+        return folders
+    return []
+
+
 def _fit_art(url, width):
     """Request a cacheable width from Amazon's image host. Other URLs pass through."""
     url = _http(url)
@@ -214,6 +280,63 @@ def _nested_playable(value, row):
     if isinstance(value, dict) and value.get('video', True) and _play_url(value.get('url')):
         return value
     return None
+
+
+def _title_plate(text):
+    """Cached Bebas Neue plate. Failure leaves the hero without a picture."""
+    try:
+        profile = xbmcaddon.Addon(ADDON_ID).getAddonInfo('profile')
+    except Exception:
+        profile = ''
+    try:
+        return render_title(text, Path(profile or '.') / 'title-art')
+    except Exception:
+        return ''
+
+
+def _episode_order(row):
+    info = row.get('info') or {}
+
+    def number(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 1 << 20
+
+    return (number(info.get('season')), number(info.get('episode')), row.get('title') or '')
+
+
+def choose_playback(rows):
+    """The one PlayVideo row a detail page can start, and why.
+
+    A movie is its feature. A series prefers the episode already in progress,
+    otherwise the earliest season and episode. No row means there is no single
+    playable episode and the caller may show the list.
+    """
+    found, seen = [], set()
+    for row in rows or []:
+        target = playback_row(row)
+        if not target:
+            continue
+        url = target.get('url') or ''
+        if not _play_url(url) or url in seen:
+            continue
+        seen.add(url)
+        found.append(target)
+    episodes = [row for row in found if _kind(row.get('info')) == 'episode']
+    if episodes:
+        resumed = [row for row in episodes if _progress(row.get('info')) > 0]
+        if resumed:
+            resumed.sort(key=lambda row: (_progress(row.get('info')), _episode_order(row)))
+            return resumed[-1], 'resume'
+        episodes.sort(key=_episode_order)
+        return episodes[0], 'first'
+    if len(found) == 1:
+        kind = _kind(found[0].get('info'))
+        return found[0], 'movie' if kind in ('movie', 'video', '') else 'only'
+    if found:
+        return found[0], 'only'
+    return None, 'picker'
 
 
 def playback_row(row):
@@ -272,6 +395,9 @@ def _item(row):
     item.setProperty('MediaType', _kind(info))
     item.setProperty('Id', str(row.get('url') or ''))
     item.setProperty('Identity', str(row.get('identity') or ''))
+    plate = _title_plate(title)
+    if plate:
+        item.setProperty('TitleArt', plate)
     try:
         tag = item.getVideoInfoTag()
         progress = _progress(info)
@@ -400,7 +526,13 @@ class AuroraHome(xbmcgui.WindowXML):
         self.account_generation = None
         self._ready = False
         self._restore = None
-        self._play_single = False
+        self.detail_jobs = Queue()
+        self.detail_worker = None
+        self.bridge = None
+        self.bridge_lock = Lock()
+        self.detail_cache = {}
+        self._play_token = 0
+        self._allow_enrich = True
 
     def onInit(self):
         if self._ready:
@@ -440,10 +572,12 @@ class AuroraHome(xbmcgui.WindowXML):
             self.account_generation = account_epoch(self.g.DATA_PATH)
         self._set_hero_status('PRIME SCENE', 'CONNECTING')
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
+        self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
         self.nav = 'home'
         self.navigate('root', remember=False, heading='Home')
         self.setFocusId(200)
         self.worker.start()
+        self.detail_worker.start()
         if self.launch_diagnostics is not None:
             self.launch_diagnostics({'event': 'interface_ready', 'signed_in': True,
                                      'current_window_id': xbmcgui.getCurrentWindowId()})
@@ -477,6 +611,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroTag', tag)
         self.setProperty('HeroSynopsis', '')
         self.setProperty('HeroFanart', '')
+        self.setProperty('HeroTitleArt', _title_plate(title))
 
     def pause_catalog(self, status='Signing out...'):
         self.stop.set()
@@ -491,13 +626,18 @@ class AuroraHome(xbmcgui.WindowXML):
         control = self.getControl(200)
         if hasattr(control, 'reset'):
             control.reset()
-        if self.worker is not None:
-            while self.worker.is_alive():
-                self.worker.join(0.1)
+        for worker in (self.worker, self.detail_worker):
+            if worker is not None:
+                while worker.is_alive():
+                    worker.join(0.1)
         self.worker = None
+        self.detail_worker = None
+        self.bridge = None
         self.jobs = Queue()
+        self.detail_jobs = Queue()
+        self.detail_cache = {}
 
-    def navigate(self, path, remember=True, query=None, selection=0, heading=None, play_single=False):
+    def navigate(self, path, remember=True, query=None, selection=0, heading=None):
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
             return
@@ -513,10 +653,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self.prefetch_at = 0
             self.busy = True
             self._restore = selection or None
-            # Set only for a card that had no PlayVideo row of its own. When
-            # that detail page comes back with exactly one playable item, it
-            # starts. Category shortcuts leave this false.
-            self._play_single = bool(play_single)
             token = self.generation
         self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
         self.setProperty('Section', (self.heading or 'Home').upper())
@@ -557,29 +693,38 @@ class AuroraHome(xbmcgui.WindowXML):
                 from .account_state import current_account
                 if not current_account(self.g.DATA_PATH, self.account_generation):
                     return
-            had = bool(self.rows)
-            additions = []
+            staged = []
             for row in packet.get('rows') or []:
                 key = row.get('url')
                 if any(existing.get('url') == key for existing in self.rows):
                     continue
+                if any(existing.get('url') == key for existing in staged):
+                    continue
                 info = dict(row.get('info') or {})
                 self._note_artwork(info)
-                stored = dict(row, info=info)
-                self.rows.append(stored)
-                additions.append(_item(stored))
-            self.next_path = packet.get('next')
-            rows = list(self.rows)
-        if additions:
-            control = self.getControl(200)
-            if not had and hasattr(control, 'reset'):
+                staged.append(dict(row, info=info))
+        # Plates are drawn here, off the GUI thread and outside the row lock,
+        # so a slow title never blocks left/right or the next catalogue page.
+        additions = [_item(stored) for stored in staged]
+        control = self.getControl(200)
+        with self.lock:
+            if self.stop.is_set() or token != self.generation:
+                return
+            had = bool(self.rows)
+            if additions and not had and hasattr(control, 'reset'):
                 control.reset()
             for item in additions:
                 control.addItem(item)
-            if not had and self._restore and self._restore < len(rows):
-                if hasattr(control, 'selectItem'):
-                    control.selectItem(self._restore)
-                self._restore = None
+            self.rows.extend(staged)
+            self.next_path = packet.get('next')
+            count = len(self.rows)
+            restore = self._restore
+        if additions and not had and restore and restore < count and hasattr(control, 'selectItem'):
+            control.selectItem(restore)
+            with self.lock:
+                if self._restore == restore:
+                    self._restore = None
+        if additions:
             self.setProperty('Section', (self.heading or 'Home').upper())
 
     def _work(self):
@@ -587,6 +732,7 @@ class AuroraHome(xbmcgui.WindowXML):
             # The landing dashboard does not need the playback provider. Movies,
             # TV and legacy sections ask the bridge for it when they are opened.
             bridge = ProviderBridge(None, self.g, initialize_provider=self.initialize_provider)
+            self.bridge = bridge
             record(self.g, 'catalog_worker_ready')
         except Exception as error:
             record(self.g, 'provider_init_failed', error)
@@ -604,12 +750,12 @@ class AuroraHome(xbmcgui.WindowXML):
             if token != self.generation:
                 continue
             page_start = len(self.rows)
-            finished = False
             try:
                 record(self.g, 'catalog_request_started')
-                bridge.browse_progressive(
-                    path, lambda packet: self._publish(token, packet),
-                    lambda: token == self.generation and not self.stop.is_set(), query=query)
+                with self.bridge_lock:
+                    bridge.browse_progressive(
+                        path, lambda packet: self._publish(token, packet),
+                        lambda: token == self.generation and not self.stop.is_set(), query=query)
                 record(self.g, 'catalog_request_finished')
                 with self.lock:
                     if token == self.generation and not self.stop.is_set():
@@ -618,7 +764,6 @@ class AuroraHome(xbmcgui.WindowXML):
                         if not self.rows:
                             self._set_hero_status((self.heading or 'Prime Scene').upper(),
                                                   'NO TITLES WERE RETURNED. TRY HOME OR SEARCH.')
-                finished = True
             except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
@@ -629,18 +774,10 @@ class AuroraHome(xbmcgui.WindowXML):
                                    'UNABLE TO FINISH LOADING. RETURN HOME OR OPEN DIAGNOSTICS.')
                         self._set_hero_status((self.heading or 'Prime Scene').upper(), message)
             finally:
-                single = None
                 with self.lock:
                     if token == self.generation:
                         self.busy = False
-                        if finished and self._play_single:
-                            targets = [item for item in (playback_row(row) for row in self.rows) if item]
-                            if len(targets) == 1:
-                                single = targets[0]
-                        self._play_single = False
                         self._prefetch()
-                if single is not None and not self.stop.is_set():
-                    play_row(single, self.g.DATA_PATH)
 
     def _prefetch(self):
         with self.lock:
@@ -659,15 +796,182 @@ class AuroraHome(xbmcgui.WindowXML):
                 return None
             return dict(self.rows[index])
 
-    def _open_browse(self, row, play_single=False):
+    def _open_browse(self, row):
         path = _browse_path(self.g.pluginid, row.get('url'))
         if path:
-            self.navigate(path, heading=row.get('title') or 'Prime Scene', play_single=play_single)
+            self.navigate(path, heading=row.get('title') or 'Prime Scene')
             return True
         if '?mode=Search' in (row.get('url') or ''):
             self._search()
             return True
         return False
+
+    def _detail_loop(self):
+        while not self.stop.is_set():
+            try:
+                job = self.detail_jobs.get(timeout=0.15)
+            except Empty:
+                if self._allow_enrich and not self.stop.is_set():
+                    self._queue_enrich()
+                continue
+            if self.stop.is_set() or not job:
+                return
+            kind = job[0]
+            if kind == 'enrich':
+                self._enrich(job[1])
+            elif kind == 'play':
+                self._play_resolved(job[1], job[2], job[3], job[4])
+
+    def _queue_enrich(self):
+        row = self._selected_row()
+        path = _detail_path(self.g.pluginid, row)
+        if not path or not _needs_detail(row):
+            return
+        cached = self.detail_cache.get(path)
+        if cached and cached.get('how') != 'error':
+            self._paint_cached(path)
+            return
+        if cached and cached.get('how') == 'error':
+            return
+        self.detail_jobs.put(('enrich', path))
+
+    def _enrich(self, path):
+        if self.stop.is_set():
+            return
+        cached = self.detail_cache.get(path)
+        if cached and cached.get('how') != 'error':
+            self._paint_cached(path)
+            return
+        playable, how, packet = self._resolve_playable(path)
+        if how == 'wait' or self.stop.is_set():
+            return
+        if packet is None:
+            self.detail_cache[path] = {'playable': None, 'how': 'error', 'info': {}}
+            return
+        self._remember(path, playable, how, packet)
+
+    def _fetch_detail(self, path):
+        bridge = self.bridge
+        if bridge is None or self.stop.is_set():
+            return 'wait'
+        packet = {'rows': []}
+
+        def publish(part):
+            if part:
+                packet['rows'].extend(part.get('rows') or [])
+
+        try:
+            with self.bridge_lock:
+                if self.stop.is_set():
+                    return 'wait'
+                bridge.browse_progressive(path, publish, lambda: not self.stop.is_set())
+        except Exception as error:
+            xbmc.log('[Prime Scene] Detail lookup failed: ' + type(error).__name__, xbmc.LOGERROR)
+            return None
+        return packet
+
+    def _resolve_playable(self, path, depth=0):
+        packet = self._fetch_detail(path)
+        if packet == 'wait':
+            return None, 'wait', None
+        if packet is None:
+            return None, 'error', None
+        rows = packet.get('rows') or []
+        playable, how = choose_playback(rows)
+        if playable is not None or depth >= 1:
+            return playable, how if playable is not None else 'picker', packet
+        folders = _season_folders(self.g.pluginid, rows)
+        if not folders:
+            return None, 'picker' if rows else 'empty', packet
+        child = folders[0][0]
+        if not child or child == path:
+            return None, 'picker', packet
+        nested, nested_how, nested_packet = self._resolve_playable(child, depth + 1)
+        merged = {'rows': rows + ((nested_packet or {}).get('rows') or [])}
+        if nested is not None:
+            label = 'first' if _kind(nested.get('info')) == 'episode' else nested_how
+            return nested, label, merged
+        return None, 'picker', packet
+
+    def _remember(self, path, playable, how, packet):
+        info = _richer((packet or {}).get('rows'))
+        self.detail_cache[path] = {'playable': playable, 'how': how, 'info': info}
+        xbmc.log('[Prime Scene] Playback choice for %s: %s' % (path, how), xbmc.LOGINFO)
+        self._paint_cached(path)
+
+    def _paint_cached(self, path):
+        cached = self.detail_cache.get(path)
+        if not cached:
+            return
+        info = cached.get('info') or {}
+        if not info:
+            return
+        with self.lock:
+            matches = [(index, dict(row)) for index, row in enumerate(self.rows)
+                       if _detail_path(self.g.pluginid, row) == path]
+        control = self.getControl(200)
+        for index, row in matches:
+            current = dict(row.get('info') or {})
+            for key, value in info.items():
+                if current.get(key) in (None, '', [], {}) and value not in (None, '', [], {}):
+                    current[key] = value
+            with self.lock:
+                if index < len(self.rows) and _detail_path(self.g.pluginid, self.rows[index]) == path:
+                    self.rows[index]['info'] = dict(current)
+            if not hasattr(control, 'getListItem'):
+                continue
+            try:
+                item = control.getListItem(index)
+            except Exception:
+                continue
+            painted = {'title': row.get('title'), 'info': current}
+            item.setProperty('Meta', _meta(painted))
+            item.setProperty('Plot', _plain(current.get('plot') or ''))
+            item.setProperty('Year', _year_label(current))
+            runtime = current.get('duration') if current.get('duration') not in (None, '') else current.get('runtime')
+            item.setProperty('Runtime', _runtime_label(runtime))
+            item.setProperty('Rating', _rating_label(current))
+            item.setProperty('Genre', _genre_label(current))
+            art = {}
+            fanart = _fit_art(current.get('fanart'), _HERO_ART)
+            thumb = _fit_art(current.get('thumb') or current.get('poster'), _CARD_ART)
+            if fanart:
+                art['fanart'] = fanart
+            if thumb:
+                art['thumb'] = thumb
+            if art and hasattr(item, 'setArt'):
+                item.setArt(art)
+
+    def _play_resolved(self, token, generation, path, title):
+        try:
+            cached = self.detail_cache.get(path)
+            if cached is None or cached.get('how') in ('error', 'wait'):
+                playable, how, packet = self._resolve_playable(path)
+                if how == 'wait':
+                    self.g.dialog.ok('Prime Scene', 'The catalogue is still opening. Try this title again.')
+                    return
+                if packet is not None:
+                    self._remember(path, playable, how, packet)
+                    cached = self.detail_cache.get(path)
+                else:
+                    cached = {'playable': None, 'how': 'error', 'info': {}}
+                    self.detail_cache[path] = cached
+            if token != self._play_token or generation != self.generation or self.stop.is_set():
+                return
+            playable = (cached or {}).get('playable')
+            how = (cached or {}).get('how')
+            if playable is not None:
+                xbmc.log('[Prime Scene] Playing %s (%s) without a detail page' % (path, how), xbmc.LOGINFO)
+                play_row(playable, self.g.DATA_PATH)
+                return
+            if how == 'picker':
+                self.navigate(path, heading=title or 'Prime Scene')
+                return
+            self.g.dialog.ok('Prime Scene', 'This title did not return a video to play.')
+        finally:
+            if token == self._play_token:
+                self.setProperty('Busy', '')
+                xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
 
     def _search(self):
         phrase = self.g.dialog.input('Search Prime Video')
@@ -721,14 +1025,24 @@ class AuroraHome(xbmcgui.WindowXML):
             if not row:
                 return
             target = playback_row(row)
+            path = _detail_path(self.g.pluginid, row)
+            if target is None and path:
+                cached = self.detail_cache.get(path)
+                if cached and cached.get('playable') is not None:
+                    target = cached['playable']
             if target is not None:
                 play_row(target, self.g.DATA_PATH)
                 return
-            # No PlayVideo row on the card. A series with a next or first
-            # episode already returned above. What remains is a detail link:
-            # open it, and start playback when that page has one playable item.
-            if not self._open_browse(row, play_single=True):
+            if not path:
                 self.g.dialog.ok('Prime Scene', 'This menu item is unavailable here. Open Settings for account options.')
+                return
+            # The rail card has no ASIN. Resolve it away from this click and
+            # hand the result to PlayVideo. The listing stays where it is.
+            self._play_token += 1
+            token = self._play_token
+            self.setProperty('Busy', '1')
+            xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
+            self.detail_jobs.put(('play', token, self.generation, path, row.get('title') or 'Prime Scene'))
 
     def onAction(self, action):
         # Left and right belong to the list. The hero reads Container(200),
@@ -747,12 +1061,53 @@ class AuroraHome(xbmcgui.WindowXML):
             self.close()
 
 
+_SEEK_STEPS = {1: -10, 2: 10, 20: 10, 21: -10, 22: 30, 23: -30, 16: 30, 17: -30, 77: 10, 78: -10}
+_PAUSE_ACTIONS = {12, 79, 229}
+_INFO_ACTIONS = {11, 18, 24, 163}
+_SKIN_OSDS = ('videoosd', 'seekbar', 'videobookmarks', 'playerprocessinfo')
+_CHROME_SECONDS = 5
+
+
+def _playing(player):
+    try:
+        return bool(player.isPlaying())
+    except Exception:
+        return False
+
+
+def _player_paused():
+    try:
+        return bool(xbmc.getCondVisibility('Player.Paused'))
+    except Exception:
+        return False
+
+
 class PlayerOverlay(xbmcgui.WindowXMLDialog):
+    """One set of playback controls for the whole Prime Scene title.
+
+    The dialog stays open from the start of playback until it ends. Back hides
+    the chrome the first time and stops the second time, so Estuary's VideoOSD
+    never becomes the control scheme. Pause, OK, info and seek bring the same
+    chrome back. automatic is off in the headless test, which calls maintain().
+    """
+
+    automatic = True
+
     def __init__(self, *args, **kwargs):
         _prepare(self, args)
         self.info = {}
+        self.player = None
+        self._subs = []
+        self._audios = []
+        self._chrome_at = 0
+        self._halt = Event()
+        self._pump = None
+        self._ready_player = False
 
     def onInit(self):
+        if self._ready_player:
+            return
+        self._ready_player = True
         info = self.info or {}
         self.setProperty('Title', (info.get('title') or 'PRIME SCENE').upper())
         self.setProperty('Meta', info.get('meta') or '')
@@ -760,18 +1115,179 @@ class PlayerOverlay(xbmcgui.WindowXMLDialog):
         volume = self.getControl(520)
         if hasattr(volume, 'setPercent'):
             volume.setPercent(int(info.get('volume') or 40))
+        self.reveal()
+        if self.automatic and self._pump is None:
+            self._pump = Thread(target=self._run, name='AuroraPlayer', daemon=True)
+            self._pump.start()
+
+    def _run(self):
+        while not self._halt.is_set():
+            self.maintain()
+            if self._halt.wait(0.2):
+                return
+
+    def close(self):
+        self._halt.set()
+        pump = self._pump
+        self._pump = None
+        if pump is not None and pump is not current_thread() and pump.is_alive():
+            pump.join(1)
+        super(PlayerOverlay, self).close()
+
+    def reveal(self):
+        self._chrome_at = time()
+        self.setProperty('Chrome', '1')
+        try:
+            self.setFocusId(501)
+        except Exception:
+            pass
+
+    def hide_chrome(self):
+        self.setProperty('Chrome', '')
 
     def onAction(self, action):
-        if action.getId() in _BACK:
-            self.close()
+        aid = action.getId()
+        hidden = self.getProperty('Chrome') != '1'
+        if aid in _BACK:
+            if hidden:
+                self._stop_playback()
+            else:
+                self.hide_chrome()
+            return
+        if aid == 13:
+            self._stop_playback()
+            return
+        if aid == 25:
+            self.reveal()
+            self._choose_subtitles()
+            return
+        delta = _SEEK_STEPS.get(aid)
+        if delta is not None and (hidden or aid not in (1, 2)):
+            self._seek(delta)
+            self.reveal()
+            return
+        if hidden and aid in _PAUSE_ACTIONS.union({7}):
+            self.reveal()
+            xbmc.executebuiltin('PlayerControl(Play)')
+            return
+        if aid in _INFO_ACTIONS:
+            self.reveal()
+            return
+        if aid in _PAUSE_ACTIONS:
+            self.reveal()
+            xbmc.executebuiltin('PlayerControl(Play)')
+            return
+        if aid == 7:
+            self._chrome_at = time()
 
     def onClick(self, control_id):
+        self.reveal()
         if control_id == 500:
-            xbmc.executebuiltin('PlayerControl(Previous)')
+            self._seek(-10)
         elif control_id == 501:
             xbmc.executebuiltin('PlayerControl(Play)')
         elif control_id == 502:
-            xbmc.executebuiltin('PlayerControl(Next)')
+            self._seek(10)
+        elif control_id == 503:
+            self._stop_playback()
+        elif control_id == 504:
+            self._choose_subtitles()
+        elif control_id == 505:
+            self._choose_audio()
+
+    def _seek(self, delta):
+        player = self.player
+        if player is None:
+            return
+        try:
+            now = float(player.getTime() or 0)
+            total = float(player.getTotalTime() or 0)
+        except Exception:
+            return
+        target = max(0, now + delta)
+        if total:
+            target = min(total, target)
+        try:
+            player.seekTime(target)
+        except Exception:
+            xbmc.executebuiltin('PlayerControl(Seek)')
+        self.apply_times(target, total)
+
+    def _stop_playback(self):
+        xbmc.executebuiltin('PlayerControl(Stop)')
+        player = self.player
+        if player is not None:
+            try:
+                player.stop()
+            except Exception:
+                pass
+        self.close()
+
+    def refresh_streams(self):
+        player = self.player
+        subs, audios = [], []
+        if player is not None:
+            try:
+                subs = list(player.getAvailableSubtitleStreams() or [])
+            except Exception:
+                subs = []
+            try:
+                audios = list(player.getAvailableAudioStreams() or [])
+            except Exception:
+                audios = []
+        self._subs = subs
+        self._audios = audios
+        self.setProperty('HasSubtitles', '1' if subs else '')
+        self.setProperty('HasAudio', '1' if len(audios) > 1 else '')
+
+    def _choose_subtitles(self):
+        self.refresh_streams()
+        if not self._subs:
+            return
+        choice = xbmcgui.Dialog().select('Subtitles', ['Off'] + self._subs)
+        player = self.player
+        if choice < 0 or player is None:
+            return
+        try:
+            if choice == 0:
+                if hasattr(player, 'showSubtitles'):
+                    player.showSubtitles(False)
+            else:
+                if hasattr(player, 'setSubtitleStream'):
+                    player.setSubtitleStream(choice - 1)
+                if hasattr(player, 'showSubtitles'):
+                    player.showSubtitles(True)
+        except Exception:
+            pass
+
+    def _choose_audio(self):
+        self.refresh_streams()
+        if len(self._audios) < 2:
+            return
+        choice = xbmcgui.Dialog().select('Audio', self._audios)
+        player = self.player
+        if choice < 0 or player is None:
+            return
+        try:
+            if hasattr(player, 'setAudioStream'):
+                player.setAudioStream(choice)
+        except Exception:
+            pass
+
+    def reclaim_skin_osd(self):
+        """Drop Estuary's OSD if a key opened it, and show this chrome instead."""
+        opened = False
+        for name in _SKIN_OSDS:
+            try:
+                active = xbmc.getCondVisibility('Window.IsActive(%s)' % name)
+            except Exception:
+                active = False
+            if active:
+                xbmc.executebuiltin('Dialog.Close(%s,true)' % name)
+                opened = True
+        if opened:
+            self.reveal()
+        return opened
 
     def apply_times(self, position, duration):
         self.setProperty('Elapsed', _clock(position))
@@ -791,49 +1307,55 @@ class PlayerOverlay(xbmcgui.WindowXMLDialog):
             return
         self.apply_times(position, duration)
 
-
-def playback_overlay(profile):
-    """Modeless player chrome. The service calls tick() while a title plays."""
-    note = _read_note(profile) or {}
-    window = PlayerOverlay(_PLAYER_XML, _addon_path(), 'Default', '1080i')
-    window.info = {
-        'title': note.get('title') or '',
-        'meta': note.get('meta') or '',
-        'volume': 40,
-    }
-    window.show()
-    window.onInit()
-    return window
+    def maintain(self):
+        player = self.player
+        if player is None or not _playing(player):
+            self.close()
+            return
+        self.reclaim_skin_osd()
+        self.tick(player)
+        self.refresh_streams()
+        if self.getProperty('Chrome') == '1' and not _player_paused():
+            if time() - (self._chrome_at or 0) >= _CHROME_SECONDS:
+                self.hide_chrome()
 
 
 def watch_playback(profile):
-    """Show Aurora player chrome only for a title this add-on just started."""
+    """Keep Aurora's controls up for the whole of a Prime Scene playback.
+
+    doModal takes the remote while our file is playing, including after the
+    chrome was hidden and after the dialog was closed early. Other videos do
+    not open it, and the dialog is closed when playback ends.
+    """
     monitor = xbmc.Monitor()
     player = xbmc.Player()
-    overlay = None
     latched = False
     while not monitor.abortRequested():
-        playing = False
-        try:
-            playing = bool(player.isPlaying())
-        except Exception:
-            playing = False
-        due = overlay_due(playing, _read_note(profile), time(), latched)
-        if due:
+        playing = _playing(player)
+        note = _read_note(profile)
+        if overlay_due(playing, note, time(), latched):
             latched = True
-            if overlay is None:
-                overlay = playback_overlay(profile)
-            else:
-                overlay.tick(player)
-        elif overlay is not None:
-            overlay.close()
-            overlay = None
+            dialog = PlayerOverlay(_PLAYER_XML, _addon_path(), 'Default', '1080i')
+            dialog.player = player
+            dialog.profile = profile
+            dialog.info = {
+                'title': (note or {}).get('title') or '',
+                'meta': (note or {}).get('meta') or '',
+                'volume': 40,
+            }
+            try:
+                dialog.doModal()
+            except Exception:
+                xbmc.log('[Prime Scene] Player controls stopped\n' + format_exc(), xbmc.LOGERROR)
+            if not _playing(player):
+                latched = False
+                _clear_note(profile)
+        else:
             latched = False
-            _clear_note(profile)
-        if monitor.waitForAbort(0.5):
+            if not playing:
+                _clear_note(profile)
+        if monitor.waitForAbort(0.2):
             break
-    if overlay is not None:
-        overlay.close()
 
 
 def open_interface(globals_instance, settings_instance, initialize_provider=None, account_name=None,
@@ -850,9 +1372,10 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
         window.doModal()
     finally:
         window.stop.set()
-        if window.worker is not None:
-            while window.worker.is_alive():
-                window.worker.join(0.1)
+        for worker in (window.worker, getattr(window, 'detail_worker', None)):
+            if worker is not None:
+                while worker.is_alive():
+                    worker.join(0.1)
     if window.init_error is not None:
         if launch_diagnostics is not None:
             launch_diagnostics({'event': 'interface_initialization_failed',

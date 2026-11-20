@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.2.3" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.2.4" provider-name="AgreeWithScotty">
     <requires>
       <import addon="xbmc.python" version="3.0.1" />
       <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -27,7 +27,7 @@
       <summary lang="en_GB">Prime Video in the Aurora Cinema interface</summary>
       <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
       <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-      <news>0.2.3[CR]- The focused title, metadata and full synopsis stay on the home screen.[CR]- Choosing a card plays it. A series opens its episode list when it has no single episode to play.[CR]- Moving across the row no longer waits on Python.</news>
+      <news>0.2.4[CR]- The focused title is large condensed type, with metadata and the synopsis, on every home view.[CR]- A movie or episode plays as soon as its id is resolved. A series plays one episode when it can, and opens a list only when it cannot.[CR]- Aurora's playback controls stay up for the whole title. Pause, OK, info and seek bring them back.</news>
     </extension>
   </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
