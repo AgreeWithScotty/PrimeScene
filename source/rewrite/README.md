@@ -1,7 +1,7 @@
 # Prime Scene for Prime Video
 
 Standalone Kodi application with permanent ID `plugin.video.primeinterface`.
-Current release: 0.2.0. Install updates through the ScottyWins repository; do not
+Current release: 0.2.1. Install updates through the ScottyWins repository; do not
 uninstall between versions. Account data belongs only to this add-on.
 
 The Aurora Cinema window opens directly from Video add-ons: a full-bleed hero,

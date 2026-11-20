@@ -11,6 +11,7 @@ from queue import Empty, Queue
 from re import sub
 from threading import Event, RLock, Thread
 from time import time
+from traceback import format_exc
 
 import xbmc
 import xbmcaddon
@@ -25,6 +26,14 @@ _TINTS = ('66181C22', '661C1916', '66141A1C', '661A1814', '66121618')
 _NOTE = 'aurora-playback.json'
 _NOTE_WINDOW = 120
 ADDON_ID = 'plugin.video.primeinterface'
+# Kodi 21 WindowXML::WindowXML looks up xmlFilename in the active skin first
+# (<skin>/<res>/<xmlFilename>) and only then in
+# <scriptPath>/resources/skins/<defaultSkin>/<defaultRes>/<xmlFilename>.
+# Estuary always ships Home.xml, so that name loads the skin window. These
+# names are not skin windows, so the add-on files are the ones that open.
+_HOME_XML = 'PrimeSceneHome.xml'
+_TITLE_XML = 'PrimeSceneTitle.xml'
+_PLAYER_XML = 'PrimeScenePlayer.xml'
 
 
 def _addon_path():
@@ -195,6 +204,15 @@ def _clock(seconds):
     return '%d:%02d' % (minutes, secs)
 
 
+def failure_detail(error):
+    """One line for the Kodi dialog. The traceback is logged separately."""
+    text = ' '.join(str(error).split())
+    name = type(error).__name__
+    if not text or text == name:
+        return name
+    return name + ': ' + text
+
+
 def _prepare(window, args):
     # Kodi builds the WindowXML from the filename before this Python __init__.
     # Calling the base constructor again passes those arguments a second time.
@@ -249,7 +267,9 @@ class AuroraHome(xbmcgui.WindowXML):
         try:
             self._initialize_controls()
         except Exception as error:
-            self.init_error = type(error).__name__
+            self.init_error = failure_detail(error)
+            self.init_error_type = type(error).__name__
+            xbmc.log('[Prime Scene] The interface could not initialize\n' + format_exc(), xbmc.LOGERROR)
             record(self.g, 'window_init_failed', error)
             self.stop.set()
             self.close()
@@ -720,7 +740,7 @@ class PlayerOverlay(xbmcgui.WindowXMLDialog):
 
 
 def open_title(video, related, plugin_path, profile):
-    window = TitleWindow('Title.xml', plugin_path, 'Default', '1080i')
+    window = TitleWindow(_TITLE_XML, plugin_path, 'Default', '1080i')
     window.video = video
     window.related = list(related or [])
     window.profile = profile
@@ -731,7 +751,7 @@ def open_title(video, related, plugin_path, profile):
 def playback_overlay(profile):
     """Modeless player chrome. The service calls tick() while a title plays."""
     note = _read_note(profile) or {}
-    window = PlayerOverlay('Player.xml', _addon_path(), 'Default', '1080i')
+    window = PlayerOverlay(_PLAYER_XML, _addon_path(), 'Default', '1080i')
     window.info = {
         'title': note.get('title') or '',
         'meta': note.get('meta') or '',
@@ -778,7 +798,7 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
         globals_instance.dialog.ok('Prime Scene', 'Choose Website under Settings > Data Source to browse Prime Scene.')
         return False
     record(globals_instance, 'window_creating')
-    window = AuroraHome('Home.xml', globals_instance.PLUGIN_PATH, 'Default', '1080i',
+    window = AuroraHome(_HOME_XML, globals_instance.PLUGIN_PATH, 'Default', '1080i',
                         globals_instance=globals_instance, initialize_provider=initialize_provider,
                         account_name=account_name, account_action=account_action,
                         offer_signin=offer_signin, launch_diagnostics=launch_diagnostics)
@@ -793,7 +813,9 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
             window.follower.join(0.2)
     if window.init_error is not None:
         if launch_diagnostics is not None:
-            launch_diagnostics({'event': 'interface_initialization_failed', 'error_type': window.init_error,
+            launch_diagnostics({'event': 'interface_initialization_failed',
+                                'error_type': getattr(window, 'init_error_type', None) or window.init_error,
+                                'error': window.init_error,
                                 'current_window_id': xbmcgui.getCurrentWindowId()})
         globals_instance.dialog.ok('Prime Scene', 'The interface could not initialize (' +
                                    window.init_error + '). Your sign-in is saved.')

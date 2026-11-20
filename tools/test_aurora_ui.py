@@ -6,6 +6,7 @@ Checks the Aurora Cinema window XML, textures, routing, focus tint,
 detail view and playback handoff. The catalogue bridge is faked; no
 account and no network are used.
 """
+import ast
 import os
 import sys
 import tempfile
@@ -15,7 +16,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.0.zip'
+ZIP_PATH = ROOT / 'packages' / 'plugin.video.primeinterface' / 'plugin.video.primeinterface-0.2.1.zip'
 PROFILE = tempfile.mkdtemp(prefix='primescene-aurora-')
 
 FILM_URL = ('plugin://plugin.video.primeinterface/?mode=PlayVideo&asin=B001'
@@ -124,7 +125,7 @@ class Addon(object):
             'path': str(ADDON),
             'profile': PROFILE,
             'name': 'Prime Scene',
-            'version': '0.2.0',
+            'version': '0.2.1',
             'icon': str(ADDON / 'icon.png'),
             'fanart': str(ADDON / 'fanart.png'),
         }[key]
@@ -313,7 +314,7 @@ def referenced_files(addon):
     media = skin / 'media'
     fonts = skin / 'fonts'
     missing = []
-    for name in ('Font.xml', 'Home.xml', 'Title.xml', 'Player.xml'):
+    for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeSceneTitle.xml', 'PrimeScenePlayer.xml'):
         root = ET.parse(skin / '1080i' / name).getroot()
         print('parsed %s' % name)
         for node in root.iter():
@@ -370,6 +371,227 @@ class FakeBridge(object):
             publish({'rows': [SHOW], 'next': None})
 
 
+# skin.estuary xml/ on Kodi 21.2 Omega. WindowXML uses one of these names
+# from the active skin and does not open the add-on copy.
+_OMEGA_ESTUARY_WINDOWS = frozenset((
+    'AddonBrowser.xml', 'Custom_1100_AddonLauncher.xml', 'Custom_1101_SettingsList.xml',
+    'Custom_1102_TextViewer.xml', 'Custom_1103_VolumeSlider.xml', 'Custom_1104_Fanart.xml',
+    'Custom_1105_MusicOSDSettings.xml', 'Custom_1107_SearchDialog.xml',
+    'Custom_1109_TopBarOverlay.xml', 'Custom_1110_TempoControl.xml', 'Defaults.xml',
+    'DialogAddonInfo.xml', 'DialogAddonSettings.xml', 'DialogBusy.xml', 'DialogButtonMenu.xml',
+    'DialogColorPicker.xml', 'DialogConfirm.xml', 'DialogContextMenu.xml',
+    'DialogExtendedProgressBar.xml', 'DialogFullScreenInfo.xml', 'DialogGameControllers.xml',
+    'DialogKeyboard.xml', 'DialogMediaSource.xml', 'DialogMusicInfo.xml', 'DialogNotification.xml',
+    'DialogNumeric.xml', 'DialogPVRChannelGuide.xml', 'DialogPVRChannelManager.xml',
+    'DialogPVRChannelsOSD.xml', 'DialogPVRGroupManager.xml', 'DialogPVRGuideControls.xml',
+    'DialogPVRGuideSearch.xml', 'DialogPVRInfo.xml', 'DialogPVRRadioRDSInfo.xml',
+    'DialogPictureInfo.xml', 'DialogPlayerProcessInfo.xml', 'DialogSeekBar.xml',
+    'DialogSelect.xml', 'DialogSettings.xml', 'DialogSlider.xml', 'DialogSubtitles.xml',
+    'DialogTextViewer.xml', 'DialogVideoInfo.xml', 'DialogVideoManager.xml', 'DialogVolumeBar.xml',
+    'EventLog.xml', 'FileBrowser.xml', 'FileManager.xml', 'Font.xml', 'GameOSD.xml', 'Home.xml',
+    'Includes.xml', 'Includes_Animations.xml', 'Includes_Buttons.xml', 'Includes_DialogSelect.xml',
+    'Includes_Games.xml', 'Includes_Home.xml', 'Includes_MediaMenu.xml', 'Includes_MusicInfo.xml',
+    'Includes_PVR.xml', 'LoginScreen.xml', 'MusicOSD.xml', 'MusicVisualisation.xml',
+    'MyFavourites.xml', 'MyGames.xml', 'MyMusicNav.xml', 'MyMusicPlaylistEditor.xml',
+    'MyPVRChannels.xml', 'MyPVRGuide.xml', 'MyPVRRecordings.xml', 'MyPVRSearch.xml',
+    'MyPVRTimers.xml', 'MyPics.xml', 'MyPlaylist.xml', 'MyPrograms.xml', 'MyVideoNav.xml',
+    'MyWeather.xml', 'PlayerControls.xml', 'Pointer.xml', 'Settings.xml', 'SettingsCategory.xml',
+    'SettingsProfile.xml', 'SettingsScreenCalibration.xml', 'SettingsSystemInfo.xml',
+    'SkinSettings.xml', 'SlideShow.xml', 'SmartPlaylistEditor.xml', 'SmartPlaylistRule.xml',
+    'Startup.xml', 'Timers.xml', 'Variables.xml', 'VideoFullScreen.xml', 'VideoOSD.xml',
+    'VideoOSDBookmarks.xml', 'View_500_Wall.xml', 'View_501_Banner.xml', 'View_502_FanArt.xml',
+    'View_503_NowPlaying.xml', 'View_50_List.xml', 'View_51_Poster.xml', 'View_52_IconWall.xml',
+    'View_53_Shift.xml', 'View_54_InfoWall.xml', 'View_55_WideList.xml',
+))
+_CONTAINER_TYPES = frozenset(('fixedlist', 'list', 'wraplist', 'panel'))
+_CONTROL_METHODS = {
+    'reset': _CONTAINER_TYPES,
+    'addItem': _CONTAINER_TYPES,
+    'addItems': _CONTAINER_TYPES,
+    'getSelectedPosition': _CONTAINER_TYPES,
+    'selectItem': _CONTAINER_TYPES,
+    'size': _CONTAINER_TYPES,
+    'getListItem': _CONTAINER_TYPES,
+    'setColorDiffuse': frozenset(('image',)),
+    'setImage': frozenset(('image',)),
+    'setPercent': frozenset(('progress', 'slider')),
+}
+
+
+def _module_strings(tree):
+    values = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            value = node.value
+            if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                values[node.targets[0].id] = value.value
+    return values
+
+
+def _string_value(node, constants):
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.Name):
+        return constants.get(node.id)
+    return None
+
+
+def _getcontrol_id(node):
+    if not isinstance(node, ast.Call):
+        return None
+    func = node.func
+    if not isinstance(func, ast.Attribute) or func.attr != 'getControl' or not node.args:
+        return None
+    arg = node.args[0]
+    if isinstance(arg, ast.Constant) and type(arg.value) is int:
+        return arg.value
+    return 'dynamic'
+
+
+def _control_uses(class_node):
+    """Map getControl ids in one window class to the methods called on them."""
+    uses = {}
+
+    class Visitor(ast.NodeVisitor):
+        def __init__(self):
+            self.bound = {}
+
+        def visit_FunctionDef(self, node):
+            saved = self.bound
+            self.bound = {}
+            for stmt in node.body:
+                self.visit(stmt)
+            self.bound = saved
+
+        visit_AsyncFunctionDef = visit_FunctionDef
+
+        def visit_Assign(self, node):
+            control_id = _getcontrol_id(node.value)
+            if (control_id not in (None, 'dynamic') and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)):
+                self.bound[node.targets[0].id] = control_id
+                uses.setdefault(control_id, set())
+            elif control_id == 'dynamic':
+                uses.setdefault('dynamic', set())
+            self.generic_visit(node)
+
+        def visit_Call(self, node):
+            control_id = _getcontrol_id(node)
+            if control_id == 'dynamic':
+                uses.setdefault('dynamic', set())
+            elif control_id is not None:
+                uses.setdefault(control_id, set())
+            func = node.func
+            if isinstance(func, ast.Attribute):
+                target = None
+                if isinstance(func.value, ast.Name):
+                    target = self.bound.get(func.value.id)
+                if target is None:
+                    target = _getcontrol_id(func.value)
+                if target not in (None, 'dynamic'):
+                    uses.setdefault(target, set()).add(func.attr)
+            self.generic_visit(node)
+
+    Visitor().visit(class_node)
+    return uses
+
+
+def _xml_controls(path):
+    found = {}
+    duplicates = []
+    for node in ET.parse(path).getroot().iter('control'):
+        raw = node.attrib.get('id')
+        if not raw:
+            continue
+        control_id = int(raw)
+        if control_id in found:
+            duplicates.append(control_id)
+        found[control_id] = (node.attrib.get('type') or '').strip().lower()
+    return found, duplicates
+
+
+def _path_mentions_resources(node):
+    for child in ast.walk(node):
+        if isinstance(child, ast.Constant) and isinstance(child.value, str):
+            text = child.value.replace('\\', '/')
+            if 'resources/' in text or text.endswith('.xml'):
+                return True
+    return False
+
+
+def windowxml_contract(addon, packaged_source, zip_names):
+    """Kodi loads <addon>/resources/skins/<skin>/<res>/<xmlFilename> only when the active skin has no such file."""
+    problems = []
+    tree = ast.parse(packaged_source)
+    constants = _module_strings(tree)
+    classes = {}
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        bases = [base.attr if isinstance(base, ast.Attribute) else getattr(base, 'id', '') for base in node.bases]
+        if 'WindowXML' in bases or 'WindowXMLDialog' in bases:
+            classes[node.name] = node
+    windows = {}
+
+    class Calls(ast.NodeVisitor):
+        def visit_Call(self, node):
+            if isinstance(node.func, ast.Name) and node.func.id in classes and len(node.args) >= 4:
+                xml_name = _string_value(node.args[0], constants)
+                skin = _string_value(node.args[2], constants)
+                res = _string_value(node.args[3], constants)
+                if not xml_name or not skin or not res:
+                    problems.append('%s WindowXML arguments are not literal xml, skin and resolution' % node.func.id)
+                else:
+                    windows.setdefault(node.func.id, set()).add((xml_name, skin, res))
+                if _path_mentions_resources(node.args[1]):
+                    problems.append('%s scriptPath includes a resources path; it must be the add-on root' % node.func.id)
+            self.generic_visit(node)
+
+    Calls().visit(tree)
+    for name, node in classes.items():
+        if name not in windows:
+            problems.append('%s is never constructed with an xml filename' % name)
+            continue
+        if len(windows[name]) != 1:
+            problems.append('%s is constructed with more than one window file: %s' % (name, sorted(windows[name])))
+            continue
+        xml_name, skin, res = next(iter(windows[name]))
+        relative = 'resources/skins/%s/%s/%s' % (skin, res, xml_name)
+        archived = 'plugin.video.primeinterface/' + relative
+        if xml_name in _OMEGA_ESTUARY_WINDOWS:
+            problems.append(
+                '%s collides with skin.estuary on Kodi 21, so WindowXML never opens %s'
+                % (xml_name, archived))
+        if archived not in zip_names:
+            problems.append('packaged zip is missing %s' % archived)
+        xml_path = addon / relative
+        if not xml_path.is_file():
+            problems.append('unpacked add-on is missing %s' % relative)
+            continue
+        controls, duplicates = _xml_controls(xml_path)
+        if duplicates:
+            problems.append('%s repeats control ids %s' % (xml_name, sorted(set(duplicates))))
+        uses = _control_uses(node)
+        if 'dynamic' in uses:
+            problems.append('%s calls getControl with a non-literal id' % name)
+        for control_id, methods in sorted((key, value) for key, value in uses.items() if key != 'dynamic'):
+            if control_id not in controls:
+                problems.append('%s getControl(%s) is not a control in %s' % (name, control_id, xml_name))
+                continue
+            allowed = None
+            for method in methods:
+                expected = _CONTROL_METHODS.get(method)
+                if expected is None:
+                    continue
+                allowed = expected if allowed is None else allowed & expected
+            actual = controls[control_id]
+            if allowed is not None and actual not in allowed:
+                problems.append(
+                    '%s getControl(%s) is <%s> in %s; the calls need %s'
+                    % (name, control_id, actual or 'unknown', xml_name, ', '.join(sorted(allowed))))
+    return problems
+
+
 def main():
     global ADDON
     failures = []
@@ -390,16 +612,23 @@ def main():
     check(not any('prime-nav-' in name or 'prime-card-gold' in name for name in names),
           'old sidebar textures are not packaged')
     addon_xml = (ADDON / 'addon.xml').read_text(encoding='utf-8')
-    check('version="0.2.0"' in addon_xml, 'addon.xml version is 0.2.0')
+    check('version="0.2.1"' in addon_xml, 'addon.xml version is 0.2.1')
     check('Aurora Cinema' in addon_xml, 'addon.xml describes Aurora Cinema')
     source = (ROOT / 'source' / 'rewrite' / 'aurora.py').read_bytes()
     packaged = (ADDON / 'resources' / 'lib' / 'aurora.py').read_bytes()
     check(source == packaged, 'packaged aurora.py matches source/rewrite/aurora.py')
+    check((ROOT / 'source' / 'rewrite' / 'gui.py').read_bytes() == (ADDON / 'gui.py').read_bytes(),
+          'packaged gui.py matches source/rewrite/gui.py')
+    contract = windowxml_contract(ADDON, packaged.decode('utf-8'), names)
+    for problem in contract:
+        check(False, problem)
+    check(not contract, 'WindowXML path contract and getControl types')
     playback = (ADDON / 'resources' / 'lib' / 'playback.py').read_text(encoding='utf-8')
     service = (ADDON / 'resources' / 'lib' / 'service.py').read_text(encoding='utf-8')
     check('note_playback' in playback, 'playback hands the title to Aurora without replacing PlayVideo')
     check('watch_playback' in service, 'service shows the Aurora player overlay')
-    check('from resources.lib.aurora import open_interface' in (ADDON / 'gui.py').read_text(encoding='utf-8'),
+    gui_source = (ADDON / 'gui.py').read_text(encoding='utf-8')
+    check('from resources.lib.aurora import' in gui_source and 'open_interface' in gui_source,
           'application entry opens Aurora')
 
     xbmc = install_stubs()
@@ -437,7 +666,7 @@ def main():
         return False
 
     WindowXML.opened = []
-    home = AuroraHome('Home.xml', str(ADDON), 'Default', '1080i',
+    home = AuroraHome('PrimeSceneHome.xml', str(ADDON), 'Default', '1080i',
                       globals_instance=g, initialize_provider=lambda: started.append('provider'),
                       account_name=account_name, account_action=account_action)
     home.doModal()
@@ -451,7 +680,7 @@ def main():
     print('tint %s' % home.getControl(101).color)
     print('cards %s' % home.getControl(200).size())
     check(ready, 'home row finished loading')
-    check(home.xml == 'Home.xml', 'home loads Home.xml')
+    check(home.xml == 'PrimeSceneHome.xml', 'home loads PrimeSceneHome.xml')
     check(home.getProperty('Nav') == 'home', 'home nav underline')
     check(home.getControl(200).size() == 3, 'home row lists categories and a title')
     check(home.getProperty('HeroTitle') == 'MOVIES', 'first card is the hero')
@@ -488,7 +717,7 @@ def main():
     print('=== title ===')
     print('xml %s kicker %s title %s' % (title.xml, title.getProperty('Kicker'), title.getProperty('HeroTitle')))
     print('synopsis %s related %s' % (title.getProperty('Synopsis'), title.getControl(210).size()))
-    check(title.xml == 'Title.xml', 'detail view loads Title.xml')
+    check(title.xml == 'PrimeSceneTitle.xml', 'detail view loads PrimeSceneTitle.xml')
     check(title.getProperty('Kicker') == 'A FILM', 'film kicker')
     check(title.getProperty('HeroTitle') == 'HARBOR LIGHTS', 'detail title')
     check('secret schedule' in title.getProperty('Synopsis'), 'synopsis is on the detail view')
@@ -526,7 +755,7 @@ def main():
     ready = wait_until(lambda: home.path == 'root/tv')
     check(ready, 'tv shortcut opens that category')
 
-    signed = AuroraHome('Home.xml', str(ADDON), 'Default', '1080i',
+    signed = AuroraHome('PrimeSceneHome.xml', str(ADDON), 'Default', '1080i',
                         globals_instance=g, account_name=lambda: '')
     signed.doModal()
     print('signed out focus %s tag %s' % (getattr(signed, 'focus', None), signed.getProperty('HeroTag')))
@@ -540,14 +769,14 @@ def main():
     check(any('Website' in message for _heading, message in dialog.messages),
           'the website data source message is shown')
 
-    overlay = PlayerOverlay('Player.xml', str(ADDON), 'Default', '1080i')
+    overlay = PlayerOverlay('PrimeScenePlayer.xml', str(ADDON), 'Default', '1080i')
     overlay.info = {'title': 'Harbor Lights', 'meta': '2021  •  FILM', 'position': 754, 'duration': 9360, 'volume': 35}
     overlay.doModal()
     print('')
     print('=== player ===')
     print('elapsed %s total %s progress %s' % (
         overlay.getProperty('Elapsed'), overlay.getProperty('Total'), overlay.getControl(400).percent))
-    check(overlay.xml == 'Player.xml', 'player overlay loads Player.xml')
+    check(overlay.xml == 'PrimeScenePlayer.xml', 'player overlay loads PrimeScenePlayer.xml')
     check(overlay.getProperty('Title') == 'HARBOR LIGHTS', 'player title')
     check(overlay.getProperty('Elapsed') == '12:34', 'elapsed time')
     check(overlay.getProperty('Total') == '2:36:00', 'total time')
@@ -565,7 +794,7 @@ def main():
     Monitor.waits = 0
     Monitor.limit = 3
     watch_playback(PROFILE)
-    shown = [window for window in WindowXML.shown if getattr(window, 'xml', '') == 'Player.xml']
+    shown = [window for window in WindowXML.shown if getattr(window, 'xml', '') == 'PrimeScenePlayer.xml']
     check(bool(shown), 'service overlay opens while the noted title is playing')
     if shown:
         print('service overlay %s %s' % (shown[-1].getProperty('Title'), shown[-1].getProperty('Elapsed')))
@@ -594,6 +823,27 @@ def main():
     sys.argv = [str(ADDON / 'default.py')]
     default.main()
     check(len(gui_calls) == 1 and not startup_calls, 'opening the add-on starts the Aurora window')
+
+    logs = []
+    xbmc.log = lambda *args, **kwargs: logs.append(args)
+
+    class MissingControl(AuroraHome):
+        def getControl(self, control_id):
+            raise RuntimeError('Non-Existent Control %s' % control_id)
+
+    aurora.AuroraHome = MissingControl
+    dialog.messages.clear()
+    failed = open_interface(g, Settings(), account_name=lambda: 'Ada')
+    aurora.AuroraHome = AuroraHome
+    if dialog.messages:
+        print('init dialog %s' % dialog.messages[-1][1])
+    check(failed is False, 'a missing control aborts initialization')
+    check(any('could not initialize (RuntimeError: Non-Existent Control 200)' in message
+              for _heading, message in dialog.messages),
+          'initialization dialog includes the exception detail')
+    logged = '\n'.join(str(part) for entry in logs for part in entry)
+    check('Traceback (most recent call last)' in logged and 'Non-Existent Control 200' in logged,
+          'initialization logs traceback.format_exc()')
 
     print('')
     if failures:
