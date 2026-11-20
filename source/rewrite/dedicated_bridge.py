@@ -208,6 +208,7 @@ class ProviderBridge:
             self.details.setdefault(identity, {'title': card.title, 'lazyLoadURL': url})
             rows.append({'title': card.title,
                          'url': self.g.pluginid + 'pv/browse/__storefront__/' + identity,
+                         'detail_url': url,
                          'video': False, 'identity': identity,
                          'info': _card_info(card)})
         visited = previous_urls + ((continuation,) if continuation else ())

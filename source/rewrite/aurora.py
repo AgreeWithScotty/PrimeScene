@@ -11,7 +11,7 @@ from re import IGNORECASE
 from re import compile as compile_re
 from re import fullmatch
 from threading import Event, Lock, RLock, Thread, current_thread
-from time import time
+from time import time, monotonic
 from traceback import format_exc
 
 import xbmc
@@ -21,6 +21,9 @@ import xbmcgui
 from .dedicated_bridge import CatalogSigninRequired, ProviderBridge
 from .interface_diagnostics import record
 from .title_art import render_title
+from .navigation import StorefrontLoader
+from .artwork_cache import ImageCache
+from .prime_diagnostics import DiagnosticLog, exception_details
 
 _BACK = (9, 10, 92)
 # The visible scrim stays on one matte tone. It does not cycle, and it never
@@ -282,18 +285,6 @@ def _nested_playable(value, row):
     return None
 
 
-def _title_plate(text):
-    """Cached Bebas Neue plate. Failure leaves the hero without a picture."""
-    try:
-        profile = xbmcaddon.Addon(ADDON_ID).getAddonInfo('profile')
-    except Exception:
-        profile = ''
-    try:
-        return render_title(text, Path(profile or '.') / 'title-art')
-    except Exception:
-        return ''
-
-
 def _episode_order(row):
     info = row.get('info') or {}
 
@@ -365,7 +356,7 @@ def playback_row(row):
     return None
 
 
-def _item(row):
+def _item(row, title_art='', image_cache=None):
     info = row.get('info') or {}
     title = (row.get('title') or 'Untitled').upper()
     item = xbmcgui.ListItem(label=title)
@@ -381,6 +372,8 @@ def _item(row):
         art['icon'] = poster
     if fanart:
         art['fanart'] = fanart
+    if image_cache is not None:
+        art = {key: image_cache.local(value) for key, value in art.items()}
     if art:
         item.setArt(art)
     meta = _meta(row)
@@ -395,9 +388,8 @@ def _item(row):
     item.setProperty('MediaType', _kind(info))
     item.setProperty('Id', str(row.get('url') or ''))
     item.setProperty('Identity', str(row.get('identity') or ''))
-    plate = _title_plate(title)
-    if plate:
-        item.setProperty('TitleArt', plate)
+    if title_art:
+        item.setProperty('TitleArt', title_art)
     try:
         tag = item.getVideoInfoTag()
         progress = _progress(info)
@@ -518,6 +510,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.heading = 'Home'
         self.nav = 'home'
         self.next_path = None
+        self.pending_path = None
         self.prefetch_at = 0
         self.busy = False
         self.result = None
@@ -533,6 +526,16 @@ class AuroraHome(xbmcgui.WindowXML):
         self.detail_cache = {}
         self._play_token = 0
         self._allow_enrich = True
+        self.loader = None
+        self.image_cache = None
+        self.visual_worker = None
+        self.items, self.row_keys = [], set()
+        self.views, self.known_details, self.title_cache = {}, {}, {}
+        self._focus_signature, self._focus_since, self._enriched_focus = None, 0, None
+        self._painted_details = set()
+        self._navigation_started = monotonic()
+        self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
+                                         operation='interface_performance')
 
     def onInit(self):
         if self._ready:
@@ -553,6 +556,10 @@ class AuroraHome(xbmcgui.WindowXML):
             return
 
     def _initialize_controls(self):
+        if self.getCurrentContainerId() != 200:
+            xbmc.executebuiltin('Container.SetViewMode(200)', True)
+        if self.getCurrentContainerId() != 200:
+            raise RuntimeError('Kodi did not activate the Prime Scene catalog rail')
         self.update_account_button()
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
@@ -570,14 +577,16 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.account_name is not None:
             from .account_state import account_epoch
             self.account_generation = account_epoch(self.g.DATA_PATH)
-        self._set_hero_status('PRIME SCENE', 'CONNECTING')
+        self._set_hero_status('PRIME SCENE', 'LOADING YOUR HOME')
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
+        self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
         self.nav = 'home'
         self.navigate('root', remember=False, heading='Home')
         self.setFocusId(200)
         self.worker.start()
         self.detail_worker.start()
+        self.visual_worker.start()
         if self.launch_diagnostics is not None:
             self.launch_diagnostics({'event': 'interface_ready', 'signed_in': True,
                                      'current_window_id': xbmcgui.getCurrentWindowId()})
@@ -592,12 +601,14 @@ class AuroraHome(xbmcgui.WindowXML):
             self.rows = []
             self.history.clear()
             self.artwork.clear()
+            self.views.clear()
+            self.items, self.row_keys = [], set()
+            self.title_cache.clear()
+            self.known_details.clear()
             self.path, self.query, self.next_path = 'root', None, None
             self.busy = False
             self.nav = ''
-        control = self.getControl(200)
-        if hasattr(control, 'reset'):
-            control.reset()
+        self.clearList()
         self.setProperty('Nav', '')
         self.setProperty('Section', '')
         self.setProperty('AccountLabel', 'Sign in')
@@ -611,7 +622,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroTag', tag)
         self.setProperty('HeroSynopsis', '')
         self.setProperty('HeroFanart', '')
-        self.setProperty('HeroTitleArt', _title_plate(title))
+        self.setProperty('HeroTitleArt', self.title_cache.get(title.upper(), ''))
 
     def pause_catalog(self, status='Signing out...'):
         self.stop.set()
@@ -623,109 +634,163 @@ class AuroraHome(xbmcgui.WindowXML):
             self.rows = []
             self.history.clear()
             self.next_path = None
-        control = self.getControl(200)
-        if hasattr(control, 'reset'):
-            control.reset()
-        for worker in (self.worker, self.detail_worker):
+            self.views.clear()
+            self.items, self.row_keys = [], set()
+            self.title_cache.clear()
+            self.known_details.clear()
+        self.clearList()
+        for worker in (self.worker, self.detail_worker, self.visual_worker):
             if worker is not None:
                 while worker.is_alive():
                     worker.join(0.1)
         self.worker = None
         self.detail_worker = None
+        self.visual_worker = None
         self.bridge = None
         self.jobs = Queue()
         self.detail_jobs = Queue()
         self.detail_cache = {}
+        self._painted_details.clear()
+        self.title_cache.clear()
+        self.known_details.clear()
+        self.artwork.clear()
+        self.views.clear()
+
+    def _save_view(self):
+        if self.rows:
+            self.views[(self.path, self.query)] = {'rows': list(self.rows), 'items': list(self.items),
+                'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at, 'selected': self._selected_index()}
+            if len(self.views) > 12:
+                self.views.pop(next(iter(self.views)))
 
     def navigate(self, path, remember=True, query=None, selection=0, heading=None):
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
             return
         with self.lock:
+            if (path, query) == (self.path, self.query) and self.rows:
+                self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
+                return
+            self._save_view()
             if remember and (path, query) != (self.path, self.query):
-                self.history.append((self.path, self.query, self.heading, self.nav, self._selected_index()))
+                previous_nav = {'root': 'home', '__prime_home__': 'home', '__prime_movies__': 'movies',
+                                '__prime_tv__': 'tv'}.get(self.path, self.nav)
+                self.history.append((self.path, self.query, self.heading, previous_nav, self._selected_index()))
             self.path = path
             self.query = query
             self.heading = heading or 'Home'
             self.generation += 1
             self.rows = []
+            self.items, self.row_keys = [], set()
             self.next_path = None
+            self.pending_path = None
             self.prefetch_at = 0
             self.busy = True
             self._restore = selection or None
             token = self.generation
+            self._navigation_started = monotonic()
+            cached = self.views.get((path, query))
+        self.performance({'event': 'navigation_started', 'generation': token,
+                          'section': self.nav if self.nav in ('home', 'movies', 'tv') else 'detail_or_search',
+                          'cached_view': bool(cached)})
         self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
         self.setProperty('Section', (self.heading or 'Home').upper())
-        self._set_hero_status((self.heading or 'Prime Scene').upper(), 'CONNECTING')
-        control = self.getControl(200)
-        if hasattr(control, 'reset'):
-            control.reset()
+        self.clearList()
+        if cached:
+            with self.lock:
+                self.rows, self.items = list(cached['rows']), list(cached['items'])
+                self.row_keys = {row.get('url') for row in self.rows}
+                self.next_path, self.prefetch_at = cached['next'], cached['prefetch_at']
+                self.busy = False
+                self.addItems(self.items)
+                self.setCurrentListPosition(selection or cached['selected'])
+            self.performance({'event': 'navigation_restored', 'source': 'view_memory', 'cards': len(self.rows),
+                              'generation': token,
+                              'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
+            return
+        self._set_hero_status((self.heading or 'Prime Scene').upper(), 'LOADING TITLES')
+        # Drop queued obsolete work. In-flight public requests continue only to
+        # warm their cache; the worker stops waiting when generation changes.
+        while True:
+            try:
+                self.jobs.get_nowait()
+            except Empty:
+                break
         self.jobs.put((token, path, query, selection))
 
     def _selected_index(self):
-        control = self.getControl(200)
-        position = 0
-        if hasattr(control, 'getSelectedPosition'):
-            position = control.getSelectedPosition()
+        position = self.getCurrentListPosition()
         if position is None or position < 0:
             position = 0
         return position
 
     def _note_artwork(self, info):
         art = {key: info[key] for key in ('thumb', 'poster', 'fanart') if info.get(key)}
-        fresh = {value for value in art.values() if isinstance(value, str) and value.startswith('https://')} - self.artwork
+        used = set(art.values())
+        used.update(_fit_art(value, width) for value in art.values() for width in (_CARD_ART, _HERO_ART))
+        fresh = {value for value in used if isinstance(value, str) and value.startswith('https://')} - self.artwork
         if not fresh or self.account_name is None:
-            return art
+            return set()
         self.artwork.update(fresh)
-        try:
-            with (Path(self.g.DATA_PATH) / 'account-artwork.jsonl').open('a', encoding='utf-8') as output:
-                for value in fresh:
-                    output.write(dumps(value) + '\n')
-        except OSError:
-            pass
-        return art
+        return fresh
 
     def _publish(self, token, packet):
+        started = monotonic()
+        if self.account_generation is not None:
+            from .account_state import current_account
+            if not current_account(self.g.DATA_PATH, self.account_generation):
+                return
         with self.lock:
             if self.stop.is_set() or token != self.generation:
                 return
-            if self.account_generation is not None:
-                from .account_state import current_account
-                if not current_account(self.g.DATA_PATH, self.account_generation):
-                    return
             staged = []
+            seen = set(self.row_keys)
             for row in packet.get('rows') or []:
                 key = row.get('url')
-                if any(existing.get('url') == key for existing in self.rows):
+                if key in seen:
                     continue
-                if any(existing.get('url') == key for existing in staged):
-                    continue
+                seen.add(key)
                 info = dict(row.get('info') or {})
-                self._note_artwork(info)
                 staged.append(dict(row, info=info))
-        # Plates are drawn here, off the GUI thread and outside the row lock,
-        # so a slow title never blocks left/right or the next catalogue page.
-        additions = [_item(stored) for stored in staged]
-        control = self.getControl(200)
+        # Publish cheap card objects immediately. The visual worker renders only
+        # the focused/nearby title plates after these cards are already usable.
+        fresh_artwork = set()
+        for row in staged:
+            fresh_artwork.update(self._note_artwork(row['info']))
+        if fresh_artwork:
+            try:
+                with (Path(self.g.DATA_PATH) / 'account-artwork.jsonl').open('a', encoding='utf-8') as output:
+                    output.write(''.join(dumps(value) + '\n' for value in fresh_artwork))
+            except OSError as error:
+                self.performance({'event': 'artwork_tracking_failed', 'exception': exception_details(error), 'result': 'failure'})
+        additions = [_item(row, self.title_cache.get((row.get('title') or '').upper(), ''),
+                           self.image_cache) for row in staged]
         with self.lock:
             if self.stop.is_set() or token != self.generation:
                 return
             had = bool(self.rows)
-            if additions and not had and hasattr(control, 'reset'):
-                control.reset()
-            for item in additions:
-                control.addItem(item)
+            if additions:
+                self.addItems(additions)
             self.rows.extend(staged)
+            self.items.extend(additions)
+            self.row_keys.update(row.get('url') for row in staged)
+            for row in staged:
+                if row.get('identity') and row.get('detail_url'):
+                    self.known_details[row['identity']] = {'title': row['title'], 'lazyLoadURL': row['detail_url']}
             self.next_path = packet.get('next')
             count = len(self.rows)
             restore = self._restore
-        if additions and not had and restore and restore < count and hasattr(control, 'selectItem'):
-            control.selectItem(restore)
+        if additions and restore is not None and restore < count:
+            self.setCurrentListPosition(restore)
             with self.lock:
                 if self._restore == restore:
                     self._restore = None
         if additions:
             self.setProperty('Section', (self.heading or 'Home').upper())
+            self.performance({'event': 'cards_published', 'added': len(additions), 'total': count,
+                'generation': token,
+                'build_and_bind_ms': round((monotonic() - started) * 1000),
+                'since_navigation_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
 
     def _work(self):
         try:
@@ -733,13 +798,25 @@ class AuroraHome(xbmcgui.WindowXML):
             # TV and legacy sections ask the bridge for it when they are opened.
             bridge = ProviderBridge(None, self.g, initialize_provider=self.initialize_provider)
             self.bridge = bridge
+            self.loader = StorefrontLoader(self.g)
+            self.image_cache = ImageCache(self.g, self.loader.epoch)
+            self.loader.warm()
             record(self.g, 'catalog_worker_ready')
+            self._catalog_loop(bridge)
         except Exception as error:
             record(self.g, 'provider_init_failed', error)
             if not self.stop.is_set():
                 self._set_hero_status('PRIME SCENE', 'COULD NOT OPEN THE CATALOG. YOUR SIGN-IN IS SAVED.')
             self.busy = False
-            return
+            self.stop.set()
+        finally:
+            self.stop.set()
+            if self.loader is not None:
+                self.loader.close()
+            if self.image_cache is not None:
+                self.image_cache.close()
+
+    def _catalog_loop(self, bridge):
         monitor = xbmc.Monitor()
         while not self.stop.is_set() and not monitor.abortRequested():
             try:
@@ -750,12 +827,31 @@ class AuroraHome(xbmcgui.WindowXML):
             if token != self.generation:
                 continue
             page_start = len(self.rows)
+            started = monotonic()
             try:
                 record(self.g, 'catalog_request_started')
-                with self.bridge_lock:
-                    bridge.browse_progressive(
-                        path, lambda packet: self._publish(token, packet),
-                        lambda: token == self.generation and not self.stop.is_set(), query=query)
+                if query is None and self.loader.handles(path):
+                    cached = self.loader.peek(path)
+                    if cached:
+                        self._publish(token, cached)
+                    future = self.loader.request(path)
+                    while not future.done() and token == self.generation and not self.stop.is_set():
+                        self.stop.wait(0.025)
+                    if token != self.generation or self.stop.is_set():
+                        self.performance({'event': 'navigation_wait_cancelled',
+                            'generation': token,
+                            'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'cancelled'})
+                        continue
+                    packet = future.result()
+                    if packet:
+                        self._publish(token, packet)
+                else:
+                    with self.bridge_lock:
+                        if token != self.generation or self.stop.is_set():
+                            continue
+                        bridge.browse_progressive(
+                            path, lambda packet: self._publish(token, packet),
+                            lambda: token == self.generation and not self.stop.is_set(), query=query)
                 record(self.g, 'catalog_request_finished')
                 with self.lock:
                     if token == self.generation and not self.stop.is_set():
@@ -777,6 +873,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 with self.lock:
                     if token == self.generation:
                         self.busy = False
+                        self.pending_path = None
                         self._prefetch()
 
     def _prefetch(self):
@@ -785,6 +882,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
             if self._selected_index() >= self.prefetch_at:
                 path = self.next_path
+                self.pending_path = path
                 self.next_path = None
                 self.busy = True
                 self.jobs.put((self.generation, path, None, 0))
@@ -806,6 +904,58 @@ class AuroraHome(xbmcgui.WindowXML):
             return True
         return False
 
+    def _visual_loop(self):
+        """Keep expensive title drawing and image downloads away from input/binding."""
+        while not self.stop.is_set():
+            with self.lock:
+                token = self.generation
+                index = self._selected_index() if self.rows else 0
+                nearby = [(position, dict(self.rows[position]), self.items[position])
+                          for position in range(index, min(index + 10, len(self.rows)))]
+            if not nearby:
+                self.stop.wait(0.1)
+                continue
+            try:
+                urls = []
+                for offset, (_position, row, _item_ref) in enumerate(nearby):
+                    info = row.get('info') or {}
+                    urls.append(_fit_art(info.get('thumb') or info.get('poster') or info.get('fanart'), _CARD_ART))
+                    if offset < 3:
+                        urls.append(_fit_art(info.get('fanart'), _HERO_ART))
+                if self.image_cache is not None:
+                    self.image_cache.warm([url for url in urls if url])
+                for offset, (position, row, item) in enumerate(nearby):
+                    if self.stop.is_set() or token != self.generation:
+                        break
+                    title = (row.get('title') or 'Untitled').upper()
+                    if offset < 3 and title not in self.title_cache:
+                        started = monotonic()
+                        plate = render_title(title, Path(self.g.DATA_PATH) / 'title-art')
+                        if self.stop.is_set():
+                            break
+                        self.title_cache[title] = plate
+                        self.performance({'event': 'title_art_ready', 'index': position,
+                            'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'success'})
+                    if title in self.title_cache and item.getProperty('TitleArt') != self.title_cache[title]:
+                        item.setProperty('TitleArt', self.title_cache[title])
+                    if self.image_cache is None:
+                        continue
+                    info = row.get('info') or {}
+                    thumb = _fit_art(info.get('thumb') or info.get('poster') or info.get('fanart'), _CARD_ART)
+                    local = self.image_cache.local(thumb)
+                    if local and local != thumb and item.getProperty('LocalThumb') != local:
+                        item.setArt({'thumb': local, 'landscape': local})
+                        item.setProperty('LocalThumb', local)
+                    hero = _fit_art(info.get('fanart'), _HERO_ART)
+                    local = self.image_cache.local(hero)
+                    if local and local != hero and item.getProperty('LocalHero') != local:
+                        item.setArt({'fanart': local})
+                        item.setProperty('LocalHero', local)
+            except Exception as error:
+                self.performance({'event': 'visual_work_failed', 'exception': exception_details(error), 'result': 'failure'})
+                self.stop.wait(0.5)
+            self.stop.wait(0.1)
+
     def _detail_loop(self):
         while not self.stop.is_set():
             try:
@@ -818,22 +968,33 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
             kind = job[0]
             if kind == 'enrich':
-                self._enrich(job[1])
+                if job[2] == self.generation and _detail_path(self.g.pluginid, self._selected_row()) == job[1]:
+                    self._enrich(job[1])
             elif kind == 'play':
                 self._play_resolved(job[1], job[2], job[3], job[4])
 
     def _queue_enrich(self):
         row = self._selected_row()
         path = _detail_path(self.g.pluginid, row)
+        signature = (self.generation, path)
+        if signature != self._focus_signature:
+            self._focus_signature, self._focus_since = signature, monotonic()
+            return
         if not path or not _needs_detail(row):
+            return
+        if monotonic() - self._focus_since < 0.45 or signature == self._enriched_focus:
             return
         cached = self.detail_cache.get(path)
         if cached and cached.get('how') != 'error':
-            self._paint_cached(path)
+            if signature not in self._painted_details:
+                self._paint_cached(path)
+                self._painted_details.add(signature)
+            self._enriched_focus = signature
             return
         if cached and cached.get('how') == 'error':
             return
-        self.detail_jobs.put(('enrich', path))
+        self._enriched_focus = signature
+        self.detail_jobs.put(('enrich', path, self.generation))
 
     def _enrich(self, path):
         if self.stop.is_set():
@@ -842,13 +1003,14 @@ class AuroraHome(xbmcgui.WindowXML):
         if cached and cached.get('how') != 'error':
             self._paint_cached(path)
             return
-        playable, how, packet = self._resolve_playable(path)
-        if how == 'wait' or self.stop.is_set():
+        packet = self._fetch_detail(path)
+        if packet == 'wait' or self.stop.is_set():
             return
         if packet is None:
             self.detail_cache[path] = {'playable': None, 'how': 'error', 'info': {}}
             return
-        self._remember(path, playable, how, packet)
+        playable, how = choose_playback(packet.get('rows'))
+        self._remember(path, playable, how if playable is not None else 'metadata', packet)
 
     def _fetch_detail(self, path):
         bridge = self.bridge
@@ -864,6 +1026,8 @@ class AuroraHome(xbmcgui.WindowXML):
             with self.bridge_lock:
                 if self.stop.is_set():
                     return 'wait'
+                with self.lock:
+                    bridge.details.update(self.known_details)
                 bridge.browse_progressive(path, publish, lambda: not self.stop.is_set())
         except Exception as error:
             xbmc.log('[Prime Scene] Detail lookup failed: ' + type(error).__name__, xbmc.LOGERROR)
@@ -906,10 +1070,10 @@ class AuroraHome(xbmcgui.WindowXML):
         info = cached.get('info') or {}
         if not info:
             return
+        self._painted_details.add((self.generation, path))
         with self.lock:
             matches = [(index, dict(row)) for index, row in enumerate(self.rows)
                        if _detail_path(self.g.pluginid, row) == path]
-        control = self.getControl(200)
         for index, row in matches:
             current = dict(row.get('info') or {})
             for key, value in info.items():
@@ -918,12 +1082,9 @@ class AuroraHome(xbmcgui.WindowXML):
             with self.lock:
                 if index < len(self.rows) and _detail_path(self.g.pluginid, self.rows[index]) == path:
                     self.rows[index]['info'] = dict(current)
-            if not hasattr(control, 'getListItem'):
-                continue
-            try:
-                item = control.getListItem(index)
-            except Exception:
-                continue
+                    item = self.items[index]
+                else:
+                    continue
             painted = {'title': row.get('title'), 'info': current}
             item.setProperty('Meta', _meta(painted))
             item.setProperty('Plot', _plain(current.get('plot') or ''))
@@ -945,7 +1106,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _play_resolved(self, token, generation, path, title):
         try:
             cached = self.detail_cache.get(path)
-            if cached is None or cached.get('how') in ('error', 'wait'):
+            if cached is None or cached.get('how') in ('error', 'wait', 'metadata'):
                 playable, how, packet = self._resolve_playable(path)
                 if how == 'wait':
                     self.g.dialog.ok('Prime Scene', 'The catalogue is still opening. Try this title again.')
@@ -1016,7 +1177,7 @@ class AuroraHome(xbmcgui.WindowXML):
             finally:
                 self.stop = Event()
                 self.update_account_button()
-                if self.account_name and self.account_name() and changed:
+                if self.account_name and self.account_name() and (changed or self.worker is None):
                     self._initialize_controls()
                 elif self.account_name is not None and not self.account_name():
                     self.show_signed_out()
@@ -1372,7 +1533,7 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
         window.doModal()
     finally:
         window.stop.set()
-        for worker in (window.worker, getattr(window, 'detail_worker', None)):
+        for worker in (window.worker, getattr(window, 'detail_worker', None), getattr(window, 'visual_worker', None)):
             if worker is not None:
                 while worker.is_alive():
                     worker.join(0.1)

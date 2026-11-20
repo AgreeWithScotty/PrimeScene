@@ -1,0 +1,38 @@
+{
+  "base_version": "0.2.4",
+  "base_commit": "15d1d0622d5e81f4117637d8610cdbf5e41ea21c",
+  "version": "0.2.5",
+  "sha256": "4ea37b2f1336407a02403654bca53eba5f42a57b0115a4be010c6174aecee254",
+  "playback_components_preserved": true,
+  "python_xml_and_zip_checks": "passed",
+  "simulated_provider_or_kodi_tests_run": false,
+  "device_latency_measured": false,
+  "source_findings": [
+    "Every card used ControlList.addItem, rebinding the complete rail each time",
+    "Every card title was rasterized before any page items were bound",
+    "Navigation cleared visited lists and showed CONNECTING before cache lookup",
+    "Catalog and hover detail calls shared a provider lock",
+    "Account guards took SQLite writer transactions for read checks"
+  ],
+  "changes": [
+    "Native WindowXML list with one bind per page and selected-index preservation",
+    "Memory view snapshots, epoch-scoped saved first pages and shared in-flight requests",
+    "Bounded warm-up for Home/Movies/TV and their first two actual server pages",
+    "Separate primary reader lane from legacy detail/playback provider",
+    "Focus dwell before one metadata lookup; no automatic season traversal",
+    "Focused/nearby title plates and ten-card artwork read-ahead off the navigation path",
+    "Read-only account guard transactions; cached account files still purged on sign-out",
+    "Actual-run network, cache, bind, title and artwork timing diagnostics"
+  ],
+  "primary_source_references": [
+    "https://github.com/xbmc/xbmc/blob/21.3-Omega/xbmc/interfaces/legacy/Control.cpp",
+    "https://github.com/xbmc/xbmc/blob/21.3-Omega/xbmc/interfaces/legacy/WindowXML.cpp",
+    "https://github.com/xbmc/xbmc/blob/21.3-Omega/xbmc/view/GUIViewControl.cpp",
+    "https://github.com/xbmc/xbmc/blob/21.3-Omega/xbmc/guilib/GUIControlFactory.cpp"
+  ],
+  "limitations": [
+    "Cold uncached provider requests retain real network latency",
+    "No invented pagination endpoints or silent provider substitution",
+    "Real device timings come from the combined diagnostic report"
+  ]
+}

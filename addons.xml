@@ -1,35 +1,35 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.2.4" provider-name="AgreeWithScotty">
-    <requires>
-      <import addon="xbmc.python" version="3.0.1" />
-      <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
-      <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1" />
-      <import addon="script.module.pyxbmct" version="1.3.1+matrix.1" />
-      <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1" />
-      <import addon="script.module.requests" version="2.22.0+matrix.1" />
-      <import addon="script.module.pyautogui" version="0.9.49+matrix.1" />
-      <import addon="script.module.amazoncaptcha" version="0.5.11+matrix.1" />
-    </requires>
-    <extension point="xbmc.python.script" library="default.py">
-      <provides>video</provides>
-    </extension>
-    <extension point="xbmc.service" library="service.py" />
-    <extension point="xbmc.addon.metadata">
-      <platform>all</platform>
-      <reuselanguageinvoker>false</reuselanguageinvoker>
-      <license>GPL-3.0-or-later</license>
-      <source>https://github.com/AgreeWithScotty/PrimeScene</source>
-      <assets>
-        <icon>icon.png</icon>
-        <fanart>fanart.jpg</fanart>
-      </assets>
-      <summary lang="en_GB">Prime Video in the Aurora Cinema interface</summary>
-      <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
-      <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-      <news>0.2.4[CR]- The focused title is large condensed type, with metadata and the synopsis, on every home view.[CR]- A movie or episode plays as soon as its id is resolved. A series plays one episode when it can, and opens a list only when it cannot.[CR]- Aurora's playback controls stay up for the whole title. Pause, OK, info and seek bring them back.</news>
-    </extension>
-  </addon>
+  <addon id="plugin.video.primeinterface" name="Prime Scene" version="0.2.5" provider-name="AgreeWithScotty">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1" />
+    <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
+    <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1" />
+    <import addon="script.module.pyxbmct" version="1.3.1+matrix.1" />
+    <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1" />
+    <import addon="script.module.requests" version="2.22.0+matrix.1" />
+    <import addon="script.module.pyautogui" version="0.9.49+matrix.1" />
+    <import addon="script.module.amazoncaptcha" version="0.5.11+matrix.1" />
+  </requires>
+  <extension point="xbmc.python.script" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <reuselanguageinvoker>false</reuselanguageinvoker>
+    <license>GPL-3.0-or-later</license>
+    <source>https://github.com/AgreeWithScotty/PrimeScene</source>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>fanart.jpg</fanart>
+    </assets>
+    <summary lang="en_GB">Prime Video in the Aurora Cinema interface</summary>
+    <description lang="en_GB">Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
+    <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
+    <news>0.2.5[CR]- Keep visited screens and their selected cards ready for Back and tab navigation.[CR]- Load Home, Movies and TV ahead, sharing in-flight requests and warming their first two real pages.[CR]- Bind one page at a time through Kodi's native window list instead of rebinding the full rail for each card.[CR]- Display cards before drawing title plates; prepare nearby titles and artwork in the background.[CR]- Keep storefront requests independent of title-detail lookups. Enrich only after focus settles.[CR]- Keep account cache reads out of writer transactions and preserve complete sign-out cleanup.[CR]- Record real navigation, request, card-binding, title-rendering and artwork timings in Diagnostics.</news>
+  </extension>
+</addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
     <requires>
       <import addon="xbmc.addon" version="21.0.0"/>

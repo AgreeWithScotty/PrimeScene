@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <window>
     <defaultcontrol always="true">200</defaultcontrol>
+    <views>200</views>
     <animation effect="fade" start="0" end="100" time="280">WindowOpen</animation>
     <animation effect="fade" start="100" end="0" time="200">WindowClose</animation>
     <controls>
@@ -202,6 +203,12 @@
             <texture background="true">$INFO[Container(200).ListItem.Property(TitleArt)]</texture>
             <visible>Integer.IsGreater(Container(200).NumItems,0)</visible>
         </control>
+        <control type="label">
+            <left>76</left><top>148</top><width>1240</width><height>220</height>
+            <font>font30</font><textcolor>FFF5F7FA</textcolor><aligny>top</aligny>
+            <label>$INFO[Container(200).ListItem.Label]</label>
+            <visible>Integer.IsGreater(Container(200).NumItems,0) + String.IsEmpty(Container(200).ListItem.Property(TitleArt))</visible>
+        </control>
         <control type="image" id="111">
             <left>72</left>
             <top>148</top>
@@ -210,6 +217,12 @@
             <aspectratio align="left" aligny="top">center</aspectratio>
             <texture background="true">$INFO[Window.Property(HeroTitleArt)]</texture>
             <visible>Integer.IsEqual(Container(200).NumItems,0)</visible>
+        </control>
+        <control type="label">
+            <left>76</left><top>148</top><width>1240</width><height>220</height>
+            <font>font30</font><textcolor>FFF5F7FA</textcolor><aligny>top</aligny>
+            <label>$INFO[Window.Property(HeroTitle)]</label>
+            <visible>Integer.IsEqual(Container(200).NumItems,0) + String.IsEmpty(Window.Property(HeroTitleArt))</visible>
         </control>
         <control type="label">
             <left>76</left>

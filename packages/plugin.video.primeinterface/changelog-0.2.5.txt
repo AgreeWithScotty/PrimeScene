@@ -1,0 +1,8 @@
+0.2.5
+- Keep visited screens and their selected cards ready for Back and tab navigation.
+- Load Home, Movies and TV ahead, sharing in-flight requests and warming their first two real pages.
+- Bind one page at a time through Kodi's native window list instead of rebinding the full rail for each card.
+- Display cards before drawing title plates; prepare nearby titles and artwork in the background.
+- Keep storefront requests independent of title-detail lookups. Enrich only after focus settles.
+- Keep account cache reads out of writer transactions and preserve complete sign-out cleanup.
+- Record real navigation, request, card-binding, title-rendering and artwork timings in Diagnostics.

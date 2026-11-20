@@ -31,20 +31,35 @@ def state_db(profile):
         connection.close()
 
 
-def account_epoch(profile):
+def read_state(profile):
+    """Read account guards without taking a writer lock on every UI/log event."""
+    path = Path(profile) / STATE_FILE
+    if path.exists():
+        connection = sqlite3.connect(str(path), timeout=2)
+        try:
+            value = connection.execute('SELECT epoch, signed_out FROM session WHERE id=1').fetchone()
+            if value is not None:
+                return value
+        except sqlite3.OperationalError as error:
+            if 'no such table' not in str(error):
+                raise
+        finally:
+            connection.close()
     with state_db(profile) as db:
-        return db.execute('SELECT epoch FROM session WHERE id=1').fetchone()[0]
+        return db.execute('SELECT epoch, signed_out FROM session WHERE id=1').fetchone()
+
+
+def account_epoch(profile):
+    return read_state(profile)[0]
 
 
 def is_signed_out(profile):
-    with state_db(profile) as db:
-        return bool(db.execute('SELECT signed_out FROM session WHERE id=1').fetchone()[0])
+    return bool(read_state(profile)[1])
 
 
 def current_account(profile, expected, allow_signed_out=False):
-    with state_db(profile) as db:
-        epoch, signed_out = db.execute('SELECT epoch, signed_out FROM session WHERE id=1').fetchone()
-        return epoch == expected and (allow_signed_out or not signed_out)
+    epoch, signed_out = read_state(profile)
+    return epoch == expected and (allow_signed_out or not signed_out)
 
 
 def persist_if_current(profile, expected, callback, allow_signed_out=False):
