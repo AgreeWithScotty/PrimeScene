@@ -1,5 +1,6 @@
 """Separate script entry for the Prime Scene window."""
 import sys
+from traceback import format_exc
 import xbmc
 import xbmcgui
 
@@ -11,7 +12,7 @@ def main(launch_diagnostics=None):
     sys.argv[:] = ['plugin://' + ID + '/', '-1', '']
     from resources.lib.common import Globals, Settings
     from resources.lib.users import loadUser, loadUsers
-    from resources.lib.aurora import open_interface
+    from resources.lib.aurora import failure_detail, open_interface
     from resources.lib.interface_diagnostics import record
     g, settings = Globals(), Settings()
     record(g, 'gui_script_started')
@@ -59,11 +60,12 @@ def main(launch_diagnostics=None):
             return False
     except Exception as error:
         record(g, 'window_open_failed', error)
+        xbmc.log('[Prime Scene] The interface could not open\n' + format_exc(), xbmc.LOGERROR)
         if launch_diagnostics is not None:
             from resources.lib.prime_diagnostics import exception_details
             launch_diagnostics({'event': 'window_open_failed', 'exception': exception_details(error)})
         xbmcgui.Dialog().ok('Prime Scene', 'The interface could not open (' +
-                           type(error).__name__ + '). Your sign-in is saved.')
+                           failure_detail(error) + '). Your sign-in is saved.')
         return False
 
 

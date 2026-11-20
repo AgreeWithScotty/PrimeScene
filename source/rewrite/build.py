@@ -218,7 +218,13 @@ def writeConfig(cfile, value):
                             listing_card(o, item, iu)
 """ + eager_movie)
     web_api_path.write_text(web_api, encoding='utf-8', newline='\n')
-    shutil.copyfile(ROOT/'src/PrimeStreaming.xml',addon/'resources/skins/Default/1080i/PrimeStreaming.xml')
+    skin_xml = addon/'resources/skins/Default/1080i'
+    skin_xml.mkdir(parents=True, exist_ok=True)
+    for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeSceneTitle.xml', 'PrimeScenePlayer.xml'):
+        shutil.copyfile(ROOT/'skins/Default/1080i'/name, skin_xml/name)
+    legacy_window = skin_xml/'PrimeStreaming.xml'
+    if legacy_window.exists():
+        legacy_window.unlink()
     for obsolete in (addon/'resources/skins/Default/media').glob('category-*.png'):
         obsolete.unlink()
     for asset in (ROOT/'src/assets').glob('category-*.webp'):

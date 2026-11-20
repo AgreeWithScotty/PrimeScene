@@ -1,0 +1,3 @@
+0.2.1
+- Open the Aurora Cinema windows under names the active Kodi skin does not already provide. Home.xml was opening Estuary's home, so the catalog list did not exist.
+- If the window still cannot initialize, log the full traceback and show the exception detail. Sign-in stays saved.
