@@ -1,0 +1,4 @@
+0.2.4
+- Draw the focused title as large condensed type on every home-window view, and fill in the year, runtime, rating, genres and synopsis when the rail card did not include them.
+- Play a movie or episode as soon as its id can be resolved. A series plays the next, in-progress or earliest episode, and opens a list only when no episode can be resolved.
+- Use the Aurora playback controls for the whole title. Pause, OK, info and seek bring them back, and Kodi's own OSD stays in place for other videos.

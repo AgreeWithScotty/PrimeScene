@@ -222,6 +222,10 @@ def writeConfig(cfile, value):
     skin_xml.mkdir(parents=True, exist_ok=True)
     for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeScenePlayer.xml'):
         shutil.copyfile(ROOT/'skins/Default/1080i'/name, skin_xml/name)
+    for name in ('aurora.py', 'title_art.py', 'title_glyphs.json', 'title_glyphs.py'):
+        shutil.copyfile(ROOT/name, addon/'resources/lib'/name)
+    for name in ('stop.png', 'subtitles.png', 'audio.png'):
+        shutil.copyfile(ROOT/'skins/Default/media'/name, addon/'resources/skins/Default/media'/name)
     legacy_window = skin_xml/'PrimeStreaming.xml'
     if legacy_window.exists():
         legacy_window.unlink()
