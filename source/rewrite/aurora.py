@@ -4,10 +4,11 @@ Layout and the charcoal tint follow SmoothFlix Aurora Cinema. The home hero
 is drawn by the skin from the focused card. Playback uses the existing Prime
 Scene PlayVideo URL. No separate Kodi skin is required.
 """
-from json import dumps, load
+from json import dumps, load, loads
 from copy import deepcopy
 from pathlib import Path
 from queue import Empty, Queue
+from secrets import token_hex
 from re import IGNORECASE
 from re import compile as compile_re
 from re import fullmatch
@@ -33,6 +34,8 @@ _BACK = (9, 10, 92)
 _SCRIM = '99141A20'
 _NOTE = 'aurora-playback.json'
 _NOTE_WINDOW = 120
+_HOME_REGISTRY = 'smoothprime.interface'
+_RETURN_COMMAND = 'PlaybackReturn'
 ADDON_ID = 'plugin.video.primeinterface'
 # Kodi 21 WindowXML::WindowXML looks up xmlFilename in the active skin first
 # (<skin>/<res>/<xmlFilename>) and only then in
@@ -422,16 +425,26 @@ def _note_path(profile):
 
 
 def note_playback(profile, title, meta=''):
-    """Remember the title the existing player is about to start."""
+    """Keep one request ID across UI and resolver, including its live return target."""
     if not profile:
         return
     path = _note_path(profile)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(dumps({
-        'title': title or 'Smooth Prime',
-        'meta': meta or '',
-        'armed': time(),
-    }), encoding='utf-8')
+    previous = _read_note(profile) or {}
+    target = xbmcgui.Window(10000).getProperty(_HOME_REGISTRY)
+    reuse = (0 <= time() - float(previous.get('armed') or 0) < _NOTE_WINDOW
+             and previous.get('target') == target)
+    note = {'title': title or 'Smooth Prime', 'meta': meta or (previous.get('meta') if reuse else '') or '',
+            'armed': previous.get('armed') if reuse else time(), 'target': target,
+            'request_id': previous.get('request_id') if reuse else token_hex(8)}
+    try:
+        temporary = path.with_suffix('.new')
+        temporary.write_text(dumps(note), encoding='utf-8')
+        temporary.replace(path)
+    except OSError as error:
+        DiagnosticLog(profile, xbmcaddon.Addon(ADDON_ID).getAddonInfo('version'),
+                      operation='playback_return')({'event': 'playback_note_failed',
+            'request_id': note['request_id'], 'exception': exception_details(error), 'result': 'failure'})
 
 
 def _read_note(profile):
@@ -444,8 +457,10 @@ def _read_note(profile):
     return note if isinstance(note, dict) else None
 
 
-def _clear_note(profile):
+def _clear_note(profile, request_id=None):
     try:
+        if request_id and (_read_note(profile) or {}).get('request_id') != request_id:
+            return
         _note_path(profile).unlink()
     except OSError:
         pass
@@ -465,8 +480,41 @@ def overlay_due(playing, note, now, latched):
 
 
 def play_row(row, profile):
+    _clear_note(profile)
     note_playback(profile, row.get('title') or 'Smooth Prime', _detail_meta(row))
     xbmc.Player().play(row.get('url') or '')
+
+
+def _request_playback_return(note, reason, report):
+    """Signal the existing live window, never launch a replacement application."""
+    request_id = (note or {}).get('request_id')
+    try:
+        target = (note or {}).get('target')
+        if not target or xbmcgui.Window(10000).getProperty(_HOME_REGISTRY) != target:
+            report({'event': 'playback_return_cancelled', 'request_id': request_id,
+                    'reason': 'interface_closed_or_account_changed', 'result': 'cancelled'})
+            return
+        destination = loads(target)
+        window = xbmcgui.Window(int(destination['window_id']))
+        if window.getProperty('InterfaceSession') != destination['session']:
+            raise RuntimeError('The return window is no longer the same interface')
+        window.setProperty(_RETURN_COMMAND, dumps({'request_id': request_id, 'reason': reason}))
+        report({'event': 'playback_return_requested', 'request_id': request_id, 'reason': reason,
+                'target_window_id': destination['window_id'],
+                'current_window_id': xbmcgui.getCurrentWindowId(), 'result': 'success'})
+    except Exception as error:
+        report({'event': 'playback_return_request_failed', 'request_id': request_id,
+                'exception': exception_details(error), 'result': 'failure'})
+
+
+def _top_selector_row(pluginid, row):
+    path = _browse_path(pluginid, row.get('url'))
+    if path in _SECTION_PATHS:
+        return True
+    # Only navigation entries: real titles called Home retain their identity.
+    return (not row.get('identity') and not row.get('detail_url') and not row.get('video')
+            and not _kind(row.get('info'))
+            and str(row.get('title') or '').strip().casefold() in ('home', 'movie', 'movies', 'tv', 'tv shows'))
 
 
 def _clock(seconds):
@@ -546,6 +594,10 @@ class AuroraHome(xbmcgui.WindowXML):
         self.description_attempts = set()
         self._description_window = None
         self.series_context = None
+        self.return_worker = None
+        self.window_id = None
+        self.interface_session = None
+        self._replace_rail = False
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
 
@@ -553,6 +605,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if self._ready:
             return
         self._ready = True
+        self.window_id = xbmcgui.getCurrentWindowId()
         record(self.g, 'window_initialized')
         if self.launch_diagnostics is not None:
             self.launch_diagnostics({'event': 'window_on_init', 'current_window_id': xbmcgui.getCurrentWindowId()})
@@ -589,7 +642,12 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.account_name is not None:
             from .account_state import account_epoch
             self.account_generation = account_epoch(self.g.DATA_PATH)
-        self._set_hero_status('SMOOTH PRIME', 'LOADING YOUR HOME')
+        self._set_hero_status('', '')
+        self.interface_session = token_hex(8)
+        self.setProperty('InterfaceSession', self.interface_session)
+        xbmcgui.Window(10000).setProperty(_HOME_REGISTRY, dumps({
+            'window_id': self.window_id, 'session': self.interface_session}))
+        self.return_worker = Thread(target=self._return_loop, name='PrimeReturn', daemon=True)
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
@@ -599,6 +657,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.worker.start()
         self.detail_worker.start()
         self.visual_worker.start()
+        self.return_worker.start()
         if self.launch_diagnostics is not None:
             self.launch_diagnostics({'event': 'interface_ready', 'signed_in': True,
                                      'current_window_id': xbmcgui.getCurrentWindowId()})
@@ -608,6 +667,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('AccountLabel', name or 'Sign in')
 
     def show_signed_out(self):
+        self._unregister_return()
         with self.lock:
             self.generation += 1
             self.rows = []
@@ -643,6 +703,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def pause_catalog(self, status='Signing out...'):
         self.stop.set()
+        self._unregister_return()
         self.setProperty('AccountLabel', status)
         self.setProperty('HeroTag', ' '.join(status.upper().split()))
         self.setProperty('HeroMeta', ' '.join(status.upper().split()))
@@ -656,13 +717,14 @@ class AuroraHome(xbmcgui.WindowXML):
             self.title_cache.clear()
             self.known_details.clear()
         self.clearList()
-        for worker in (self.worker, self.detail_worker, self.visual_worker):
+        for worker in (self.worker, self.detail_worker, self.visual_worker, self.return_worker):
             if worker is not None:
                 while worker.is_alive():
                     worker.join(0.1)
         self.worker = None
         self.detail_worker = None
         self.visual_worker = None
+        self.return_worker = None
         self.bridge = None
         self.jobs = Queue()
         self.detail_jobs = Queue()
@@ -677,6 +739,57 @@ class AuroraHome(xbmcgui.WindowXML):
         self._description_window = None
         self.series_context = None
 
+    def _unregister_return(self):
+        registry = xbmcgui.Window(10000)
+        expected = dumps({'window_id': self.window_id, 'session': self.interface_session})
+        if registry.getProperty(_HOME_REGISTRY) == expected:
+            registry.clearProperty(_HOME_REGISTRY)
+        self.clearProperty('InterfaceSession')
+        self.clearProperty(_RETURN_COMMAND)
+
+    def _return_loop(self):
+        while not self.stop.wait(0.05):
+            command = self.getProperty(_RETURN_COMMAND)
+            if not command:
+                continue
+            self.clearProperty(_RETURN_COMMAND)
+            started = monotonic()
+            request = {}
+            try:
+                request = loads(command)
+                pending = _read_note(self.g.DATA_PATH) or {}
+                superseded = pending.get('request_id') and pending['request_id'] != request.get('request_id')
+                if (self.stop.is_set() or self.getProperty('InterfaceSession') != self.interface_session
+                        or superseded or _playing(xbmc.Player())):
+                    self.performance({'event': 'playback_home_return_cancelled',
+                        'request_id': request.get('request_id'),
+                        'reason': 'interface_invalidated_or_new_playback', 'result': 'cancelled'})
+                    continue
+                self.history.clear()
+                self.nav = 'home'
+                self._play_token += 1
+                self.navigate('root', remember=False, heading='Home')
+                before = xbmcgui.getCurrentWindowId()
+                # Activate the existing ID without changing WindowXML's original
+                # Kodi return window, as calling show() again would do.
+                xbmc.executebuiltin('ActivateWindow(%d)' % self.window_id, True)
+                self.setFocusId(200 if self.rows else 301)
+                current_window = xbmcgui.getCurrentWindowId()
+                self.performance({'event': 'playback_home_returned', 'stage': 'window_restore',
+                    'request_id': request.get('request_id'), 'reason': request.get('reason'),
+                    'previous_window_id': before, 'target_window_id': self.window_id,
+                    'current_window_id': current_window,
+                    'home_cards': len(self.rows), 'generation': self.generation,
+                    'elapsed_ms': round((monotonic() - started) * 1000),
+                    'result': 'success' if current_window == self.window_id else 'failure'})
+            except Exception as error:
+                self.performance({'event': 'playback_home_return_failed',
+                    'request_id': request.get('request_id'), 'exception': exception_details(error),
+                    'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'failure'})
+
+    def _section_label(self):
+        self.setProperty('Section', '' if self.path in _SECTION_PATHS else (self.heading or '').upper())
+
     def _save_view(self):
         if self.rows:
             self.views[(self.path, self.query)] = {'rows': list(self.rows), 'items': list(self.items),
@@ -685,7 +798,9 @@ class AuroraHome(xbmcgui.WindowXML):
             if self.series_context:
                 self.views[(self.series_context['root_path'], None)] = self.views[(self.path, self.query)]
             if len(self.views) > 12:
-                self.views.pop(next(iter(self.views)))
+                oldest = next((key for key in self.views if key[0] not in _SECTION_PATHS), None)
+                if oldest is not None:
+                    self.views.pop(oldest)
 
     def navigate(self, path, remember=True, query=None, selection=0, heading=None, series=None):
         if self.account_name is not None and not self.account_name():
@@ -696,6 +811,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
                 return
             self._save_view()
+            visible_cards = len(self.rows)
             if remember and (path, query) != (self.path, self.query):
                 previous_nav = {'root': 'home', '__prime_home__': 'home', '__prime_movies__': 'movies',
                                 '__prime_tv__': 'tv'}.get(self.path, self.nav)
@@ -718,12 +834,14 @@ class AuroraHome(xbmcgui.WindowXML):
             self.series_context = deepcopy(cached.get('series')) if cached else deepcopy(series)
         self.performance({'event': 'navigation_started', 'generation': token,
                           'section': self.nav if self.nav in ('home', 'movies', 'tv') else 'detail_or_search',
-                          'cached_view': bool(cached)})
+                          'cached_view': bool(cached), 'retained_visible_cards': visible_cards,
+                          'progress_chrome': False})
         self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
-        self.setProperty('Section', (self.heading or 'Home').upper())
+        self._section_label()
         self._season_properties()
-        self.clearList()
         if cached:
+            self.clearList()
+            self._replace_rail = False
             with self.lock:
                 self.rows, self.items = list(cached['rows']), list(cached['items'])
                 self.row_keys = {row.get('url') for row in self.rows}
@@ -735,8 +853,9 @@ class AuroraHome(xbmcgui.WindowXML):
                               'generation': token,
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
             return
-        self._set_hero_status((self.heading or 'Smooth Prime').upper(),
-                              'LOADING EPISODES' if self.series_context else 'LOADING TITLES')
+        # Leave the visible cards/hero intact until the replacement is ready.
+        self._replace_rail = True
+        self._set_hero_status('', '')
         # Drop queued obsolete work. In-flight public requests continue only to
         # warm their cache; the worker stops waiting when generation changes.
         while True:
@@ -774,6 +893,8 @@ class AuroraHome(xbmcgui.WindowXML):
             staged = []
             seen = set(self.row_keys)
             for row in packet.get('rows') or []:
+                if _top_selector_row(self.g.pluginid, row):
+                    continue
                 key = row.get('url')
                 if key in seen:
                     continue
@@ -798,6 +919,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
             had = bool(self.rows)
             if additions:
+                if self._replace_rail:
+                    self.clearList()
+                    self._replace_rail = False
                 self.addItems(additions)
             self.rows.extend(staged)
             self.items.extend(additions)
@@ -814,8 +938,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 if self._restore == restore:
                     self._restore = None
         if additions:
-            self.setProperty('Section', (self.heading or 'Home').upper())
+            self._section_label()
             self.performance({'event': 'cards_published', 'added': len(additions), 'total': count,
+                'navigation_entries_hidden': sum(_top_selector_row(self.g.pluginid, row) for row in packet.get('rows') or []),
                 'generation': token,
                 'build_and_bind_ms': round((monotonic() - started) * 1000),
                 'since_navigation_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
@@ -891,7 +1016,9 @@ class AuroraHome(xbmcgui.WindowXML):
                         if path.endswith('/nextPage') and len(self.rows) > page_start:
                             self.prefetch_at = page_start
                         if not self.rows:
-                            self._set_hero_status((self.heading or 'Smooth Prime').upper(),
+                            self.clearList()
+                            self._replace_rail = False
+                            self._set_hero_status('SMOOTH PRIME',
                                                   'NO EPISODES WERE RETURNED FOR THIS SEASON. OPEN DIAGNOSTICS.'
                                                   if self.series_context else 'NO TITLES WERE RETURNED. TRY HOME OR SEARCH.')
             except BaseException as error:
@@ -901,8 +1028,11 @@ class AuroraHome(xbmcgui.WindowXML):
                     if token == self.generation and not self.stop.is_set():
                         message = ('USE THE ACCOUNT BUTTON AND CHOOSE SIGN IN AGAIN.'
                                    if isinstance(error, CatalogSigninRequired) else
-                                   'UNABLE TO FINISH LOADING. RETURN HOME OR OPEN DIAGNOSTICS.')
-                        self._set_hero_status((self.heading or 'Smooth Prime').upper(), message)
+                                   'THE CATALOG REQUEST FAILED. OPEN DIAGNOSTICS FOR DETAILS.')
+                        if not self.rows:
+                            self.clearList()
+                            self._replace_rail = False
+                        self._set_hero_status('SMOOTH PRIME', message)
             finally:
                 with self.lock:
                     if token == self.generation:
@@ -1327,7 +1457,9 @@ class AuroraHome(xbmcgui.WindowXML):
             if cached is None or cached.get('how') in ('error', 'wait', 'metadata'):
                 playable, how, packet = self._resolve_playable(path)
                 if how == 'wait':
-                    self.g.dialog.ok('Smooth Prime', 'The catalogue is still opening. Try this title again.')
+                    self.performance({'event': 'title_action_cancelled', 'stage': 'detail_resolution',
+                        'generation': generation, 'request_id': token, 'reason': 'catalog_session_unavailable',
+                        'result': 'cancelled'})
                     return
                 if packet is not None:
                     self._remember(path, playable, how, packet)
@@ -1357,7 +1489,6 @@ class AuroraHome(xbmcgui.WindowXML):
         finally:
             if token == self._play_token:
                 self.setProperty('Busy', '')
-                xbmc.executebuiltin('Dialog.Close(busydialognocancel)')
 
     def _search(self):
         phrase = self.g.dialog.input('Search Prime Video')
@@ -1434,7 +1565,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self._play_token += 1
             token = self._play_token
             self.setProperty('Busy', '1')
-            xbmc.executebuiltin('ActivateWindow(busydialognocancel)')
             self.detail_jobs.put(('play', token, self.generation, path, row.get('title') or 'Smooth Prime'))
 
     def onAction(self, action):
@@ -1450,6 +1580,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.navigate(path, remember=False, query=query, heading=heading, selection=selected, series=series)
         else:
             self.stop.set()
+            self._unregister_return()
             record(self.g, 'window_exit_to_kodi_home')
             self.close()
 
@@ -1713,41 +1844,75 @@ class PlayerOverlay(xbmcgui.WindowXMLDialog):
                 self.hide_chrome()
 
 
-def watch_playback(profile):
-    """Keep Aurora's controls up for the whole of a Prime Scene playback.
+class _PlaybackSignals(xbmc.Player):
+    def __init__(self):
+        super(_PlaybackSignals, self).__init__()
+        self.terminal = ''
 
-    doModal takes the remote while our file is playing, including after the
-    chrome was hidden and after the dialog was closed early. Other videos do
-    not open it, and the dialog is closed when playback ends.
-    """
+    def onAVStarted(self):
+        self.terminal = ''
+
+    def onPlayBackEnded(self):
+        self.terminal = 'ended'
+
+    def onPlayBackStopped(self):
+        self.terminal = 'stopped'
+
+    def onPlayBackError(self):
+        self.terminal = 'error'
+
+
+def watch_playback(profile):
+    """Close playback controls, then return the live application to its Home."""
     monitor = xbmc.Monitor()
-    player = xbmc.Player()
+    player = _PlaybackSignals()
+    report = DiagnosticLog(profile, xbmcaddon.Addon(ADDON_ID).getAddonInfo('version'),
+                           operation='playback_return')
     latched = False
+    active_note = None
     while not monitor.abortRequested():
         playing = _playing(player)
         note = _read_note(profile)
-        if overlay_due(playing, note, time(), latched):
+        if note and (not active_note or note.get('request_id') != active_note.get('request_id')):
+            active_note = note
+            player.terminal = ''
+            report({'event': 'playback_request_armed', 'stage': 'await_player',
+                    'request_id': note.get('request_id'), 'has_return_target': bool(note.get('target')),
+                    'current_window_id': xbmcgui.getCurrentWindowId()})
+        if overlay_due(playing, note or active_note, time(), latched):
+            if not latched:
+                report({'event': 'playback_observed', 'stage': 'player_active',
+                        'request_id': (active_note or {}).get('request_id'), 'result': 'success'})
             latched = True
             dialog = PlayerOverlay(_PLAYER_XML, _addon_path(), 'Default', '1080i')
             dialog.player = player
             dialog.profile = profile
-            dialog.info = {
-                'title': (note or {}).get('title') or '',
-                'meta': (note or {}).get('meta') or '',
-                'volume': 40,
-            }
+            dialog.info = {'title': (active_note or {}).get('title') or '',
+                           'meta': (active_note or {}).get('meta') or '', 'volume': 40}
             try:
                 dialog.doModal()
-            except Exception:
-                xbmc.log('[Prime Scene] Player controls stopped\n' + format_exc(), xbmc.LOGERROR)
-            if not _playing(player):
-                latched = False
-                _clear_note(profile)
-        else:
-            latched = False
-            if not playing:
-                _clear_note(profile)
-        if monitor.waitForAbort(0.2):
+            except Exception as error:
+                report({'event': 'playback_overlay_failed',
+                        'request_id': (active_note or {}).get('request_id'),
+                        'exception': exception_details(error), 'result': 'failure'})
+            # The dialog has finished closing before the home window is raised.
+            playing = _playing(player)
+        if active_note and not playing:
+            age = time() - float(active_note.get('armed') or 0)
+            reason = player.terminal or 'stopped_or_ended'
+            if latched or player.terminal == 'error' or age >= _NOTE_WINDOW:
+                if not latched and player.terminal != 'error':
+                    reason = 'start_timeout'
+                report({'event': 'playback_finished', 'stage': 'return_to_home',
+                        'request_id': active_note.get('request_id'), 'reason': reason,
+                        'current_window_id': xbmcgui.getCurrentWindowId(),
+                        'since_request_ms': round(age * 1000),
+                        'result': 'failure' if reason in ('error', 'start_timeout') else 'success'})
+                _request_playback_return(active_note, reason, report)
+                _clear_note(profile, active_note.get('request_id'))
+                latched, active_note, player.terminal = False, None, ''
+            # A fresh pending request must survive the pre-playback gap.
+        if monitor.waitForAbort(0.1):
             break
 
 
@@ -1765,7 +1930,9 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
         window.doModal()
     finally:
         window.stop.set()
-        for worker in (window.worker, getattr(window, 'detail_worker', None), getattr(window, 'visual_worker', None)):
+        window._unregister_return()
+        for worker in (window.worker, getattr(window, 'detail_worker', None),
+                       getattr(window, 'visual_worker', None), window.return_worker):
             if worker is not None:
                 while worker.is_alive():
                     worker.join(0.1)

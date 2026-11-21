@@ -26,9 +26,6 @@ def dashboard_packet(g, account_name=''):
     profile_name = g.addon.getSetting('ProfileName') or account_name or 'Profiles'
     tiles = ((profile_name, '__legacy_profile__', 'profile'),
              ('My Stuff', '__legacy_mystuff__', 'my-stuff'),
-             ('Home', '__prime_home__', 'home'),
-             ('Movies', '__prime_movies__', 'cinema'),
-             ('TV shows', '__prime_tv__', 'tv'),
              ('Sports', '__legacy_sports__', 'sports'),
              ('News', '__legacy_news__', 'news'),
              ('Live TV', '__legacy_live__', 'live-tv'))

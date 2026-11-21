@@ -1,0 +1,9 @@
+0.2.9
+- Return to the application Home when a movie or episode ends or is stopped.
+- Restore the existing window after playback controls close; do not open a second app.
+- Keep pending playback requests alive until playback starts instead of deleting their return state.
+- Keep current cards and hero artwork visible while a new catalog page arrives.
+- Remove navigation loading text and the title-resolution busy dialog.
+- Home, Movies and TV navigation appear only in the top selectors.
+- Preserve landscape cards, TV episode browsing, season selection and description/artwork read-ahead.
+- Record playback request IDs, terminal reason, actual return window, timings and explicit failures.

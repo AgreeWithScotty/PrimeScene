@@ -1,25 +1,21 @@
-# Smooth Prime 0.2.8
+# Smooth Prime 0.2.9
 
-The current complete application remains plugin.video.primeinterface, with the
-0.2.7 Smooth Prime name/icon and existing player. Series/season cards open the
-show episode browser and a season selector when multiple actual linked seasons
-are present. Movie and individual-episode cards play their own item. No series
-card auto-selects a resume/first episode. Unknown title types resolve before the
-action is chosen, and an unavailable listing is reported instead of guessed.
+Same permanent application, based on the checksum-verified 0.2.8 ZIP. Preserve
+Smooth Prime branding, landscape cards, TV episode/season browsing, description
+and artwork read-ahead and all player/resolver backend bytes.
 
-Selected title metadata is read from the provider's selected node, keeping parent
-show data separate from child episode data. Cached list packets and parsed title
-nodes are reused. Show/season view state preserves Back and the original catalog
-selection. Normal card/description/image prefetching remains in place.
+The playback watcher correlates requests across the UI and resolver, retains
+the pending note before video starts, observes playback termination and queues
+Home restoration only after the overlay closes. The original window is activated
+by its registered ID, preserving its Kodi exit target. Exiting or changing the
+account invalidates the return target; new playback cancels stale commands.
+Primary Home/Movies/TV views are retained in memory during detail-view eviction.
 
-Card imagery prefers declared landscape art. Each card has the same black canvas
-and independent focus frame; portrait-only fallback images fit completely without
-stretching or clipping. Hero artwork and poster fields keep their separate roles.
+Navigation keeps existing cards/hero until replacement cards arrive and does
+not display loading text or a title-resolution busy dialog. Duplicate primary
+navigation cards and section headings are removed; top selectors remain.
+Genuine errors retain actionable reports. Real-run diagnostics include correlated
+request IDs, terminal reasons, actual window IDs, timing and explicit outcomes.
+No simulated tests or device-return success claims were made.
 
-Real-run diagnostics record click action/type, season and episode counts, artwork
-coverage, cache outcomes and existing request/parser diagnostics. No simulated
-provider/Kodi tests or real-device success claims were made. The original player
-and backend code/branding assets were preserved in the actual ZIP.
-
-Rebuild using tools/package_tv_artwork_release.py and the verified published
-0.2.7 ZIP. Source overlays are listed in that builder.
+Rebuild using tools/package_return_release.py with the published 0.2.8 ZIP.
