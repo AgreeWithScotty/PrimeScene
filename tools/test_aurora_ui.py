@@ -461,7 +461,7 @@ def referenced_files(addon):
     media = skin / 'media'
     fonts = skin / 'fonts'
     missing = []
-    for name in ('Font.xml', 'PrimeSceneHome.xml', 'PrimeScenePlayer.xml'):
+    for name in ('Font.xml', 'PrimeSceneHome.xml'):
         root = ET.parse(skin / '1080i' / name).getroot()
         print('parsed %s' % name)
         for node in root.iter():
@@ -809,7 +809,6 @@ def main():
             ('resources/lib/public_catalog.py', 'public_catalog.py'),
             ('resources/lib/dedicated_bridge.py', 'dedicated_bridge.py'),
             ('resources/skins/Default/1080i/PrimeSceneHome.xml', 'skins/Default/1080i/PrimeSceneHome.xml'),
-            ('resources/skins/Default/1080i/PrimeScenePlayer.xml', 'skins/Default/1080i/PrimeScenePlayer.xml'),
             ('resources/skins/Default/1080i/Font.xml', 'skins/Default/1080i/Font.xml'),
             ('resources/lib/title_art.py', 'title_art.py'),
             ('resources/lib/title_glyphs.json', 'title_glyphs.json'),
@@ -878,17 +877,28 @@ def main():
     check(not contract, 'WindowXML path contract and getControl types')
     playback = (ADDON / 'resources' / 'lib' / 'playback.py').read_text(encoding='utf-8')
     service = (ADDON / 'resources' / 'lib' / 'service.py').read_text(encoding='utf-8')
-    check('note_playback' in playback, 'playback hands the title to Aurora without replacing PlayVideo')
-    check('watch_playback' in service, 'service shows the Aurora player overlay')
+    check('note_playback' in playback, 'playback hands the title to Kodi without replacing PlayVideo')
+    check('watch_playback' in service, 'service watches playback so the catalog can return')
+    source_aurora = (ROOT / 'source' / 'rewrite' / 'aurora.py').read_text(encoding='utf-8')
+    source_service = (ROOT / 'source' / 'rewrite' / 'service.py').read_text(encoding='utf-8')
+    removed_class = 'Player' + 'Overlay'
+    removed_window = 'PrimeScene' + 'Player.xml'
+    check(('class ' + removed_class) not in source_aurora and removed_window not in source_aurora,
+          'source no longer defines the playback overlay')
+    check('Dialog.Close' not in source_aurora and 'videoosd' not in source_aurora and 'seekbar' not in source_aurora,
+          'source does not close Kodi playback dialogs')
+    check('xbmc.Player().play' in source_aurora, 'playback still hands the URL to Kodi')
+    check(removed_class not in source_service and removed_window not in source_service
+          and 'Dialog.Close' not in source_service,
+          'service does not open a playback overlay or close the stock OSD')
     gui_source = (ADDON / 'gui.py').read_text(encoding='utf-8')
     check('from resources.lib.aurora import' in gui_source and 'open_interface' in gui_source,
           'application entry opens Aurora')
 
     xbmc = install_stubs()
     sys.path.insert(0, str(ADDON))
-    from resources.lib.aurora import (AuroraHome, PlayerOverlay, _SCRIM, _fit_art, _item, _meta,
-                                      choose_playback, note_playback, open_interface, overlay_due,
-                                      playback_row, watch_playback)
+    from resources.lib.aurora import (AuroraHome, _SCRIM, _fit_art, _item, _meta,
+                                      choose_playback, note_playback, open_interface, playback_row)
     from resources.lib.public_catalog import parse_cards
 
     import resources.lib.aurora as aurora
@@ -896,7 +906,6 @@ def main():
     # Home, Movies and TV go through StorefrontLoader, which constructs its own bridge.
     navigation.ProviderBridge = FakeBridge
     aurora.ProviderBridge = FakeBridge
-    PlayerOverlay.automatic = False
 
     def png_size(path):
         data = Path(path).read_bytes()
@@ -1071,7 +1080,7 @@ def main():
     check(Player.shared.played == [FILM_URL], 'card click hands the existing playback URL to the player')
     check(not WindowXML.opened, 'card click does not open another screen')
     note = (Path(PROFILE) / 'aurora-playback.json').read_text(encoding='utf-8')
-    check('Harbor Lights' in note, 'playback note carries the title for the overlay')
+    check('Harbor Lights' in note, 'playback note carries the title for the return to this card')
 
     home.onAction(Action(10))
     ready = wait_until(lambda: home.path == 'root' and not home.busy and home.getControl(200).size() == 3
@@ -1211,122 +1220,6 @@ def main():
     check(open_interface(g, settings) is False, 'a non-website source asks for the website data source')
     check(any('Website' in message for _heading, message in dialog.messages),
           'the website data source message is shown')
-
-    overlay = PlayerOverlay('PrimeScenePlayer.xml', str(ADDON), 'Default', '1080i')
-    overlay.player = Player()
-    overlay.info = {'title': 'Harbor Lights', 'meta': '2021  •  FILM', 'position': 754, 'duration': 9360, 'volume': 35}
-    overlay.doModal()
-    print('')
-    print('=== player ===')
-    print('elapsed %s total %s progress %s chrome %s' % (
-        overlay.getProperty('Elapsed'), overlay.getProperty('Total'), overlay.getControl(400).percent,
-        overlay.getProperty('Chrome')))
-    player_xml = (ADDON / 'resources/skins/Default/1080i/PrimeScenePlayer.xml').read_text(encoding='utf-8')
-    check(overlay.xml == 'PrimeScenePlayer.xml', 'player overlay loads PrimeScenePlayer.xml')
-    check('Window.Property(Chrome)' in player_xml and 'stop.png' in player_xml,
-          'player chrome is one Aurora group with a stop control')
-    check(overlay.getProperty('Title') == 'HARBOR LIGHTS', 'player title')
-    check(overlay.getProperty('Chrome') == '1', 'player chrome starts visible')
-    check(overlay.getProperty('Elapsed') == '12:34', 'elapsed time')
-    check(overlay.getProperty('Total') == '2:36:00', 'total time')
-    check(overlay.getControl(400).percent == 8, 'progress percent')
-    xbmc.builtins.clear()
-    overlay.onClick(501)
-    check('PlayerControl(Play)' in xbmc.builtins, 'pause button uses Kodi player controls')
-    overlay.onAction(Action(10))
-    check(overlay.getProperty('Chrome') == '' and not getattr(overlay, 'closed', False),
-          'back hides the chrome and leaves the controls alive')
-    overlay.onAction(Action(12))
-    check(overlay.getProperty('Chrome') == '1', 'pause brings the same chrome back')
-    overlay.hide_chrome()
-    overlay.onAction(Action(11))
-    check(overlay.getProperty('Chrome') == '1', 'info brings the same chrome back')
-    overlay.hide_chrome()
-    overlay.onAction(Action(24))
-    check(overlay.getProperty('Chrome') == '1', 'the OSD key brings the same chrome back')
-    overlay.hide_chrome()
-    overlay.onAction(Action(7))
-    check(overlay.getProperty('Chrome') == '1', 'OK brings the same chrome back')
-    overlay.hide_chrome()
-    Player.shared.time = 100
-    Player.shared.total = 9360
-    overlay.onAction(Action(2))
-    check(Player.shared.time == 110 and overlay.getProperty('Chrome') == '1',
-          'a hidden right press seeks and shows the time bar')
-    overlay.onAction(Action(20))
-    check(Player.shared.time == 120, 'step forward seeks while the chrome is up')
-    xbmc.builtins.clear()
-    overlay.onAction(Action(13))
-    check('PlayerControl(Stop)' in xbmc.builtins and not Player.shared.playing and getattr(overlay, 'closed', False),
-          'stop ends playback and closes the chrome')
-    check(overlay_due(True, {'armed': time.time()}, time.time(), False), 'fresh playback may show the overlay')
-    check(not overlay_due(True, {'armed': time.time() - 500}, time.time(), False),
-          'an old note does not cover someone else playing')
-    check(overlay_due(True, {'armed': time.time() - 500}, time.time(), True), 'overlay stays for the title already shown')
-    check(not overlay_due(False, {'armed': time.time()}, time.time(), True), 'overlay leaves when playback stops')
-
-    again = PlayerOverlay('PrimeScenePlayer.xml', str(ADDON), 'Default', '1080i')
-    again.player = Player()
-    Player.shared.playing = True
-    Player.shared.subs = ['English']
-    Player.shared.audios = ['English', 'Spanish']
-    again.info = {'title': 'Harbor Lights', 'meta': '2021  •  FILM', 'position': 10, 'duration': 100, 'volume': 40}
-    again.doModal()
-    xbmc.conditions['Window.IsActive(videoosd)'] = True
-    xbmc.conditions['Window.IsActive(seekbar)'] = True
-    xbmc.builtins.clear()
-    check(again.reclaim_skin_osd(), 'a skin OSD that appears during Prime Scene playback is closed')
-    check('Dialog.Close(videoosd,true)' in xbmc.builtins and 'Dialog.Close(seekbar,true)' in xbmc.builtins,
-          'Estuary video OSD and seek bar are dismissed')
-    check(again.getProperty('Chrome') == '1', 'dismissing the skin OSD shows the Aurora chrome')
-    again.refresh_streams()
-    check(again.getProperty('HasSubtitles') == '1' and again.getProperty('HasAudio') == '1',
-          'subtitle and audio controls follow the streams Prime provides')
-    Dialog.choices = []
-    again.onClick(504)
-    again.onClick(505)
-    check([item[0] for item in Dialog.choices] == ['Subtitles', 'Audio'],
-          'subtitle and audio choices use the Aurora dialog')
-    xbmc.conditions.clear()
-    again._chrome_at = 0
-    xbmc.conditions['Player.Paused'] = False
-    again.maintain()
-    check(again.getProperty('Chrome') == '' and not getattr(again, 'closed', False),
-          'the chrome hides on its own while playback continues')
-    xbmc.conditions['Player.Paused'] = True
-    again.reveal()
-    again._chrome_at = 0
-    again.maintain()
-    check(again.getProperty('Chrome') == '1', 'pause keeps the chrome on screen')
-    xbmc.conditions['Player.Paused'] = False
-    Player.shared.playing = False
-    again.maintain()
-    check(getattr(again, 'closed', False), 'the chrome closes when playback ends')
-
-    note_playback(PROFILE, 'Harbor Lights', '2021  •  FILM')
-    Player.shared.playing = True
-    WindowXML.opened = []
-    Monitor.waits = 0
-    Monitor.limit = 4
-    watch_playback(PROFILE)
-    opened = [window for window in WindowXML.opened if getattr(window, 'xml', '') == 'PrimeScenePlayer.xml']
-    print('service overlays %s' % len(opened))
-    check(len(opened) >= 2, 'the overlay is shown again for the whole playback after it closes')
-    check(all(window.getProperty('Title') == 'HARBOR LIGHTS' and window.getProperty('Chrome') == '1'
-              for window in opened), 'each return uses the Aurora title and chrome')
-    WindowXML.opened = []
-    (Path(PROFILE) / 'aurora-playback.json').unlink()
-    Monitor.waits = 0
-    Monitor.limit = 2
-    watch_playback(PROFILE)
-    check(not any(getattr(window, 'xml', '') == 'PrimeScenePlayer.xml' for window in WindowXML.opened),
-          'another video does not get the Aurora controls')
-    note_playback(PROFILE, 'Harbor Lights', '2021  •  FILM')
-    Player.shared.playing = False
-    Monitor.waits = 0
-    Monitor.limit = 2
-    watch_playback(PROFILE)
-    check(not (Path(PROFILE) / 'aurora-playback.json').exists(), 'ending playback clears the Aurora note')
 
     startup_calls = []
     gui_calls = []

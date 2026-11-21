@@ -43,7 +43,6 @@ ADDON_ID = 'plugin.video.primeinterface'
 # Estuary always ships Home.xml, so that name loads the skin window. These
 # names are not skin windows, so the add-on files are the ones that open.
 _HOME_XML = 'PrimeSceneHome.xml'
-_PLAYER_XML = 'PrimeScenePlayer.xml'
 # Amazon's public image service. A width suffix keeps the texture cache on a
 # predictable file instead of the full master.
 _AMAZON_IMAGE = compile_re(
@@ -54,10 +53,6 @@ _CARD_ART = 720
 _HERO_ART = 1280
 _DESCRIPTION_AHEAD = 10
 _DESCRIPTION_BEHIND = 2
-
-
-def _addon_path():
-    return xbmcaddon.Addon(ADDON_ID).getAddonInfo('path')
 
 
 def _http(value):
@@ -469,19 +464,6 @@ def _clear_note(profile, request_id=None):
         pass
 
 
-def overlay_due(playing, note, now, latched):
-    """True while a Prime Scene title we just started is on screen."""
-    if not playing or not isinstance(note, dict):
-        return False
-    if latched:
-        return True
-    try:
-        armed = float(note.get('armed') or 0)
-    except (TypeError, ValueError):
-        return False
-    return 0 <= now - armed <= _NOTE_WINDOW
-
-
 def play_row(row, profile):
     _clear_note(profile)
     note_playback(profile, row.get('title') or 'Smooth Prime', _detail_meta(row))
@@ -519,15 +501,6 @@ def _top_selector_row(pluginid, row):
             and not _kind(row.get('info'))
             and str(row.get('title') or '').strip().casefold() in
             ('home', 'movie', 'movies', 'tv', 'tv shows', 'sports', 'purchases', 'purchases & rentals'))
-
-
-def _clock(seconds):
-    seconds = int(seconds or 0)
-    hours, rest = divmod(seconds, 3600)
-    minutes, secs = divmod(rest, 60)
-    if hours:
-        return '%d:%02d:%02d' % (hours, minutes, secs)
-    return '%d:%02d' % (minutes, secs)
 
 
 def failure_detail(error):
@@ -1838,13 +1811,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self.close()
 
 
-_SEEK_STEPS = {1: -10, 2: 10, 20: 10, 21: -10, 22: 30, 23: -30, 16: 30, 17: -30, 77: 10, 78: -10}
-_PAUSE_ACTIONS = {12, 79, 229}
-_INFO_ACTIONS = {11, 18, 24, 163}
-_SKIN_OSDS = ('videoosd', 'seekbar', 'videobookmarks', 'playerprocessinfo')
-_CHROME_SECONDS = 5
-
-
 def _playing(player):
     try:
         return bool(player.isPlaying())
@@ -1852,249 +1818,17 @@ def _playing(player):
         return False
 
 
-def _player_paused():
-    try:
-        return bool(xbmc.getCondVisibility('Player.Paused'))
-    except Exception:
+def _title_is_playing(playing, note, now, latched):
+    """True while the Smooth Prime title just started is the active Kodi video."""
+    if not playing or not isinstance(note, dict):
         return False
-
-
-class PlayerOverlay(xbmcgui.WindowXMLDialog):
-    """One set of playback controls for the whole Prime Scene title.
-
-    The dialog stays open from the start of playback until it ends. Back hides
-    the chrome the first time and stops the second time, so Estuary's VideoOSD
-    never becomes the control scheme. Pause, OK, info and seek bring the same
-    chrome back. automatic is off in the headless test, which calls maintain().
-    """
-
-    automatic = True
-
-    def __init__(self, *args, **kwargs):
-        _prepare(self, args)
-        self.info = {}
-        self.player = None
-        self._subs = []
-        self._audios = []
-        self._chrome_at = 0
-        self._halt = Event()
-        self._pump = None
-        self._ready_player = False
-
-    def onInit(self):
-        if self._ready_player:
-            return
-        self._ready_player = True
-        info = self.info or {}
-        self.setProperty('Title', (info.get('title') or 'SMOOTH PRIME').upper())
-        self.setProperty('Meta', info.get('meta') or '')
-        self.apply_times(info.get('position') or 0, info.get('duration') or 0)
-        volume = self.getControl(520)
-        if hasattr(volume, 'setPercent'):
-            volume.setPercent(int(info.get('volume') or 40))
-        self.reveal()
-        if self.automatic and self._pump is None:
-            self._pump = Thread(target=self._run, name='AuroraPlayer', daemon=True)
-            self._pump.start()
-
-    def _run(self):
-        while not self._halt.is_set():
-            self.maintain()
-            if self._halt.wait(0.2):
-                return
-
-    def close(self):
-        self._halt.set()
-        pump = self._pump
-        self._pump = None
-        if pump is not None and pump is not current_thread() and pump.is_alive():
-            pump.join(1)
-        super(PlayerOverlay, self).close()
-
-    def reveal(self):
-        self._chrome_at = time()
-        self.setProperty('Chrome', '1')
-        try:
-            self.setFocusId(501)
-        except Exception:
-            pass
-
-    def hide_chrome(self):
-        self.setProperty('Chrome', '')
-
-    def onAction(self, action):
-        aid = action.getId()
-        hidden = self.getProperty('Chrome') != '1'
-        if aid in _BACK:
-            if hidden:
-                self._stop_playback()
-            else:
-                self.hide_chrome()
-            return
-        if aid == 13:
-            self._stop_playback()
-            return
-        if aid == 25:
-            self.reveal()
-            self._choose_subtitles()
-            return
-        delta = _SEEK_STEPS.get(aid)
-        if delta is not None and (hidden or aid not in (1, 2)):
-            self._seek(delta)
-            self.reveal()
-            return
-        if hidden and aid in _PAUSE_ACTIONS.union({7}):
-            self.reveal()
-            xbmc.executebuiltin('PlayerControl(Play)')
-            return
-        if aid in _INFO_ACTIONS:
-            self.reveal()
-            return
-        if aid in _PAUSE_ACTIONS:
-            self.reveal()
-            xbmc.executebuiltin('PlayerControl(Play)')
-            return
-        if aid == 7:
-            self._chrome_at = time()
-
-    def onClick(self, control_id):
-        self.reveal()
-        if control_id == 500:
-            self._seek(-10)
-        elif control_id == 501:
-            xbmc.executebuiltin('PlayerControl(Play)')
-        elif control_id == 502:
-            self._seek(10)
-        elif control_id == 503:
-            self._stop_playback()
-        elif control_id == 504:
-            self._choose_subtitles()
-        elif control_id == 505:
-            self._choose_audio()
-
-    def _seek(self, delta):
-        player = self.player
-        if player is None:
-            return
-        try:
-            now = float(player.getTime() or 0)
-            total = float(player.getTotalTime() or 0)
-        except Exception:
-            return
-        target = max(0, now + delta)
-        if total:
-            target = min(total, target)
-        try:
-            player.seekTime(target)
-        except Exception:
-            xbmc.executebuiltin('PlayerControl(Seek)')
-        self.apply_times(target, total)
-
-    def _stop_playback(self):
-        xbmc.executebuiltin('PlayerControl(Stop)')
-        player = self.player
-        if player is not None:
-            try:
-                player.stop()
-            except Exception:
-                pass
-        self.close()
-
-    def refresh_streams(self):
-        player = self.player
-        subs, audios = [], []
-        if player is not None:
-            try:
-                subs = list(player.getAvailableSubtitleStreams() or [])
-            except Exception:
-                subs = []
-            try:
-                audios = list(player.getAvailableAudioStreams() or [])
-            except Exception:
-                audios = []
-        self._subs = subs
-        self._audios = audios
-        self.setProperty('HasSubtitles', '1' if subs else '')
-        self.setProperty('HasAudio', '1' if len(audios) > 1 else '')
-
-    def _choose_subtitles(self):
-        self.refresh_streams()
-        if not self._subs:
-            return
-        choice = xbmcgui.Dialog().select('Subtitles', ['Off'] + self._subs)
-        player = self.player
-        if choice < 0 or player is None:
-            return
-        try:
-            if choice == 0:
-                if hasattr(player, 'showSubtitles'):
-                    player.showSubtitles(False)
-            else:
-                if hasattr(player, 'setSubtitleStream'):
-                    player.setSubtitleStream(choice - 1)
-                if hasattr(player, 'showSubtitles'):
-                    player.showSubtitles(True)
-        except Exception:
-            pass
-
-    def _choose_audio(self):
-        self.refresh_streams()
-        if len(self._audios) < 2:
-            return
-        choice = xbmcgui.Dialog().select('Audio', self._audios)
-        player = self.player
-        if choice < 0 or player is None:
-            return
-        try:
-            if hasattr(player, 'setAudioStream'):
-                player.setAudioStream(choice)
-        except Exception:
-            pass
-
-    def reclaim_skin_osd(self):
-        """Drop Estuary's OSD if a key opened it, and show this chrome instead."""
-        opened = False
-        for name in _SKIN_OSDS:
-            try:
-                active = xbmc.getCondVisibility('Window.IsActive(%s)' % name)
-            except Exception:
-                active = False
-            if active:
-                xbmc.executebuiltin('Dialog.Close(%s,true)' % name)
-                opened = True
-        if opened:
-            self.reveal()
-        return opened
-
-    def apply_times(self, position, duration):
-        self.setProperty('Elapsed', _clock(position))
-        self.setProperty('Total', _clock(duration))
-        percent = 0
-        if duration:
-            percent = max(0, min(100, int(100 * float(position) / float(duration))))
-        bar = self.getControl(400)
-        if hasattr(bar, 'setPercent'):
-            bar.setPercent(percent)
-
-    def tick(self, player):
-        try:
-            position = player.getTime()
-            duration = player.getTotalTime()
-        except Exception:
-            return
-        self.apply_times(position, duration)
-
-    def maintain(self):
-        player = self.player
-        if player is None or not _playing(player):
-            self.close()
-            return
-        self.reclaim_skin_osd()
-        self.tick(player)
-        self.refresh_streams()
-        if self.getProperty('Chrome') == '1' and not _player_paused():
-            if time() - (self._chrome_at or 0) >= _CHROME_SECONDS:
-                self.hide_chrome()
+    if latched:
+        return True
+    try:
+        armed = float(note.get('armed') or 0)
+    except (TypeError, ValueError):
+        return False
+    return 0 <= now - armed <= _NOTE_WINDOW
 
 
 class _PlaybackSignals(xbmc.Player):
@@ -2116,7 +1850,11 @@ class _PlaybackSignals(xbmc.Player):
 
 
 def watch_playback(profile):
-    """Close playback controls, then restore the live application's selected card."""
+    """Return the live catalog to its selected card when Kodi finishes the title.
+
+    Playback itself stays with Kodi: this loop does not open a window and does
+    not close the stock OSD, seek bar or player dialogs.
+    """
     monitor = xbmc.Monitor()
     player = _PlaybackSignals()
     report = DiagnosticLog(profile, xbmcaddon.Addon(ADDON_ID).getAddonInfo('version'),
@@ -2132,24 +1870,11 @@ def watch_playback(profile):
             report({'event': 'playback_request_armed', 'stage': 'await_player',
                     'request_id': note.get('request_id'), 'has_return_target': bool(note.get('target')),
                     'current_window_id': xbmcgui.getCurrentWindowId()})
-        if overlay_due(playing, note or active_note, time(), latched):
+        if _title_is_playing(playing, note or active_note, time(), latched):
             if not latched:
                 report({'event': 'playback_observed', 'stage': 'player_active',
                         'request_id': (active_note or {}).get('request_id'), 'result': 'success'})
             latched = True
-            dialog = PlayerOverlay(_PLAYER_XML, _addon_path(), 'Default', '1080i')
-            dialog.player = player
-            dialog.profile = profile
-            dialog.info = {'title': (active_note or {}).get('title') or '',
-                           'meta': (active_note or {}).get('meta') or '', 'volume': 40}
-            try:
-                dialog.doModal()
-            except Exception as error:
-                report({'event': 'playback_overlay_failed',
-                        'request_id': (active_note or {}).get('request_id'),
-                        'exception': exception_details(error), 'result': 'failure'})
-            # The dialog has finished closing before the home window is raised.
-            playing = _playing(player)
         if active_note and not playing:
             age = time() - float(active_note.get('armed') or 0)
             reason = player.terminal or 'stopped_or_ended'
@@ -2164,7 +1889,6 @@ def watch_playback(profile):
                 _request_playback_return(active_note, reason, report)
                 _clear_note(profile, active_note.get('request_id'))
                 latched, active_note, player.terminal = False, None, ''
-            # A fresh pending request must survive the pre-playback gap.
         if monitor.waitForAbort(0.1):
             break
 

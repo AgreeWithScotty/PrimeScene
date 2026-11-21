@@ -47,14 +47,14 @@ class BackgroundService(xbmc.Monitor):
         self.proxy_thread.start()
         Log('Service: Proxy server started')
 
-        def _aurora_watch():
+        def _playback_return():
             try:
                 from .aurora import watch_playback
                 watch_playback(Globals().DATA_PATH)
             except Exception as error:
-                Log('Service: Aurora overlay stopped (' + type(error).__name__ + ')')
+                Log('Service: playback return stopped (' + type(error).__name__ + ')')
 
-        threading.Thread(target=_aurora_watch, name='AuroraPlayback', daemon=True).start()
+        threading.Thread(target=_playback_return, name='PlaybackReturn', daemon=True).start()
 
         from time import time
         Log('Service started')

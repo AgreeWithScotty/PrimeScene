@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.16" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.17" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -25,9 +25,9 @@
       <fanart>resources/skins/Default/media/splash.png</fanart>
     </assets>
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
-    <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
+    <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.16[CR]- Restore the native catalog view and rebind cards whenever Kodi reinitializes the existing window after video.[CR]- Keep the originating card, page, season and navigation position without a catalog fetch.[CR]- Confirm native card count, view, selected index and focused control in the return diagnostics.[CR]- Preserve existing playback, sign-out, TV episode browsing, preloading and SMOOTH branding.</news>
+    <news>0.2.17[CR]- Removed custom playback control bar; Kodi's standard player controls restored.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
