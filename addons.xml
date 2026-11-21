@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.9" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.10" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -27,7 +27,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.9[CR]- Return to the application Home when a movie or episode ends or is stopped.[CR]- Restore the existing window after playback controls close; do not open a second app.[CR]- Keep pending playback requests alive until playback starts instead of deleting their return state.[CR]- Keep current cards and hero artwork visible while a new catalog page arrives.[CR]- Remove navigation loading text and the title-resolution busy dialog.[CR]- Home, Movies and TV navigation appear only in the top selectors.[CR]- Preserve landscape cards, TV episode browsing, season selection and description/artwork read-ahead.[CR]- Record playback request IDs, terminal reason, actual return window, timings and explicit failures.</news>
+    <news>0.2.10[CR]- Return to the movie or episode card that launched playback when it ends or stops.[CR]- Preserve the original page, selected card, loaded items, season and Back history.[CR]- Capture the return position at click time, including asynchronous title resolution.[CR]- Restore the existing native window without navigating to Home or fetching the page again.[CR]- Keep newer appended pages when the originating view is still present.[CR]- Clear saved playback context on sign-out and retain stale-return guards.[CR]- Record expected/actual card positions and whether the originating card was restored.[CR]- Preserve all 0.2.9 navigation, artwork, episode browsing and preloading changes.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

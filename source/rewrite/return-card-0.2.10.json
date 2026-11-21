@@ -1,0 +1,32 @@
+{
+  "version": "0.2.10",
+  "base_version": "0.2.9",
+  "base_commit": "36a345bb719b5b1643b7a23fb023b8ad06933f58",
+  "sha256": "e7a86948884714318c5bdd9e59daafc4929852ef7599e2c7cc023ce2323ea6c8",
+  "backend_bytes_preserved": true,
+  "overlay_and_title_policy_preserved": true,
+  "simulated_tests_run": false,
+  "real_device_return_observed": false,
+  "changes": [
+    "return to the originating card/page instead of Home",
+    "capture origin at click time before async resolution",
+    "preserve season, Back history and loaded view; reuse appended pages",
+    "clear origin on account changes and preserve stale-request guards"
+  ],
+  "diagnostics": [
+    "request/operation IDs, version/environment",
+    "expected and actual card indices; origin identity restored boolean",
+    "current-view versus origin-snapshot restoration source",
+    "existing terminal/window/timing and exception diagnostics"
+  ],
+  "checks": [
+    "Python/XML syntax",
+    "actual ZIP CRC and SHA-256",
+    "unchanged overlay/title-policy AST",
+    "unchanged non-overlay ZIP file bytes"
+  ],
+  "primary_sources": [
+    "https://github.com/xbmc/xbmc/blob/21.3-Omega/xbmc/interfaces/builtins/GUIBuiltins.cpp",
+    "https://github.com/xbmc/xbmc/blob/21.3-Omega/xbmc/interfaces/legacy/Window.cpp"
+  ]
+}

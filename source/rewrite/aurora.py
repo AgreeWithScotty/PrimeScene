@@ -598,6 +598,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.window_id = None
         self.interface_session = None
         self._replace_rail = False
+        self.playback_origin = None
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
 
@@ -668,6 +669,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def show_signed_out(self):
         self._unregister_return()
+        self.playback_origin = None
         with self.lock:
             self.generation += 1
             self.rows = []
@@ -704,6 +706,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def pause_catalog(self, status='Signing out...'):
         self.stop.set()
         self._unregister_return()
+        self.playback_origin = None
         self.setProperty('AccountLabel', status)
         self.setProperty('HeroTag', ' '.join(status.upper().split()))
         self.setProperty('HeroMeta', ' '.join(status.upper().split()))
@@ -761,31 +764,93 @@ class AuroraHome(xbmcgui.WindowXML):
                 superseded = pending.get('request_id') and pending['request_id'] != request.get('request_id')
                 if (self.stop.is_set() or self.getProperty('InterfaceSession') != self.interface_session
                         or superseded or _playing(xbmc.Player())):
-                    self.performance({'event': 'playback_home_return_cancelled',
+                    self.performance({'event': 'playback_card_return_cancelled',
                         'request_id': request.get('request_id'),
                         'reason': 'interface_invalidated_or_new_playback', 'result': 'cancelled'})
                     continue
-                self.history.clear()
-                self.nav = 'home'
+                origin = self.playback_origin
+                if origin and origin.get('request_id') not in (None, request.get('request_id')):
+                    self.performance({'event': 'playback_card_return_cancelled',
+                        'request_id': request.get('request_id'), 'reason': 'origin_superseded', 'result': 'cancelled'})
+                    continue
                 self._play_token += 1
-                self.navigate('root', remember=False, heading='Home')
+                source = 'current_view'
+                if origin:
+                    self.nav = origin['nav']
+                    in_current_view = any(row.get('url') == origin['url'] or origin['identity']
+                        and row.get('identity') == origin['identity'] for row in self.rows)
+                    if (self.path, self.query) != (origin['path'], origin['query']) or not in_current_view:
+                        self._save_view()
+                        if (self.path, self.query) == (origin['path'], origin['query']):
+                            with self.lock:
+                                self.rows = []
+                        self.views.pop((origin['path'], origin['query']), None)
+                        self.views[(origin['path'], origin['query'])] = origin['view']
+                        self.navigate(origin['path'], remember=False, query=origin['query'],
+                                      selection=origin['selected'], heading=origin['heading'], series=origin['series'],
+                                      save_current=False)
+                        source = 'origin_snapshot'
+                    self.history = list(origin['history'])
+                    self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
+                    self._section_label()
+                selected = self._selected_index()
+                identity_found = False
+                if origin:
+                    with self.lock:
+                        selected = next((index for index, row in enumerate(self.rows)
+                            if row.get('url') == origin['url'] or origin['identity']
+                            and row.get('identity') == origin['identity']), origin['selected'])
+                        selected = max(0, min(selected, len(self.rows) - 1))
+                        identity_found = bool(self.rows and (self.rows[selected].get('url') == origin['url']
+                            or origin['identity'] and self.rows[selected].get('identity') == origin['identity']))
                 before = xbmcgui.getCurrentWindowId()
                 # Activate the existing ID without changing WindowXML's original
                 # Kodi return window, as calling show() again would do.
                 xbmc.executebuiltin('ActivateWindow(%d)' % self.window_id, True)
+                if self.rows:
+                    self.setCurrentListPosition(selected)
                 self.setFocusId(200 if self.rows else 301)
                 current_window = xbmcgui.getCurrentWindowId()
-                self.performance({'event': 'playback_home_returned', 'stage': 'window_restore',
+                self.performance({'event': 'playback_card_returned', 'stage': 'window_restore',
                     'request_id': request.get('request_id'), 'reason': request.get('reason'),
                     'previous_window_id': before, 'target_window_id': self.window_id,
                     'current_window_id': current_window,
-                    'home_cards': len(self.rows), 'generation': self.generation,
+                    'cards': len(self.rows), 'generation': self.generation, 'source': source,
+                    'expected_index': selected, 'actual_index': self._selected_index(),
+                    'origin_present': bool(origin), 'origin_identity_restored': identity_found,
                     'elapsed_ms': round((monotonic() - started) * 1000),
-                    'result': 'success' if current_window == self.window_id else 'failure'})
+                    'result': 'success' if current_window == self.window_id
+                        and (not origin or identity_found and self._selected_index() == selected) else 'failure'})
+                self.playback_origin = None
             except Exception as error:
-                self.performance({'event': 'playback_home_return_failed',
+                self.performance({'event': 'playback_card_return_failed',
                     'request_id': request.get('request_id'), 'exception': exception_details(error),
                     'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'failure'})
+
+    def _capture_playback_origin(self):
+        """Capture at click time, before asynchronous title resolution can finish."""
+        with self.lock:
+            selected = self._selected_index()
+            visible = self.rows[selected] if 0 <= selected < len(self.rows) else {}
+            return {'path': self.path, 'query': self.query, 'nav': self.nav,
+                'heading': self.heading, 'selected': selected, 'url': visible.get('url'),
+                'identity': visible.get('identity'), 'series': deepcopy(self.series_context),
+                'history': list(self.history), 'view': {'rows': list(self.rows), 'items': list(self.items),
+                    'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at,
+                    'selected': selected, 'series': deepcopy(self.series_context)}}
+
+    def _start_playback(self, row, origin=None):
+        """Keep the launching card and original browse context until return."""
+        origin = origin or self._capture_playback_origin()
+        self.playback_origin = origin
+        play_row(row, self.g.DATA_PATH)
+        note = _read_note(self.g.DATA_PATH) or {}
+        if self.playback_origin is not None:
+            self.playback_origin['request_id'] = note.get('request_id')
+        self.performance({'event': 'playback_card_origin_saved', 'stage': 'return_origin',
+            'request_id': note.get('request_id'), 'index': origin['selected'], 'cards': len(origin['view']['rows']),
+            'has_card_identity': bool(origin['identity'] or origin['url']),
+            'series_context': bool(origin['series']), 'result': 'success'})
 
     def _section_label(self):
         self.setProperty('Section', '' if self.path in _SECTION_PATHS else (self.heading or '').upper())
@@ -802,7 +867,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 if oldest is not None:
                     self.views.pop(oldest)
 
-    def navigate(self, path, remember=True, query=None, selection=0, heading=None, series=None):
+    def navigate(self, path, remember=True, query=None, selection=0, heading=None, series=None, save_current=True):
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
             return
@@ -810,7 +875,8 @@ class AuroraHome(xbmcgui.WindowXML):
             if (path, query) == (self.path, self.query) and self.rows:
                 self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
                 return
-            self._save_view()
+            if save_current:
+                self._save_view()
             visible_cards = len(self.rows)
             if remember and (path, query) != (self.path, self.query):
                 previous_nav = {'root': 'home', '__prime_home__': 'home', '__prime_movies__': 'movies',
@@ -1233,7 +1299,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 if job[2] == self.generation and _detail_path(self.g.pluginid, self._selected_row()) == job[1]:
                     self._enrich(job[1])
             elif kind == 'play':
-                self._play_resolved(job[1], job[2], job[3], job[4])
+                self._play_resolved(job[1], job[2], job[3], job[4], job[5])
 
     def _queue_enrich(self):
         """Read the focused title and next ten descriptions before selection."""
@@ -1451,7 +1517,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if art and hasattr(item, 'setArt'):
                 item.setArt(art)
 
-    def _play_resolved(self, token, generation, path, title):
+    def _play_resolved(self, token, generation, path, title, origin=None):
         try:
             cached = self.detail_cache.get(path)
             if cached is None or cached.get('how') in ('error', 'wait', 'metadata'):
@@ -1477,7 +1543,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
             if playable is not None:
                 xbmc.log('[Prime Scene] Playing %s (%s) without a detail page' % (path, how), xbmc.LOGINFO)
-                play_row(playable, self.g.DATA_PATH)
+                self._start_playback(playable, origin)
                 return
             if how == 'picker':
                 self.navigate(path, heading=title or 'Smooth Prime')
@@ -1555,7 +1621,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if target is not None:
                 self.performance({'event': 'title_click', 'action': 'play',
                                   'media_kind': _kind(target.get('info')), 'result': 'success'})
-                play_row(target, self.g.DATA_PATH)
+                self._start_playback(target)
                 return
             if not path:
                 self.g.dialog.ok('Smooth Prime', 'This menu item is unavailable here. Open Settings for account options.')
@@ -1565,7 +1631,8 @@ class AuroraHome(xbmcgui.WindowXML):
             self._play_token += 1
             token = self._play_token
             self.setProperty('Busy', '1')
-            self.detail_jobs.put(('play', token, self.generation, path, row.get('title') or 'Smooth Prime'))
+            self.detail_jobs.put(('play', token, self.generation, path, row.get('title') or 'Smooth Prime',
+                                  self._capture_playback_origin()))
 
     def onAction(self, action):
         # Left and right belong to the list. The hero reads Container(200),
@@ -1863,7 +1930,7 @@ class _PlaybackSignals(xbmc.Player):
 
 
 def watch_playback(profile):
-    """Close playback controls, then return the live application to its Home."""
+    """Close playback controls, then restore the live application's selected card."""
     monitor = xbmc.Monitor()
     player = _PlaybackSignals()
     report = DiagnosticLog(profile, xbmcaddon.Addon(ADDON_ID).getAddonInfo('version'),
@@ -1903,7 +1970,7 @@ def watch_playback(profile):
             if latched or player.terminal == 'error' or age >= _NOTE_WINDOW:
                 if not latched and player.terminal != 'error':
                     reason = 'start_timeout'
-                report({'event': 'playback_finished', 'stage': 'return_to_home',
+                report({'event': 'playback_finished', 'stage': 'return_to_card',
                         'request_id': active_note.get('request_id'), 'reason': reason,
                         'current_window_id': xbmcgui.getCurrentWindowId(),
                         'since_request_ms': round(age * 1000),

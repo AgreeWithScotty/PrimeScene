@@ -1,0 +1,9 @@
+0.2.10
+- Return to the movie or episode card that launched playback when it ends or stops.
+- Preserve the original page, selected card, loaded items, season and Back history.
+- Capture the return position at click time, including asynchronous title resolution.
+- Restore the existing native window without navigating to Home or fetching the page again.
+- Keep newer appended pages when the originating view is still present.
+- Clear saved playback context on sign-out and retain stale-return guards.
+- Record expected/actual card positions and whether the originating card was restored.
+- Preserve all 0.2.9 navigation, artwork, episode browsing and preloading changes.
