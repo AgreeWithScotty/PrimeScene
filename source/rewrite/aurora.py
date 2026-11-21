@@ -648,6 +648,7 @@ class AuroraHome(xbmcgui.WindowXML):
             from .account_state import account_epoch
             self.account_generation = account_epoch(self.g.DATA_PATH)
         self._set_hero_status('', '')
+        self.setProperty('ShowSplash', '1')
         self.interface_session = token_hex(8)
         self.setProperty('InterfaceSession', self.interface_session)
         xbmcgui.Window(10000).setProperty(_HOME_REGISTRY, dumps({
@@ -699,6 +700,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setFocusId(306)
 
     def _set_hero_status(self, title, tag):
+        if title:
+            self.setProperty('ShowSplash', '')
         self.setProperty('HeroKicker', '')
         self.setProperty('HeroTitle', title)
         self.setProperty('HeroMeta', tag)
@@ -918,6 +921,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.busy = False
                 self.addItems(self.items)
                 self.setCurrentListPosition(selection or cached['selected'])
+            if self.items:
+                self.setProperty('ShowSplash', '')
             self.performance({'event': 'navigation_restored', 'source': 'view_memory', 'cards': len(self.rows),
                               'generation': token,
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
@@ -1007,6 +1012,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 if self._restore == restore:
                     self._restore = None
         if additions:
+            self.setProperty('ShowSplash', '')
             self._section_label()
             self.performance({'event': 'cards_published', 'added': len(additions), 'total': count,
                 'navigation_entries_hidden': sum(_top_selector_row(self.g.pluginid, row) for row in packet.get('rows') or []),

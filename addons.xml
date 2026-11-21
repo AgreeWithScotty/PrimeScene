@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.12" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.13" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -22,12 +22,12 @@
     <source>https://github.com/AgreeWithScotty/PrimeScene</source>
     <assets>
       <icon>icon.png</icon>
-      <fanart>fanart.jpg</fanart>
+      <fanart>resources/skins/Default/media/splash.png</fanart>
     </assets>
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.12[CR]- Remove Home and open Movies by default.[CR]- Use Movies, TV, Sports and Purchases as the four main selectors.[CR]- Read Movies/TV from Amazon's Included with Prime feed, split by title type and explicit Prime evidence.[CR]- Exclude unconfirmed, channel-only, rent/buy-only, preview-only and free-with-ads-only entries from Movies/TV.[CR]- Sports reads Amazon's actual sports storefront and preserves live-event title types.[CR]- Purchases follows Amazon's signed-in Purchases &amp; Rentals library link; it does not substitute Watchlist.[CR]- Warm the first two real pages for each section and invalidate old mixed-catalog page caches.[CR]- Preserve the new SP icon, ultramarine styling, episode browser, descriptions/artwork read-ahead and return to the playing card.[CR]- Record access/filter counts, library discovery, HTTP/redirect/parser details and explicit failures.</news>
+    <news>0.2.13[CR]- Use the black-and-white SMOOTH / FOR AMAZON PRIME icon.[CR]- Show that lockup as the add-on fanart and on the home window until the first cards appear.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
