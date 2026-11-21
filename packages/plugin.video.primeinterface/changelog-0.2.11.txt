@@ -1,0 +1,4 @@
+0.2.11
+- Replace the Prime Video accent cyan with electric ultramarine #4F5BFF.
+- Recolor the flat accent icons, including lighter edge blends of that blue.
+- Use the silver serif SP icon with an ultramarine edge.
