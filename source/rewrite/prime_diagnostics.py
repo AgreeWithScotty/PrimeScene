@@ -60,7 +60,7 @@ class DiagnosticLog:
         self.lock = RLock()
         self.lines = []
 
-    def replay_current(self):
+    def replay_current(self, replace=False):
         """Restore this redacted attempt after replacing an account's profile."""
         with self.lock:
             if not self.active():
@@ -68,7 +68,7 @@ class DiagnosticLog:
             try:
                 for name in self._files():
                     path = self.profile / name
-                    if not path.exists():
+                    if replace or not path.exists():
                         path.write_text(''.join(self.lines), encoding='utf-8')
             except OSError as error:
                 self._write_failure(error)

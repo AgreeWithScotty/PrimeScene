@@ -24,7 +24,10 @@ def state_db(profile):
     try:
         connection.execute('BEGIN IMMEDIATE')
         connection.execute('CREATE TABLE IF NOT EXISTS session (id INTEGER PRIMARY KEY, epoch TEXT, signed_out INTEGER)')
-        connection.execute('INSERT OR IGNORE INTO session VALUES (1, ?, 0)', (secrets.token_hex(16),))
+        connection.execute('INSERT OR IGNORE INTO session (id, epoch, signed_out) VALUES (1, ?, 0)', (secrets.token_hex(16),))
+        # Leave the three-column session table compatible with older invocations.
+        connection.execute('CREATE TABLE IF NOT EXISTS cleanup (id INTEGER PRIMARY KEY, pending INTEGER NOT NULL)')
+        connection.execute('INSERT OR IGNORE INTO cleanup VALUES (1, 0)')
         yield connection
         connection.commit()
     finally:
@@ -57,6 +60,11 @@ def is_signed_out(profile):
     return bool(read_state(profile)[1])
 
 
+def needs_cleanup(profile):
+    with state_db(profile) as db:
+        return bool(db.execute('SELECT pending FROM cleanup WHERE id=1').fetchone()[0])
+
+
 def current_account(profile, expected, allow_signed_out=False):
     epoch, signed_out = read_state(profile)
     return epoch == expected and (allow_signed_out or not signed_out)
@@ -75,7 +83,8 @@ def store_account(profile, expected, account, addon, cookie_session=None, sessio
     """Commit a fully authorized account; a signed-out attempt cannot restore it."""
     with state_db(profile) as db:
         epoch = db.execute('SELECT epoch FROM session WHERE id=1').fetchone()[0]
-        if epoch != expected:
+        pending = db.execute('SELECT pending FROM cleanup WHERE id=1').fetchone()[0]
+        if epoch != expected or pending:
             return False
         next_epoch = secrets.token_hex(16)
         if (Path(profile) / 'config/accounts.lst').exists():
@@ -123,7 +132,7 @@ def _remove_child(path, root):
         path.unlink()
 
 
-def clear_profile(profile):
+def clear_profile(profile, observer=None):
     root = Path(profile).resolve()
     if root.name != ADDON_ID or root == root.parent:
         raise ValueError('The Smooth Prime profile path is invalid')
@@ -133,12 +142,19 @@ def clear_profile(profile):
     proxy = proxy_path.read_text(encoding='utf-8') if proxy_path.is_file() else ''
     proxy = proxy if re.fullmatch(r'127\.0\.0\.1:[0-9]{1,5}', proxy) else ''
     failures = []
-    for child in root.iterdir():
+    for child in list(root.iterdir()):
         if child.name not in NEUTRAL_FILES:
             try:
                 _remove_child(child, root)
-            except OSError:
+            except OSError as error:
                 failures.append(child.name)
+                if observer is not None:
+                    from .prime_diagnostics import exception_details
+                    category = {'config': 'credentials_and_configuration', 'navigation-cache': 'catalog_cache',
+                        'title-art': 'title_art', 'image-cache': 'artwork', 'log': 'account_logs',
+                        'prime-video-session.cookies': 'website_cookies', 'settings.xml': 'account_settings'}.get(child.name, 'account_file')
+                    observer({'event': 'profile_entry_purge_failed', 'stage': 'purge_account_profile',
+                              'category': category, 'exception': exception_details(error), 'result': 'failure'})
     if proxy:
         proxy_path.parent.mkdir(parents=True, exist_ok=True)
         proxy_path.write_text(proxy, encoding='utf-8')
@@ -173,7 +189,7 @@ def clear_runtime(g):
     proxy = sys.modules.get(__package__ + '.proxy')
     if proxy is not None:
         handler = proxy.ProxyHTTPD
-        for session in handler.sessions.values():
+        for session in list(handler.sessions.values()):
             session.cookies.clear()
             session.close()
         handler.sessions.clear()
@@ -198,11 +214,16 @@ def refresh_service_session(g, service):
     if getattr(service, '_prime_scene_epoch', None) != epoch:
         clear_runtime(g)
         service._prime_scene_epoch = epoch
+    import xbmcgui
+    xbmcgui.Window(10000).setProperty('smoothprime.service_account_epoch', epoch)
     return epoch
 
 
-def _sign_out(g, artwork=()):
+def _sign_out(g, artwork=(), report=None, before_cleanup=None):
     import xbmc
+    from time import monotonic
+    from .prime_diagnostics import exception_details
+    report = report or (lambda event: None)
     profile = Path(g.DATA_PATH)
     if profile.resolve().name != ADDON_ID:
         raise ValueError('The Smooth Prime profile path is invalid')
@@ -210,22 +231,52 @@ def _sign_out(g, artwork=()):
     # by this generation and cannot recreate the previous account after cleanup.
     with state_db(profile) as db:
         db.execute('UPDATE session SET epoch=?, signed_out=1 WHERE id=1', (secrets.token_hex(16),))
+        db.execute('UPDATE cleanup SET pending=1 WHERE id=1')
+    report({'event': 'signout_stage_complete', 'stage': 'invalidate_account', 'result': 'success'})
+    failures = []
+
+    def stage(name, action):
+        started = monotonic()
+        try:
+            result = action()
+            report({'event': 'signout_stage_complete', 'stage': name,
+                    'elapsed_ms': round((monotonic()-started)*1000), 'result': 'success'})
+            return result
+        except Exception as error:
+            failures.append(name)
+            report({'event': 'signout_stage_failed', 'stage': name, 'exception': exception_details(error),
+                    'elapsed_ms': round((monotonic()-started)*1000), 'result': 'failure'})
+
+    def notify():
+        reply = json.loads(xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1,
+            'method': 'JSONRPC.NotifyAll', 'params': {'sender': ADDON_ID, 'message': 'account_invalidated'}})))
+        if 'error' in reply:
+            raise RuntimeError('Kodi did not deliver account invalidation')
+    stage('notify_active_invocations', notify)
+    if before_cleanup is not None:
+        stage('stop_interface_workers', before_cleanup)
     provider = getattr(g, '_globals', {}).get('pv')
     urls = set(artwork)
     if provider is not None:
         urls.update(_artwork_urls(getattr(provider, '_catalog', {})))
         urls.update(_artwork_urls(getattr(provider, '_videodata', {})))
     tracked = profile / 'account-artwork.jsonl'
-    if tracked.exists():
-        for line in tracked.read_text(encoding='utf-8').splitlines():
-            try:
-                urls.add(json.loads(line))
-            except ValueError:
-                pass
-    player = xbmc.Player()
-    if player.isPlaying():
-        player.stop()
-    clear_runtime(g)
+    def track():
+        if tracked.exists():
+            for line in tracked.read_text(encoding='utf-8').splitlines():
+                try:
+                    value = json.loads(line)
+                    if isinstance(value, str):
+                        urls.add(value)
+                except ValueError:
+                    pass
+    stage('read_artwork_inventory', track)
+    def stop_player():
+        player = xbmc.Player()
+        if player.isPlaying():
+            player.stop()
+    stage('stop_playback', stop_player)
+    stage('clear_runtime_credentials', lambda: clear_runtime(g))
     # Remove Kodi's cached copies of artwork used by this account as well.
     texture_error = None
     try:
@@ -237,7 +288,8 @@ def _sign_out(g, artwork=()):
             for texture in reply.get('result', {}).get('textures', []):
                 url = texture.get('url', '')
                 decoded = unquote(url[8:].rstrip('/')) if url.startswith('image://') else url
-                if url in urls or decoded in urls or str(profile) in decoded:
+                if (url in urls or decoded in urls
+                        or str(profile).replace('\\', '/').casefold() in decoded.replace('\\', '/').casefold()):
                     removed = json.loads(xbmc.executeJSONRPC(json.dumps({
                         'jsonrpc': '2.0', 'id': 1, 'method': 'Textures.RemoveTexture',
                         'params': {'textureid': texture['textureid']}})))
@@ -245,31 +297,71 @@ def _sign_out(g, artwork=()):
                         raise RuntimeError('Artwork cache cleanup failed')
     except Exception as error:
         texture_error = error
-    # Account-specific settings are cleared in Kodi's in-memory settings too.
-    schema = Path(g.PLUGIN_PATH) / 'resources/settings.xml'
-    for setting in ET.parse(schema).getroot().iter('setting'):
-        if setting.get('type') != 'action' and setting.get('id'):
-            g.addon.setSetting(setting.get('id'), setting.findtext('default') or '')
-    g.addon.setSetting('login_acc', '')
-    g.addon.setSetting('data_source', '0')
-    g.addon.setSetting('playmethod', '3')
-    clear_profile(profile)
+    def settings():
+        schema = Path(g.PLUGIN_PATH) / 'resources/settings.xml'
+        for setting in ET.parse(schema).getroot().iter('setting'):
+            if setting.get('type') != 'action' and setting.get('id'):
+                g.addon.setSetting(setting.get('id'), setting.findtext('default') or '')
+        g.addon.setSetting('login_acc', '')
+        g.addon.setSetting('data_source', '0')
+        g.addon.setSetting('playmethod', '3')
+    stage('clear_account_settings', settings)
+    # Purge runs even when a preceding cleanup stage failed.
+    stage('purge_account_profile', lambda: clear_profile(profile, report))
     (profile / 'profile-initialized').write_text('1', encoding='ascii')
     if texture_error is not None:
-        raise RuntimeError('Signed out, but Kodi could not clear every cached artwork image.') from None
+        failures.append('kodi_artwork')
+        report({'event': 'signout_stage_failed', 'stage': 'kodi_artwork',
+                'exception': exception_details(texture_error), 'result': 'failure'})
+    allowed = NEUTRAL_FILES | {'profile-initialized'}
+    leftovers = []
+    for path in profile.iterdir():
+        if path.name in allowed:
+            continue
+        if path.name == 'config' and path.is_dir() and all(child.name == 'proxyaddress' for child in path.iterdir()):
+            continue
+        if path.name == 'log' and path.is_dir() and not any(path.iterdir()):
+            continue
+        if path.name == 'prime-scene-diagnostics.jsonl' and path.is_file():
+            try:
+                entries = [json.loads(line) for line in path.read_text(encoding='utf-8').splitlines() if line]
+                if entries and all(entry.get('operation') == 'signout' and entry.get('attempt') == getattr(report, 'attempt', None)
+                                   for entry in entries):
+                    continue
+            except (OSError, ValueError):
+                pass
+        leftovers.append(path)
+    account_files = sum(path.is_file() for path in leftovers)
+    report({'event': 'signout_purge_audit', 'stage': 'verify_local_state', 'account_files_remaining': account_files,
+            'account_entries_remaining': len(leftovers), 'saved_account_setting_present': bool(g.addon.getSetting('login_acc')),
+            'canonical_cookie_file_present': (profile/'prime-video-session.cookies').exists(),
+            'result': 'success' if not leftovers and not g.addon.getSetting('login_acc') else 'failure'})
+    import xbmcgui
+    report({'event': 'signout_service_state', 'stage': 'verify_runtime_invalidation',
+        'service_epoch_matches': xbmcgui.Window(10000).getProperty('smoothprime.service_account_epoch') == account_epoch(profile),
+        'local_provider_present': bool(getattr(g, '_globals', {}).get('pv'))})
+    if leftovers or g.addon.getSetting('login_acc'):
+        failures.append('verify_local_state')
+    if failures:
+        raise RuntimeError('Signed out, but cleanup could not finish. Use Finish sign out to retry. Diagnostics records the failed stages.')
+    with state_db(profile) as db:
+        db.execute('UPDATE cleanup SET pending=0 WHERE id=1')
 
 
-def sign_out(g, artwork=()):
+def sign_out(g, artwork=(), before_cleanup=None):
     from .prime_diagnostics import DiagnosticLog, exception_details
     report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'), operation='signout')
     try:
-        _sign_out(g, artwork)
+        _sign_out(g, artwork, report=report, before_cleanup=before_cleanup)
     except Exception as error:
-        report({'event': 'signout_failed', 'exception': exception_details(error)})
+        report.replay_current(replace=True)
+        report({'event': 'signout_failed', 'exception': exception_details(error), 'result': 'failure'})
         raise
     else:
         # This records only the cleanup result after old account reports are erased.
-        report({'event': 'signout_complete', 'account_data_cleared': True})
+        report.replay_current(replace=True)
+        report({'event': 'signout_complete', 'account_data_cleared': True, 'result': 'success'})
+        g.dialog.notification('Smooth Prime', 'Signed out. Local account data cleared.', sound=False)
 
 
 def remLoginData(info=True):

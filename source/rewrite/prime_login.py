@@ -12,7 +12,7 @@ from .common import Globals, Settings
 from .prime_device import DeviceAuthorization
 from .prime_signin import HEADERS, SignInError, authenticate
 from .prime_diagnostics import DiagnosticLog, exception_details
-from .account_state import account_epoch, clear_runtime, current_account, store_account
+from .account_state import account_epoch, clear_runtime, current_account, store_account, needs_cleanup, is_signed_out
 from .public_catalog import ORIGIN
 from .session_store import begin_signin, discard_pending, retain_challenge
 
@@ -48,6 +48,10 @@ def LogIn(retToken=False):
     g, settings = Globals(), Settings()
     profile = Path(g.DATA_PATH)
     profile.mkdir(parents=True, exist_ok=True)
+    if needs_cleanup(profile):
+        g.dialog.ok(TITLE, 'Finish signing out before starting another sign-in. Use the account button to retry cleanup.')
+        return False
+    signed_out_at_start = is_signed_out(profile)
     generation = account_epoch(profile)
     observe = DiagnosticLog(profile, g.addon.getAddonInfo('version'),
                             active=lambda: current_account(profile, generation, allow_signed_out=True))
@@ -90,6 +94,7 @@ def LogIn(retToken=False):
         observe({'event': 'signin_started', 'python': sys.version.split()[0], 'platform': sys.platform,
                  'kodi': xbmc.getInfoLabel('System.BuildVersion'), 'token_requested': bool(retToken),
                  'authorization_mode': mode, 'challenge_resumed': resumed,
+                 'signed_out_at_start': signed_out_at_start, 'fresh_cookie_jar': not bool(len(cookies)),
                  'user_agent': headers.get('User-Agent'), 'initial_cookie_count': len(cookies)})
         observe({'event': 'territory_lookup_started'})
         account, valid = getTerritory(dict(loadUser(empty=True)))
@@ -103,6 +108,7 @@ def LogIn(retToken=False):
         identity = {}
 
         def website_verified(url, page, jar):
+            identity['verified'] = True
             name = page.profile_name.strip() if isinstance(page.profile_name, str) else ''
             if name:
                 observe.secret(name)
@@ -153,6 +159,8 @@ def LogIn(retToken=False):
             account = authorization.registered
         else:
             # Website login is complete without registering an Android device.
+            if not identity.get('verified'):
+                raise SignInError('Amazon did not verify the website session. No account was saved.')
             # Compatibility metadata remains available to the playback paths;
             # website credentials are stored only in the full canonical jar.
             account.update(name=identity.get('name') or 'Prime Video', cookie={}, token='',
@@ -183,7 +191,9 @@ def LogIn(retToken=False):
         observe.replay_current()
         observe({'event': 'account_storage_complete', 'website_session_persisted': True})
         observe({'event': 'signin_complete', 'authorization_mode': mode,
-                 'device_registered': authorization is not None, 'cookie_count': len(result)})
+                 'device_registered': authorization is not None, 'cookie_count': len(result),
+                 'server_verification_confirmed': bool(identity.get('verified') or authorization is not None), 'result': 'success'})
+        g.dialog.notification(TITLE, 'Signed in and verified by Amazon.', sound=False)
         if retToken and authorization is not None:
             result.clear()
             return {'Authorization': 'Bearer ' + account['token']['access']}

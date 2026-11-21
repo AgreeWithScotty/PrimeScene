@@ -35,17 +35,19 @@ def main(launch_diagnostics=None):
 
     def account_action(before_sign_out):
         from resources.lib.prime_login import LogIn
-        from resources.lib.account_state import sign_out
+        from resources.lib.account_state import sign_out, needs_cleanup
+        if needs_cleanup(g.DATA_PATH):
+            sign_out(g, before_cleanup=before_sign_out)
+            return True
         name = account_name()
         if name:
             choice = g.dialog.select(name, ['Sign out', 'Sign in again', 'Cancel'])
             if choice == 0:
-                before_sign_out()
-                sign_out(g)
+                sign_out(g, before_cleanup=before_sign_out)
                 return True
             if choice != 1:
                 return False
-            before_sign_out('Signing in...')
+            sign_out(g, before_cleanup=before_sign_out)
         from resources.lib.configs import getConfig
         if not getConfig('UserAgent'):
             from resources.lib.network import getUA

@@ -1,25 +1,29 @@
-# Smooth Prime 0.2.12
+# Smooth Prime 0.2.14
 
-Same permanent application. Movies opens first; Home is removed. Top selectors:
-Movies, TV, Sports and Purchases, followed by Search, Settings and the account.
-All SP icon and ultramarine assets from verified 0.2.11 are preserved.
+Based on verified 0.2.13, preserving its SMOOTH icon/fanart/launch splash, four
+sections, Prime filtering, player and return-to-card behavior. Top category
+clicks select/focus the first real card once, leaving later appends alone.
 
-Movies/TV read Amazon's published Included with Prime storefront and split its
-actual typed cards. Positive Prime benefit/offer evidence is required; generic
-entitlement, SVOD, ad-supported access and unknown access are not treated as
-Prime. Current real anonymous response parsing identifies 40 Prime movies and
-46 Prime TV titles. These counts do not prove a signed-in catalog's contents.
+TV listing reads actual episode children even when cached season rendering
+returns only folders or nothing. The chosen season is opened when episodes
+are absent, with a direct actual-detail-state fallback using observed URLs and
+real episode IDs. Production parsing of three current Amazon public responses
+returned all 6, 22 and 8 declared episodes and their available season links.
 
-Sports uses the actual /sports storefront, with live event types retained.
-Purchases discovers the Purchases & Rentals library through Amazon's actual
-signed-in links and parses its main library collection. It does not substitute
-Watchlist, recommendations or a guessed library URL. That signed-in flow has
-not been observed with a live account; unknown structures fail with diagnostics.
+Sign-out invalidates the local generation before worker shutdown, runs each
+cleanup stage independently, purges account-owned files/caches, and audits the
+remaining profile/settings. Neutral coordination state and the new sanitized
+cleanup report may remain. Incomplete cleanup keeps a pending flag, blocks a
+new login and exposes Finish sign out. Sign in again clears the old session
+before prompting. Website login is stored/announced only after Amazon verifies
+it; Amazon chooses any required verification challenges. UI/service notification
+and guarded title rendering prevent stale account state being written back.
 
-Four account-scoped readers warm the first two actual pages. Cache schema 3
-invalidates old mixed-title records. Sign-out still purges the account cache.
-Card return/position/history, episode browsing, descriptions and artwork prefetch
-and the existing player remain. Diagnostics record access/type coverage and the
-library discovery/HTTP/parser chain. No simulated Kodi/provider tests were run.
+Diagnostics record real focus receipts, episode structure/relationship counts,
+HTTP status/redirects/timings, purge stages and residual counts, fresh-cookie
+state and Amazon verification outcomes without secrets or account identifiers.
+Actual filesystem/SQLite cleanup primitives and schema upgrade were checked;
+these do not establish Kodi-device cleanup or live provider login/playback.
+No mocked Kodi/provider tests or device-success claims were made.
 
-Rebuild with tools/package_sections_release.py and the verified 0.2.11 ZIP.
+Rebuild with tools/package_repair_release.py and the verified 0.2.13 ZIP.

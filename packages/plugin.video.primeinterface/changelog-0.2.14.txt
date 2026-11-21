@@ -1,0 +1,10 @@
+0.2.14
+- Clicking a top category selects and focuses its first card once the real cards arrive.
+- Read episode children independently of season-folder rendering; open the selected season when episodes are absent.
+- Read current Amazon TV detail state as a fallback, retaining actual episode IDs and season links.
+- Invalidate the account before stopping workers; attempt every sign-out cleanup stage and audit remaining files.
+- Block a new login while cleanup is incomplete and show Finish sign out for a retry.
+- Sign in again now purges the previous session first; fresh login is saved only after Amazon verifies it.
+- Confirm completed sign-out and verified sign-in visibly, with correlated stage diagnostics.
+- Guard title-art writes against account invalidation and notify active UI/service interpreters to drop old state.
+- Preserve the SMOOTH icon/splash, Prime-only sections, playback controls, card return and preloading.

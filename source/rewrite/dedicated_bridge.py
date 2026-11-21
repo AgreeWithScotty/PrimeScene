@@ -208,6 +208,42 @@ class ProviderBridge:
             self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
             active=lambda: current_account(self.g.DATA_PATH, self.epoch), operation='catalog')
 
+    def read_tv(self, path, active):
+        """Read the exact observed show/season URL when the folder renderer lost episodes."""
+        from . import prime_signin, session_store
+        from .tv_catalog import fetch_tv_page
+        identifier = unquote_plus(path.split('/')[-1])
+        entry = self.details.get(identifier) or {}
+        continuation = self.continuations.get(path)
+        previous = ()
+        if continuation and continuation[0] == self.epoch and continuation[1] == 'tv_detail':
+            address, previous = continuation[2], continuation[3]
+        else:
+            address = entry.get('lazyLoadURL') or entry.get('ref')
+        if not address or not self._active(active):
+            raise PublicCatalogError('The show episode URL is unavailable. Open Diagnostics for details.')
+        observe = self._observe(active)
+        jar = session_store.load_session(self.g.DATA_PATH)
+        try:
+            for cookie in jar:
+                observe.secret(cookie.value)
+            if not prime_signin.has_authentication_cookie(jar):
+                raise CatalogSigninRequired('Sign in again to open episodes.')
+            opener = prime_signin.catalog_opener(jar, observer=observe,
+                                                headers=session_store.session_headers(self.g.DATA_PATH))
+            packet = fetch_tv_page(address, self.g.pluginid, opener, observe)
+            if not self._active(active):
+                return None
+            session_store.persist_session(self.g.DATA_PATH, self.epoch, jar)
+            for season in packet.get('seasons') or []:
+                self.details[season['identity']] = {'title': season['title'], 'lazyLoadURL': season['detail_url']}
+                season['url'] = self.g.pluginid+'pv/browse/__storefront__/'+quote_plus(season['identity'])
+                season['video'] = False
+            packet['next'] = self._continuation('tv_detail', packet.pop('next_url', None), previous+(address,))
+            return packet
+        finally:
+            jar.clear()
+
     def _continuation(self, page, next_url, previous_urls):
         if not next_url:
             return None
@@ -472,8 +508,17 @@ class ProviderBridge:
                 else:
                     rows.append(row)
             info, seasons, selected_id = self.title_context(path) if path != 'root' and query is None else ({}, [], None)
+            from .tv_catalog import provider_episode_groups
+            groups = provider_episode_groups(provider._videodata, selected_id,
+                                              [season.get('identity') for season in seasons], self.g.pluginid)
+            if seasons or groups:
+                self._observe(lambda: True)({'event': 'tv_provider_relationships', 'stage': 'title_packet',
+                    'selected_kind': info.get('mediatype'), 'season_count': len(seasons),
+                    'episode_groups': len(groups), 'episodes': sum(len(group['rows']) for group in groups),
+                    'unresolved_children': sum(group['unresolved_children'] for group in groups),
+                    'rendered_rows': len(rows), 'result': 'success' if any(group['rows'] for group in groups) else 'unavailable'})
             return {'rows': deepcopy(rows), 'next': next_path, 'info': info, 'seasons': seasons,
-                    'selected_id': selected_id}
+                    'selected_id': selected_id, 'episode_groups': groups}
 
         def progress(node, breadcrumb):
             if not incremental:

@@ -549,6 +549,17 @@ def _prepare(window, args):
         window.controls = {}
 
 
+class _AccountMonitor(xbmc.Monitor):
+    def __init__(self, window):
+        super(_AccountMonitor, self).__init__()
+        self.window = window
+
+    def onNotification(self, sender, method, data):
+        if self.window is not None and sender == ADDON_ID and method.rsplit('.', 1)[-1] == 'account_invalidated':
+            self.window.stop.set()
+            self.window.show_signed_out()
+
+
 class AuroraHome(xbmcgui.WindowXML):
     def __init__(self, *args, **kwargs):
         self.g = kwargs.pop('globals_instance')
@@ -603,6 +614,9 @@ class AuroraHome(xbmcgui.WindowXML):
         self.interface_session = None
         self._replace_rail = False
         self.playback_origin = None
+        self._focus_first_generation = None
+        self._focus_receipt = None
+        self.account_monitor = _AccountMonitor(self)
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
 
@@ -647,6 +661,11 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.account_name is not None:
             from .account_state import account_epoch
             self.account_generation = account_epoch(self.g.DATA_PATH)
+        from .account_state import current_account
+        report_epoch = self.account_generation
+        self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
+            active=lambda: report_epoch is None or current_account(self.g.DATA_PATH, report_epoch),
+            operation='interface_performance')
         self._set_hero_status('', '')
         self.setProperty('ShowSplash', '1')
         self.interface_session = token_hex(8)
@@ -669,8 +688,9 @@ class AuroraHome(xbmcgui.WindowXML):
                                      'current_window_id': xbmcgui.getCurrentWindowId()})
 
     def update_account_button(self):
+        from .account_state import needs_cleanup
         name = self.account_name() if self.account_name is not None else ''
-        self.setProperty('AccountLabel', name or 'Sign in')
+        self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else name or 'Sign in')
 
     def show_signed_out(self):
         self._unregister_return()
@@ -695,7 +715,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Nav', '')
         self._season_properties()
         self.setProperty('Section', '')
-        self.setProperty('AccountLabel', 'Sign in')
+        self.update_account_button()
         self._set_hero_status('SIGN IN', 'SIGN IN TO PRIME VIDEO TO BROWSE AND WATCH.')
         self.setFocusId(306)
 
@@ -728,7 +748,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.known_details.clear()
         self.clearList()
         for worker in (self.worker, self.detail_worker, self.visual_worker, self.return_worker):
-            if worker is not None:
+            if worker is not None and worker is not current_thread():
                 while worker.is_alive():
                     worker.join(0.1)
         self.worker = None
@@ -748,6 +768,11 @@ class AuroraHome(xbmcgui.WindowXML):
         self.description_attempts.clear()
         self._description_window = None
         self.series_context = None
+        self.playback_origin = None
+        self._focus_first_generation = self._focus_receipt = None
+        with self.performance.lock:
+            self.performance.lines.clear()
+            self.performance.values.clear()
 
     def _unregister_return(self):
         registry = xbmcgui.Window(10000)
@@ -945,6 +970,24 @@ class AuroraHome(xbmcgui.WindowXML):
             position = 0
         return position
 
+    def _focus_first_card(self):
+        if not self.rows:
+            self._focus_first_generation = self.generation
+            return
+        self._focus_first_generation = None
+        self._focus_receipt = self.generation
+        self.setCurrentListPosition(0)
+        self.setFocusId(200)
+        self.performance({'event': 'category_focus_requested', 'generation': self.generation,
+                          'cards': len(self.rows), 'expected_index': 0, 'target_control': 200})
+
+    def onFocus(self, control_id):
+        if control_id == 200 and self._focus_receipt == self.generation:
+            self._focus_receipt = None
+            self.performance({'event': 'category_focus_observed', 'generation': self.generation,
+                'control_id': control_id, 'selected_index': self._selected_index(),
+                'result': 'success' if self._selected_index() == 0 else 'failure'})
+
     def _note_artwork(self, info):
         art = {key: info[key] for key in ('thumb', 'poster', 'fanart') if info.get(key)}
         used = set(art.values())
@@ -1013,6 +1056,8 @@ class AuroraHome(xbmcgui.WindowXML):
                     self._restore = None
         if additions:
             self.setProperty('ShowSplash', '')
+            if self._focus_first_generation == token:
+                self._focus_first_card()
             self._section_label()
             self.performance({'event': 'cards_published', 'added': len(additions), 'total': count,
                 'navigation_entries_hidden': sum(_top_selector_row(self.g.pluginid, row) for row in packet.get('rows') or []),
@@ -1168,7 +1213,11 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _episode_listing(self, path, token):
         context = deepcopy(self.series_context)
-        packet = self._fetch_detail(path)
+        continuation = self.bridge.continuations.get(path) if self.bridge else None
+        packet = (self._read_tv_detail(path, token) if continuation and continuation[1] == 'tv_detail'
+                  else self._fetch_detail(path))
+        if packet is None and not self.stop.is_set() and token == self.generation:
+            packet = self._read_tv_detail(path, token)
         if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
             return None
         self._remember(path, None, 'browse', packet)
@@ -1192,19 +1241,40 @@ class AuroraHome(xbmcgui.WindowXML):
                 chosen = next((row for row in seasons if 0 < _season_number(row) < 1 << 20), seasons[0])
             season_path = _browse_path(self.g.pluginid, chosen['url'])
             chosen_number = (chosen.get('info') or {}).get('season')
+            group = next((group for group in packet.get('episode_groups') or []
+                          if group.get('identity') == chosen.get('identity')), None)
+            if group and group.get('rows'):
+                packet = dict(packet, rows=group['rows'])
             present_episodes = [row for row in packet.get('rows') or [] if _kind(row.get('info')) == 'episode']
             already_listed = (chosen_number is not None and bool(present_episodes)
                               and all(str((row.get('info') or {}).get('season')) == str(chosen_number)
                                       for row in present_episodes))
-            if chosen.get('identity') != packet.get('selected_id') and season_path != path and not already_listed:
+            current_season = chosen.get('identity') == packet.get('selected_id')
+            if (not present_episodes or not already_listed and not current_season) and season_path != path:
                 packet = self._fetch_detail(season_path)
+                if packet is None and not self.stop.is_set() and token == self.generation:
+                    packet = self._read_tv_detail(season_path, token)
                 if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
                     return None
                 self._remember(season_path, None, 'browse', packet)
+                group = next((group for group in packet.get('episode_groups') or []
+                              if group.get('identity') == chosen.get('identity')), None)
+                if group and group.get('rows'):
+                    packet = dict(packet, rows=group['rows'])
             context['requested_path'] = season_path
             context['requested_season'] = (chosen.get('info') or {}).get('season')
             context['season_label'] = 'Season ' + str(context['requested_season']) if context['requested_season'] is not None else str(chosen['title'])
         episodes = [row for row in packet.get('rows') or [] if _kind(row.get('info')) == 'episode']
+        if not episodes:
+            direct = self._read_tv_detail((context or {}).get('requested_path') or path, token)
+            if direct is not None:
+                packet = direct
+                episodes = [row for row in packet.get('rows') or [] if _kind(row.get('info')) == 'episode']
+                if packet.get('seasons'):
+                    context['seasons'] = packet['seasons']
+                    seasons = packet['seasons']
+        if token != self.generation or self.stop.is_set():
+            return None
         if episodes:
             episodes.sort(key=_episode_order)
             if not context.get('season_label'):
@@ -1220,6 +1290,15 @@ class AuroraHome(xbmcgui.WindowXML):
         if token == self.generation:
             self.series_context = context
             self._season_properties()
+        return packet
+
+    def _read_tv_detail(self, path, token):
+        if self.bridge is None or self.stop.is_set() or token != self.generation:
+            return None
+        with self.bridge_lock:
+            packet = self.bridge.read_tv(path, lambda: not self.stop.is_set() and token == self.generation)
+        if packet is not None:
+            self._remember(path, None, 'browse', packet)
         return packet
 
     def _choose_season(self):
@@ -1269,7 +1348,13 @@ class AuroraHome(xbmcgui.WindowXML):
                     title = (row.get('title') or 'Untitled').upper()
                     if offset < 3 and title not in self.title_cache:
                         started = monotonic()
-                        plate = render_title(title, Path(self.g.DATA_PATH) / 'title-art')
+                        from .account_state import persist_if_current
+                        rendered = []
+                        def draw():
+                            rendered.append(render_title(title, Path(self.g.DATA_PATH) / 'title-art'))
+                        if not persist_if_current(self.g.DATA_PATH, self.account_generation, draw):
+                            break
+                        plate = rendered[0]
                         if self.stop.is_set():
                             break
                         self.title_cache[title] = plate
@@ -1427,7 +1512,7 @@ class AuroraHome(xbmcgui.WindowXML):
         def publish(part):
             if part:
                 packet['rows'].extend(part.get('rows') or [])
-                for key in ('next', 'info', 'seasons', 'selected_id'):
+                for key in ('next', 'info', 'seasons', 'selected_id', 'episode_groups'):
                     if key in part:
                         packet[key] = part[key]
 
@@ -1582,6 +1667,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.nav, heading = _PRIMARY_SECTIONS[path]
             self.history.clear()
             self.navigate(path, remember=False, heading=heading)
+            self._focus_first_card()
         elif control_id == 304:
             self._search()
         elif control_id == 307:
@@ -2005,6 +2091,7 @@ def open_interface(globals_instance, settings_instance, initialize_provider=None
         window.doModal()
     finally:
         window.stop.set()
+        window.account_monitor.window = None
         window._unregister_return()
         for worker in (window.worker, getattr(window, 'detail_worker', None),
                        getattr(window, 'visual_worker', None), window.return_worker):
