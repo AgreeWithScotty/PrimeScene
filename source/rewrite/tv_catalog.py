@@ -67,6 +67,7 @@ def provider_episode_groups(videodata, selected_id, season_ids, pluginid):
 
 
 def _info(node):
+    from .watch_home import progress_info
     shots = _shot_map(node)
     result = {'mediatype': _kind(node), 'plot': _plot_value(node), 'year': _year_value(node),
         'duration': _duration_value(node), 'mpaa': _rating_value(node), 'genre': _genre_value(node),
@@ -74,6 +75,7 @@ def _info(node):
         'thumb': _first_shot(shots, ('packshot', 'landscape', 'thumbnail', 'thumb', 'image')),
         'poster': _first_shot(shots, ('covershot', 'poster', 'titleshot')),
         'fanart': _first_shot(shots, ('heroshot', 'hero', 'fanart', 'background'))}
+    result.update(progress_info(node))
     return {key: value for key, value in result.items() if value not in (None, '', [], {})}
 
 

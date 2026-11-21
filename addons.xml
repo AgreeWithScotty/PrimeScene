@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.17" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.18" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -27,7 +27,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.17[CR]- Removed custom playback control bar; Kodi's standard player controls restored.</news>
+    <news>0.2.18[CR]- Personal Home reads explicitly recognized Amazon Continue Watching collections and merges local playback progress.[CR]- Capture actual position/duration during playback; retain unfinished movies and hide completed episodes in Home shows.[CR]- Advance to observed next-season links when the current season has no unfinished episodes.[CR]- Scope local progress to the active account generation and website profile context; purge it on sign-out.[CR]- Preserve 0.2.17 stock Kodi player controls, card return, Prime sections, descriptions and branding.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

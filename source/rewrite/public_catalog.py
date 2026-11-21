@@ -22,7 +22,7 @@ except ImportError:
 ORIGIN = 'https://www.primevideo.com'
 # Use Amazon's published Prime membership storefront, then split by title type.
 # The broad /movie and /tv feeds also market rentals, channels and free-with-ads.
-PAGES = {'home': '/storefront', 'movies': '/storefront/subscription/prime',
+PAGES = {'watching': '/storefront', 'home': '/storefront', 'movies': '/storefront/subscription/prime',
          'tv': '/storefront/subscription/prime', 'sports': '/sports', 'purchases': '/mystuff'}
 STOREFRONT_HOSTS = {'www.primevideo.com', 'primevideo.com', 'na.primevideo.com'}
 IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
@@ -75,6 +75,8 @@ class Card:
     seasons: str = ''
     landscape_url: str = ''
     access_evidence: str = ''
+    percentplayed: float = 0
+    playcount: int = 0
 
 
 @dataclass(frozen=True)
@@ -386,7 +388,7 @@ def _json_card(node, page_url):
                     episode=_count_value(node.get('episodeNumber') if node.get('episodeNumber') not in (None, '')
                                          else node.get('episode')),
                     seasons=_seasons_value(node), landscape_url=landscape,
-                    access_evidence=access_evidence(node))
+                    access_evidence=access_evidence(node), **__import__(__package__+'.watch_home',fromlist=['progress_info']).progress_info(node))
     return None
 
 
@@ -683,7 +685,17 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 raise PublicCatalogError('Prime Video returned more storefront data than expected.')
             data = raw.decode(response.headers.get_content_charset() or 'utf-8', errors='replace')
         stage = 'parse_response'
-        if page == 'purchases':
+        if page == 'watching':
+            from .home_catalog import read_home
+            try:
+                result, details = read_home(data, content_type, final_url, observer)
+            except Exception:
+                _emit(observer, {'event':'home_structure_unrecognized','stage':stage,
+                    'status':status,'address':route(final_url),'bytes':len(raw),
+                    'protocol_structure':_protocol_shape(json.loads(data)) if content_type.endswith('json') else
+                        {'format':'html','json_script_count':data.count('application/json')}})
+                raise
+        elif page == 'purchases':
             from .purchases_catalog import read_library
             result, details, library_link = read_library(data, content_type, final_url,
                                                        selected=continuation is not None)

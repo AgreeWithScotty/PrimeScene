@@ -12,7 +12,7 @@ from .dedicated_bridge import ProviderBridge
 from .prime_diagnostics import DiagnosticLog, exception_details
 from .public_catalog import STOREFRONT_HOSTS, safe_url
 
-ROOTS = ('__prime_movies__', '__prime_tv__', '__prime_sports__', '__prime_purchases__')
+ROOTS = ('__watching__', '__prime_movies__', '__prime_tv__', '__prime_sports__', '__prime_purchases__')
 FRESH_SECONDS = 15 * 60
 MAX_AGE = 24 * 60 * 60
 
@@ -85,7 +85,7 @@ class StorefrontLoader:
                 return
             packet = saved['packet']
             policy = ('prime_only' if root in ('__prime_movies__', '__prime_tv__') else
-                      'account_library' if root == '__prime_purchases__' else 'sports')
+                      'account_library' if root == '__prime_purchases__' else 'watch_progress' if root == '__watching__' else 'sports')
             if packet.get('catalog_policy') != policy:
                 return
             if not isinstance(packet.get('rows'), list) or len(packet['rows']) > 2000:

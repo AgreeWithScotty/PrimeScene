@@ -1,0 +1,29 @@
+{
+  "version": "0.2.18",
+  "bytes": 35838961,
+  "sha256": "c0a933dc6f11f42cf0c4be4c1916815547b47364041640110dadbea3945b29bd",
+  "files": 124,
+  "changed_source": [
+    "resources/lib/aurora.py",
+    "resources/lib/dedicated_bridge.py",
+    "resources/lib/home_catalog.py",
+    "resources/lib/navigation.py",
+    "resources/lib/public_catalog.py",
+    "resources/lib/tv_catalog.py",
+    "resources/lib/watch_home.py",
+    "resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "base_commit": "32e954f9a9858a6a92b4dda3e0976c417f9deba8",
+  "actual_account_home_success_observed": false,
+  "actual_device_progress_success_observed": false,
+  "mocked_tests_run": false,
+  "checks": [
+    "Python/XML syntax",
+    "actual ZIP CRC/hash",
+    "every unrelated base byte preserved"
+  ],
+  "limitations": [
+    "Amazon Continue Watching protocol recognition requires a real signed-in response; unrecognized data fails explicitly, never substituted with recommendations.",
+    "No cross-device progress success is claimed."
+  ]
+}

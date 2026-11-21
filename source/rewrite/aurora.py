@@ -222,9 +222,9 @@ def _browse_path(pluginid, url):
     return None
 
 
-_PRIMARY_SECTIONS = {'__prime_movies__': ('movies', 'Movies'), '__prime_tv__': ('tv', 'TV'),
+_PRIMARY_SECTIONS = {'__watching__': ('home', 'Continue Watching'), '__prime_movies__': ('movies', 'Movies'), '__prime_tv__': ('tv', 'TV'),
                      '__prime_sports__': ('sports', 'Sports'), '__prime_purchases__': ('purchases', 'Purchases')}
-_NAV_VALUES = ('movies', 'tv', 'sports', 'purchases')
+_NAV_VALUES = ('home', 'movies', 'tv', 'sports', 'purchases')
 _SECTION_PATHS = set(_PRIMARY_SECTIONS) | {'root', '__prime_home__', '__legacy_sports__'}
 _DETAIL_KEYS = ('plot', 'year', 'duration', 'runtime', 'mpaa', 'rating', 'genre', 'genres',
                 'seasons', 'season', 'episode', 'premiered', 'mediatype', 'fanart', 'thumb', 'poster')
@@ -432,7 +432,7 @@ def note_playback(profile, title, meta=''):
     target = xbmcgui.Window(10000).getProperty(_HOME_REGISTRY)
     reuse = (0 <= time() - float(previous.get('armed') or 0) < _NOTE_WINDOW
              and previous.get('target') == target)
-    note = {'title': title or 'Smooth Prime', 'meta': meta or (previous.get('meta') if reuse else '') or '',
+    note = {'watch_context': previous.get('watch_context') if reuse else None, 'title': title or 'Smooth Prime', 'meta': meta or (previous.get('meta') if reuse else '') or '',
             'armed': previous.get('armed') if reuse else time(), 'target': target,
             'request_id': previous.get('request_id') if reuse else token_hex(8)}
     try:
@@ -553,7 +553,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.generation = 0
         self.rows = []
         self.history = []
-        self.path = '__prime_movies__'
+        self.path = '__watching__'
         self.query = None
         self.heading = 'Movies'
         self.nav = 'movies'
@@ -728,8 +728,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
-        self.nav = 'movies'
-        self.navigate('__prime_movies__', remember=False, heading='Movies')
+        self.nav = 'home'
+        self.navigate('__watching__', remember=False, heading='Continue Watching')
         self.setFocusId(200)
         self.worker.start()
         self.detail_worker.start()
@@ -942,6 +942,12 @@ class AuroraHome(xbmcgui.WindowXML):
         self.playback_origin = origin
         play_row(row, self.g.DATA_PATH)
         note = _read_note(self.g.DATA_PATH) or {}
+        from .watch_home import profile_scope
+        note['watch_context'] = {'scope':profile_scope(self.g.DATA_PATH),'epoch':self.account_generation,'row':deepcopy(row),
+            'series':deepcopy(origin.get('series'))}
+        from .account_state import persist_if_current
+        persist_if_current(self.g.DATA_PATH,self.account_generation,lambda:
+            _note_path(self.g.DATA_PATH).write_text(dumps(note),encoding='utf-8'))
         if self.playback_origin is not None:
             self.playback_origin['request_id'] = note.get('request_id')
         self.performance({'event': 'playback_card_origin_saved', 'stage': 'return_origin',
@@ -969,7 +975,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.show_signed_out()
             return
         with self.lock:
-            if (path, query) == (self.path, self.query) and self.rows:
+            if path != '__watching__' and (path, query) == (self.path, self.query) and self.rows:
                 self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
                 return
             if save_current:
@@ -992,7 +998,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self._restore = selection or None
             token = self.generation
             self._navigation_started = monotonic()
-            cached = self.views.get((path, query))
+            cached = self.views.get((path, query)) if path != '__watching__' else None
             self.series_context = deepcopy(cached.get('series')) if cached else deepcopy(series)
         self.performance({'event': 'navigation_started', 'generation': token,
                           'section': self.nav if self.nav in _NAV_VALUES else 'detail_or_search',
@@ -1168,6 +1174,10 @@ class AuroraHome(xbmcgui.WindowXML):
             started = monotonic()
             try:
                 record(self.g, 'catalog_request_started')
+                if path == '__watching__':
+                    from .watch_home import home_rows
+                    local = home_rows(self.g.DATA_PATH,self.account_generation)
+                    if local: self._publish(token,{'rows':local,'next':None})
                 if query is None and self.loader.handles(path):
                     cached = self.loader.peek(path)
                     if cached:
@@ -1205,6 +1215,7 @@ class AuroraHome(xbmcgui.WindowXML):
                             self._set_hero_status('SMOOTH PRIME',
                                                   'NO EPISODES WERE RETURNED FOR THIS SEASON. OPEN DIAGNOSTICS.'
                                                   if self.series_context else
+                                                  'NOTHING TO CONTINUE YET. CHOOSE MOVIES OR TV.' if self.nav == 'home' else
                                                   'YOUR PURCHASES & RENTALS LIBRARY IS EMPTY.' if self.nav == 'purchases' else
                                                   'NO PRIME-INCLUDED TITLES WERE RETURNED.' if self.nav in ('movies', 'tv') else
                                                   'NO TITLES WERE RETURNED. CHOOSE A SECTION OR SEARCH.')
@@ -1269,7 +1280,8 @@ class AuroraHome(xbmcgui.WindowXML):
             self.g.dialog.ok('Smooth Prime', 'This show did not provide an episode-list link. Open Diagnostics for the report.')
             return
         context = {'title': row.get('title') or 'TV show', 'root_path': path,
-                   'opened_kind': _kind(row.get('info')), 'seasons': []}
+                   'opened_kind': _kind(row.get('info')), 'seasons': [],
+                   'watching_only': bool(row.get('watching_only'))}
         if _kind(row.get('info')) == 'season':
             context['requested_season'] = (row.get('info') or {}).get('season')
         self.performance({'event': 'title_click', 'action': 'browse_episodes',
@@ -1340,6 +1352,24 @@ class AuroraHome(xbmcgui.WindowXML):
                     seasons = packet['seasons']
         if token != self.generation or self.stop.is_set():
             return None
+        if context.get('watching_only'):
+            from .watch_home import decorate
+            before = len(episodes)
+            episodes = decorate(episodes,self.g.DATA_PATH,self.account_generation,True)
+            self.performance({'event':'home_episodes_filtered','stage':'series_navigation',
+                'source_episodes':before,'unfinished_episodes':len(episodes),'result':'success'})
+            packet = dict(packet,rows=episodes)
+            if not episodes:
+                current_number = context.get('requested_season')
+                next_season = next((row for row in seasons if current_number is not None
+                    and _season_number(row) > float(current_number) and _season_number(row) < 1 << 20),None)
+                if next_season is not None:
+                    next_path = _browse_path(self.g.pluginid,next_season['url'])
+                    if next_path and next_path != path:
+                        context['requested_path'] = next_path
+                        context['requested_season'] = (next_season.get('info') or {}).get('season')
+                        self.series_context = context
+                        return self._episode_listing(next_path,token)
         if episodes:
             episodes.sort(key=_episode_order)
             if not context.get('season_label'):
@@ -1725,7 +1755,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.navigate('search', query=phrase.strip(), heading='Search')
 
     def onClick(self, control_id):
-        primary = {301: '__prime_movies__', 302: '__prime_tv__',
+        primary = {309: '__watching__', 301: '__prime_movies__', 302: '__prime_tv__',
                    303: '__prime_sports__', 308: '__prime_purchases__'}
         if control_id in primary:
             path = primary[control_id]
@@ -1861,20 +1891,37 @@ def watch_playback(profile):
                            operation='playback_return')
     latched = False
     active_note = None
+    last_position = last_duration = 0
+    last_sample = last_save = 0
     while not monitor.abortRequested():
         playing = _playing(player)
         note = _read_note(profile)
         if note and (not active_note or note.get('request_id') != active_note.get('request_id')):
             active_note = note
             player.terminal = ''
+            last_position = last_duration = last_sample = last_save = 0
             report({'event': 'playback_request_armed', 'stage': 'await_player',
                     'request_id': note.get('request_id'), 'has_return_target': bool(note.get('target')),
                     'current_window_id': xbmcgui.getCurrentWindowId()})
+        if note and active_note and note.get('request_id') == active_note.get('request_id') and note.get('watch_context'):
+            active_note['watch_context'] = note['watch_context']
         if _title_is_playing(playing, note or active_note, time(), latched):
             if not latched:
                 report({'event': 'playback_observed', 'stage': 'player_active',
                         'request_id': (active_note or {}).get('request_id'), 'result': 'success'})
             latched = True
+            if time()-last_sample >= 1:
+                try:
+                    last_position,last_duration = player.getTime(),player.getTotalTime()
+                    last_sample = time()
+                    if time()-last_save >= 10:
+                        from .watch_home import save
+                        save(profile,active_note,last_position,last_duration,False,report)
+                        last_save = time()
+                except Exception as error:
+                    last_sample = last_save = time()
+                    report({'event':'watch_progress_failed','stage':'sample',
+                        'exception':exception_details(error),'result':'failure'})
         if active_note and not playing:
             age = time() - float(active_note.get('armed') or 0)
             reason = player.terminal or 'stopped_or_ended'
@@ -1886,6 +1933,11 @@ def watch_playback(profile):
                         'current_window_id': xbmcgui.getCurrentWindowId(),
                         'since_request_ms': round(age * 1000),
                         'result': 'failure' if reason in ('error', 'start_timeout') else 'success'})
+                try:
+                    from .watch_home import save
+                    save(profile,active_note,last_position,last_duration,reason == 'ended',report)
+                except Exception as error:
+                    report({'event':'watch_progress_failed','stage':'finish','exception':exception_details(error),'result':'failure'})
                 _request_playback_return(active_note, reason, report)
                 _clear_note(profile, active_note.get('request_id'))
                 latched, active_note, player.terminal = False, None, ''

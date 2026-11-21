@@ -1,0 +1,6 @@
+0.2.18
+- Personal Home reads explicitly recognized Amazon Continue Watching collections and merges local playback progress.
+- Capture actual position/duration during playback; retain unfinished movies and hide completed episodes in Home shows.
+- Advance to observed next-season links when the current season has no unfinished episodes.
+- Scope local progress to the active account generation and website profile context; purge it on sign-out.
+- Preserve 0.2.17 stock Kodi player controls, card return, Prime sections, descriptions and branding.

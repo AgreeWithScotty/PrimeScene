@@ -13,7 +13,7 @@ from .catalog_access import prime_included
 
 
 HOME_CAPACITY = 8
-STOREFRONT_PAGES = {'__prime_home__': 'movies', '__prime_movies__': 'movies', '__prime_tv__': 'tv',
+STOREFRONT_PAGES = {'__watching__': 'watching', '__prime_home__': 'movies', '__prime_movies__': 'movies', '__prime_tv__': 'tv',
                     '__prime_sports__': 'sports', '__prime_purchases__': 'purchases'}
 LEGACY_SECTIONS = {'__legacy_profile__': 'profile', '__legacy_mystuff__': 'mystuff',
                    '__legacy_sports__': 'sports', '__legacy_news__': 'news', '__legacy_live__': 'live'}
@@ -51,6 +51,7 @@ def is_title_card(info, playable=False):
 def _card_info(card):
     """Listing fields the storefront actually returned. Missing fields stay absent."""
     info = {
+        'percentplayed': card.percentplayed, 'playcount': card.playcount,
         'thumb': card.landscape_url or card.artwork_url,
         'poster': card.poster_url or card.artwork_url,
         'mediatype': card.mediatype or 'storefront',
@@ -325,6 +326,10 @@ class ProviderBridge:
                          'detail_url': url,
                          'video': False, 'identity': identity,
                          'info': _card_info(card)})
+        if page == 'watching':
+            from .watch_home import decorate
+            rows = decorate(rows,self.g.DATA_PATH,self.epoch,True)
+            for row in rows: row['watching_only'] = True
         visited = previous_urls + ((continuation,) if continuation else ())
         next_path = self._continuation(page, result.next_url, visited)
         observe({'event': 'catalog_packet_ready', 'section': page, 'rows': len(rows),
@@ -335,7 +340,7 @@ class ProviderBridge:
                  'has_next': bool(next_path), 'result': 'success'})
         return {'rows': rows, 'next': next_path, 'library_confirmed': result.library_confirmed,
                 'catalog_policy': 'prime_only' if page in ('movies', 'tv') else
-                                  'account_library' if page == 'purchases' else 'sports'}
+                                  'account_library' if page == 'purchases' else 'watch_progress' if page == 'watching' else 'sports'}
 
     def _legacy_section(self, section, publish, active):
         self.ensure_provider()
