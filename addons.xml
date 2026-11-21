@@ -27,7 +27,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.11[CR]- Replace the Prime Video accent cyan with electric ultramarine #4F5BFF.[CR]- Recolor the flat accent icons, including lighter edge blends of that blue.</news>
+    <news>0.2.11[CR]- Replace the Prime Video accent cyan with electric ultramarine #4F5BFF.[CR]- Recolor the flat accent icons, including lighter edge blends of that blue.[CR]- Use the silver serif SP icon with an ultramarine edge.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

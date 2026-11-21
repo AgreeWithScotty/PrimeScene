@@ -5,6 +5,7 @@ import hashlib
 import json
 from io import BytesIO
 from pathlib import Path
+import struct
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -23,9 +24,11 @@ TEXT_REPLACEMENTS = {
     'resources/lib/common.py': ("'FF00A8E0'", "'FF4F5BFF'"),
     'resources/settings.xml': ('<default>FF00A8E0</default>', '<default>FF4F5BFF</default>'),
 }
+ICON_SHA256 = '4f9836e9e09bd205dc9c1a823fbb515f952a3deae5d423147d32260f58511ad9'
 NOTES = '''0.2.11
 - Replace the Prime Video accent cyan with electric ultramarine #4F5BFF.
 - Recolor the flat accent icons, including lighter edge blends of that blue.
+- Use the silver serif SP icon with an ultramarine edge.
 '''
 
 
@@ -87,7 +90,12 @@ def main():
         assert changed > 0, relative
         contents[prefix + relative] = recolored
         counts[relative] = changed
-    assert contents[prefix + 'icon.png'] == zipfile.ZipFile(args.base).read(prefix + 'icon.png')
+    icon = (repository/'packages'/ID/'icon.png').read_bytes()
+    assert hashlib.sha256(icon).hexdigest() == ICON_SHA256
+    assert icon.startswith(b'\x89PNG\r\n\x1a\n') and icon[12:16] == b'IHDR'
+    width, height = struct.unpack('>II', icon[16:24])
+    assert (width, height) == (512, 512) and icon[24] == 8 and icon[25] == 2
+    contents[prefix + 'icon.png'] = icon
     metadata = ET.fromstring(contents[prefix + 'addon.xml'])
     assert metadata.get('id') == ID and metadata.get('name') == 'Smooth Prime' and metadata.get('version') == BASE_VERSION
     metadata.set('version', VERSION)
@@ -111,11 +119,11 @@ def main():
     with zipfile.ZipFile(args.output) as package:
         assert package.testzip() is None
         packed = b''.join(package.read(name).lower() for name in package.namelist())
-        assert b'00a8e0' not in packed and b'ff00a8e0' not in packed
+        assert b'00a8e0' not in packed and b'00a8e1' not in packed
     print(json.dumps({'version': VERSION, 'name': 'Smooth Prime', 'files': len(contents),
                       'sha256': hashlib.sha256(args.output.read_bytes()).hexdigest(),
                       'bytes': args.output.stat().st_size, 'replacements': counts,
-                      'icon_unchanged': True}, indent=2))
+                      'icon_sha256': ICON_SHA256}, indent=2))
 
 
 if __name__ == '__main__':
