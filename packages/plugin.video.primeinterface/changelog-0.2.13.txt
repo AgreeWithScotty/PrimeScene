@@ -1,0 +1,3 @@
+0.2.13
+- Use the black-and-white SMOOTH / FOR AMAZON PRIME icon.
+- Show that lockup as the add-on fanart and on the home window until the first cards appear.

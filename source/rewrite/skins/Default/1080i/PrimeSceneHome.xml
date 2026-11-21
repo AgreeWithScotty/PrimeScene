@@ -56,6 +56,15 @@
             <texture>white.png</texture>
             <colordiffuse>FF171C21</colordiffuse>
         </control>
+        <control type="image">
+            <left>0</left>
+            <top>0</top>
+            <width>1920</width>
+            <height>1080</height>
+            <aspectratio>scale</aspectratio>
+            <texture>splash.png</texture>
+            <visible>String.IsEqual(Window.Property(ShowSplash),1)</visible>
+        </control>
         <control type="label">
             <left>72</left>
             <top>34</top>
