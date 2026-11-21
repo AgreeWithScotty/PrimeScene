@@ -1,0 +1,30 @@
+{
+  "version": "0.2.16",
+  "sha256": "4cc7de65de27ac276a9c93d7af9f96e82487737267ec7c7b256698dd1f36f52c",
+  "bytes": 35841616,
+  "files": 131,
+  "base_commit": "dce3e0e78f36f8bff7cec571b3a7dfb592d9723c",
+  "native_cause": "Kodi frees dynamic window resources and resets media view controls; WindowXML invokes onInit again; the prior Python ready guard skipped view selection and item rebinding.",
+  "maintainer_sources": [
+    "https://github.com/xbmc/xbmc/blob/master/xbmc/guilib/GUIWindow.cpp",
+    "https://github.com/xbmc/xbmc/blob/master/xbmc/windows/GUIMediaWindow.cpp",
+    "https://github.com/xbmc/xbmc/blob/master/xbmc/interfaces/legacy/WindowXML.cpp"
+  ],
+  "checks": [
+    "all package Python/XML parse",
+    "ZIP CRC and SHA256",
+    "unchanged resolver/overlay/playback launch ASTs and unchanged other assets/backend bytes"
+  ],
+  "diagnostics": [
+    "native onInit reactivation stage and timing",
+    "previous/restored native view IDs",
+    "native/logical card counts",
+    "expected/actual list index",
+    "focused control ID",
+    "active/target window IDs",
+    "worker state and exception frames"
+  ],
+  "home_feature_added": false,
+  "live_kodi_return_confirmed": false,
+  "simulated_provider_or_kodi_tests": false
+}

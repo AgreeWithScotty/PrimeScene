@@ -1,29 +1,21 @@
-# Smooth Prime 0.2.15
+# Smooth Prime 0.2.16
 
-Based on verified 0.2.14, preserving its SMOOTH icon/fanart/launch splash, four
-sections, Prime filtering, player and return-to-card behavior. The settings sign-out path clears runtime credentials in the open UI too.
-Top category clicks select/focus the first real card once, leaving later appends alone.
+The existing WindowXML survives playback in Python while Kodi may free/recreate
+its native resources. The previous ready guard skipped native onInit work,
+leaving view 200 unselected/unbound and the window blank after video. Restore
+the native view and rebind the retained card objects on each reactivation;
+select/focus the originating card after the actual initialization callback.
+Preserve the existing window's Kodi exit target, with no new catalog fetch.
 
-TV listing reads actual episode children even when cached season rendering
-returns only folders or nothing. The chosen season is opened when episodes
-are absent, with a direct actual-detail-state fallback using observed URLs and
-real episode IDs. Production parsing of three current Amazon public responses
-returned all 6, 22 and 8 declared episodes and their available season links.
+Report actual native/logical card counts, view/focus/index and window IDs,
+worker state, stage timings and exception frames. A correct window ID alone
+no longer establishes successful return. All playback/resolver/overlay, sign-out,
+episode, preloading and SMOOTH artwork paths are preserved. Source/artifact
+checks do not establish a Kodi-device return success. No mocked tests were run.
 
-Sign-out invalidates the local generation before worker shutdown, runs each
-cleanup stage independently, purges account-owned files/caches, and audits the
-remaining profile/settings. Neutral coordination state and the new sanitized
-cleanup report may remain. Incomplete cleanup keeps a pending flag, blocks a
-new login and exposes Finish sign out. Sign in again clears the old session
-before prompting. Website login is stored/announced only after Amazon verifies
-it; Amazon chooses any required verification challenges. UI/service notification
-and guarded title rendering prevent stale account state being written back.
+Home/Continue Watching is a user design proposal, not a shipped feature in this
+repair. Amazon supports per-profile watch progress and Continue Watching;
+signed-in progress reading/availability must be established before claiming
+cross-device history support.
 
-Diagnostics record real focus receipts, episode structure/relationship counts,
-HTTP status/redirects/timings, purge stages and residual counts, fresh-cookie
-state and Amazon verification outcomes without secrets or account identifiers.
-Actual filesystem/SQLite cleanup primitives and schema upgrade were checked;
-these do not establish Kodi-device cleanup or live provider login/playback.
-No mocked Kodi/provider tests or device-success claims were made.
-
-Rebuild with tools/package_runtime_purge_release.py and the verified 0.2.14 ZIP.
+Rebuild with tools/package_reactivation_release.py and the verified 0.2.15 ZIP.

@@ -620,12 +620,19 @@ class AuroraHome(xbmcgui.WindowXML):
         self.playback_origin = None
         self._focus_first_generation = None
         self._focus_receipt = None
+        self._reactivation_ready = Event()
+        self._resume_selection = None
         self.account_monitor = _AccountMonitor(self)
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
 
     def onInit(self):
         if self._ready:
+            try:
+                self._restore_controls('window_on_init')
+            except Exception as error:
+                self.performance({'event': 'window_reactivation_failed', 'stage': 'window_on_init',
+                    'exception': exception_details(error), 'result': 'failure'})
             return
         self._ready = True
         self.window_id = xbmcgui.getCurrentWindowId()
@@ -642,6 +649,74 @@ class AuroraHome(xbmcgui.WindowXML):
             self.stop.set()
             self.close()
             return
+
+    def _restore_controls(self, stage):
+        """A live Python window can outlive Kodi's native view controls/textures."""
+        started = monotonic()
+        before_view = self.getCurrentContainerId()
+        before_size = self.getListSize()
+        if xbmcgui.getCurrentWindowId() != self.window_id:
+            raise RuntimeError('The catalog window is not active for control restoration')
+        # WindowXML bypasses CGUIMediaWindow's normal WINDOW_INIT handler.
+        # After resources are reallocated, reselect its view explicitly.
+        if before_view != 200:
+            xbmc.executebuiltin('Container.SetViewMode(200)', True)
+        if self.getCurrentContainerId() != 200:
+            raise RuntimeError('Kodi did not restore the catalog view')
+        if self.stop.is_set():
+            self.performance({'event': 'window_reactivation_cancelled', 'stage': stage,
+                'reason': 'interface_stopped', 'result': 'cancelled'})
+            return
+        if self.account_generation is not None:
+            from .account_state import current_account
+            if not current_account(self.g.DATA_PATH, self.account_generation):
+                self.show_signed_out()
+                self._reactivation_ready.set()
+                return
+        with self.lock:
+            selected = self._resume_selection
+            origin = self.playback_origin
+            if selected is None and origin:
+                selected = next((i for i, row in enumerate(self.rows)
+                    if row.get('url') == origin['url'] or origin.get('identity')
+                    and row.get('identity') == origin['identity']), origin['selected'])
+            if selected is None:
+                selected = self._selected_index()
+            selected = max(0, min(selected, max(0, len(self.rows)-1)))
+            if len(self.items) != len(self.rows):
+                self.items = [_item(row, self.title_cache.get((row.get('title') or '').upper(), ''),
+                                    self.image_cache) for row in self.rows]
+            # Rebind even when native m_vecItems survived: the view control
+            # itself may have been recreated with no item binding.
+            self.clearList()
+            if self.items:
+                self.addItems(self.items)
+                self.setCurrentListPosition(selected)
+                self.setProperty('ShowSplash', '')
+            self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
+            self._section_label()
+            self._season_properties()
+            self.update_account_button()
+            self.setFocusId(200 if self.items else 301)
+            native_count = self.getListSize()
+            view = self.getCurrentContainerId()
+            focus = self.getFocusId()
+            position = self._selected_index()
+            valid = (view == 200 and native_count == len(self.rows)
+                     and focus == (200 if self.items else 301)
+                     and (not self.items or position == selected))
+        self.performance({'event': 'window_controls_restored', 'stage': stage,
+            'request_id': (origin or {}).get('request_id'),
+            'previous_view_id': before_view, 'previous_native_cards': before_size,
+            'view_id': view, 'native_cards': native_count, 'logical_cards': len(self.rows),
+            'focused_control': focus, 'expected_index': selected, 'actual_index': position,
+            'container_cards_label': xbmc.getInfoLabel('Container(200).NumItems'),
+            'catalog_worker_alive': bool(self.worker and self.worker.is_alive()),
+            'elapsed_ms': round((monotonic()-started)*1000),
+            'result': 'success' if valid else 'failure'})
+        if not valid:
+            raise RuntimeError('Kodi catalog controls did not confirm the restored list and focus')
+        self._reactivation_ready.set()
 
     def _initialize_controls(self):
         if self.getCurrentContainerId() != 200:
@@ -840,24 +915,37 @@ class AuroraHome(xbmcgui.WindowXML):
                         identity_found = bool(self.rows and (self.rows[selected].get('url') == origin['url']
                             or origin['identity'] and self.rows[selected].get('identity') == origin['identity']))
                 before = xbmcgui.getCurrentWindowId()
+                self._resume_selection = selected
+                self._focus_first_generation = None
+                self._reactivation_ready.clear()
                 # Activate the existing ID without changing WindowXML's original
                 # Kodi return window, as calling show() again would do.
                 xbmc.executebuiltin('ActivateWindow(%d)' % self.window_id, True)
-                if self.rows:
-                    self.setCurrentListPosition(selected)
-                self.setFocusId(200 if self.rows else 301)
+                # onInit runs again when Kodi recreates resources after full
+                # screen video. Await that callback, not a guessed sleep.
+                if before != self.window_id:
+                    self._reactivation_ready.wait(1.5)
+                if not self._reactivation_ready.is_set():
+                    self._restore_controls('playback_return_rebind')
                 current_window = xbmcgui.getCurrentWindowId()
+                native_count = self.getListSize()
+                view_id = self.getCurrentContainerId()
+                focused_control = self.getFocusId()
                 self.performance({'event': 'playback_card_returned', 'stage': 'window_restore',
                     'request_id': request.get('request_id'), 'reason': request.get('reason'),
                     'previous_window_id': before, 'target_window_id': self.window_id,
                     'current_window_id': current_window,
                     'cards': len(self.rows), 'generation': self.generation, 'source': source,
+                    'native_cards': native_count, 'view_id': view_id, 'focused_control': focused_control,
+                    'reactivation_callback_ready': self._reactivation_ready.is_set(),
                     'expected_index': selected, 'actual_index': self._selected_index(),
                     'origin_present': bool(origin), 'origin_identity_restored': identity_found,
                     'elapsed_ms': round((monotonic() - started) * 1000),
-                    'result': 'success' if current_window == self.window_id
+                    'result': 'success' if current_window == self.window_id and native_count == len(self.rows)
+                        and view_id == 200 and focused_control == (200 if self.rows else 301)
                         and (not origin or identity_found and self._selected_index() == selected) else 'failure'})
                 self.playback_origin = None
+                self._resume_selection = None
             except Exception as error:
                 self.performance({'event': 'playback_card_return_failed',
                     'request_id': request.get('request_id'), 'exception': exception_details(error),
