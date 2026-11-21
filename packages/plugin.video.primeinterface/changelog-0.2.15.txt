@@ -1,0 +1,5 @@
+0.2.15
+- Clear runtime credentials in the open interface when sign-out originates from Kodi settings or another invocation.
+- Snapshot cached artwork references before notifying active interpreters to purge their account state.
+- Includes 0.2.14 first-card focus, TV episode repair, audited sign-out and fresh verified sign-in.
+- Preserve all existing playback/card return, Prime sections, preloading and SMOOTH artwork/splash.

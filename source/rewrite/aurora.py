@@ -557,7 +557,11 @@ class _AccountMonitor(xbmc.Monitor):
     def onNotification(self, sender, method, data):
         if self.window is not None and sender == ADDON_ID and method.rsplit('.', 1)[-1] == 'account_invalidated':
             self.window.stop.set()
-            self.window.show_signed_out()
+            from .account_state import clear_runtime
+            try:
+                clear_runtime(self.window.g)
+            finally:
+                self.window.show_signed_out()
 
 
 class AuroraHome(xbmcgui.WindowXML):

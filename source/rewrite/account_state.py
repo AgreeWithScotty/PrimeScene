@@ -247,6 +247,15 @@ def _sign_out(g, artwork=(), report=None, before_cleanup=None):
             report({'event': 'signout_stage_failed', 'stage': name, 'exception': exception_details(error),
                     'elapsed_ms': round((monotonic()-started)*1000), 'result': 'failure'})
 
+    # Capture texture references before notification clears other live copies.
+    urls = set(artwork)
+    def runtime_artwork():
+        provider = getattr(g, '_globals', {}).get('pv')
+        if provider is not None:
+            urls.update(_artwork_urls(getattr(provider, '_catalog', {})))
+            urls.update(_artwork_urls(getattr(provider, '_videodata', {})))
+    stage('read_runtime_artwork_inventory', runtime_artwork)
+
     def notify():
         reply = json.loads(xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1,
             'method': 'JSONRPC.NotifyAll', 'params': {'sender': ADDON_ID, 'message': 'account_invalidated'}})))
@@ -255,11 +264,6 @@ def _sign_out(g, artwork=(), report=None, before_cleanup=None):
     stage('notify_active_invocations', notify)
     if before_cleanup is not None:
         stage('stop_interface_workers', before_cleanup)
-    provider = getattr(g, '_globals', {}).get('pv')
-    urls = set(artwork)
-    if provider is not None:
-        urls.update(_artwork_urls(getattr(provider, '_catalog', {})))
-        urls.update(_artwork_urls(getattr(provider, '_videodata', {})))
     tracked = profile / 'account-artwork.jsonl'
     def track():
         if tracked.exists():

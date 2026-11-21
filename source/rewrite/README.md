@@ -1,8 +1,8 @@
-# Smooth Prime 0.2.14
+# Smooth Prime 0.2.15
 
-Based on verified 0.2.13, preserving its SMOOTH icon/fanart/launch splash, four
-sections, Prime filtering, player and return-to-card behavior. Top category
-clicks select/focus the first real card once, leaving later appends alone.
+Based on verified 0.2.14, preserving its SMOOTH icon/fanart/launch splash, four
+sections, Prime filtering, player and return-to-card behavior. The settings sign-out path clears runtime credentials in the open UI too.
+Top category clicks select/focus the first real card once, leaving later appends alone.
 
 TV listing reads actual episode children even when cached season rendering
 returns only folders or nothing. The chosen season is opened when episodes
@@ -26,4 +26,4 @@ Actual filesystem/SQLite cleanup primitives and schema upgrade were checked;
 these do not establish Kodi-device cleanup or live provider login/playback.
 No mocked Kodi/provider tests or device-success claims were made.
 
-Rebuild with tools/package_repair_release.py and the verified 0.2.13 ZIP.
+Rebuild with tools/package_runtime_purge_release.py and the verified 0.2.14 ZIP.

@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.14" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.15" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
@@ -27,7 +27,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home and player screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.14[CR]- Clicking a top category selects and focuses its first card once the real cards arrive.[CR]- Read episode children independently of season-folder rendering; open the selected season when episodes are absent.[CR]- Read current Amazon TV detail state as a fallback, retaining actual episode IDs and season links.[CR]- Invalidate the account before stopping workers; attempt every sign-out cleanup stage and audit remaining files.[CR]- Block a new login while cleanup is incomplete and show Finish sign out for a retry.[CR]- Sign in again now purges the previous session first; fresh login is saved only after Amazon verifies it.[CR]- Confirm completed sign-out and verified sign-in visibly, with correlated stage diagnostics.[CR]- Guard title-art writes against account invalidation and notify active UI/service interpreters to drop old state.[CR]- Preserve the SMOOTH icon/splash, Prime-only sections, playback controls, card return and preloading.</news>
+    <news>0.2.15[CR]- Clear runtime credentials in the open interface when sign-out originates from Kodi settings or another invocation.[CR]- Snapshot cached artwork references before notifying active interpreters to purge their account state.[CR]- Includes 0.2.14 first-card focus, TV episode repair, audited sign-out and fresh verified sign-in.[CR]- Preserve all existing playback/card return, Prime sections, preloading and SMOOTH artwork/splash.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
