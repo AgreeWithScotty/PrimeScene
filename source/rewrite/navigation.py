@@ -12,7 +12,7 @@ from .dedicated_bridge import ProviderBridge
 from .prime_diagnostics import DiagnosticLog, exception_details
 from .public_catalog import STOREFRONT_HOSTS, safe_url
 
-ROOTS = ('root', '__prime_movies__', '__prime_tv__')
+ROOTS = ('__prime_movies__', '__prime_tv__', '__prime_sports__', '__prime_purchases__')
 FRESH_SECONDS = 15 * 60
 MAX_AGE = 24 * 60 * 60
 
@@ -24,7 +24,7 @@ class StorefrontLoader:
         self.epoch = account_epoch(g.DATA_PATH)
         self.stop = Event()
         self.lock = RLock()
-        self.pool = ThreadPoolExecutor(max_workers=3, thread_name_prefix='PrimePages')
+        self.pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix='PrimePages')
         self.readers = {root: (ProviderBridge(None, g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
         self.cache, self.futures = {}, {}
@@ -39,7 +39,7 @@ class StorefrontLoader:
 
     @staticmethod
     def canonical(path):
-        return 'root' if path == '__prime_home__' else path
+        return '__prime_movies__' if path in ('root', '__prime_home__') else path
 
     def handles(self, path):
         with self.lock:
@@ -80,10 +80,14 @@ class StorefrontLoader:
             if path.stat().st_size > 8 * 1024 * 1024:
                 raise ValueError('Catalog cache exceeds its size limit')
             saved = json.loads(path.read_text(encoding='utf-8'))
-            if (saved.get('schema') != 2 or saved.get('epoch') != self.epoch
+            if (saved.get('schema') != 3 or saved.get('epoch') != self.epoch
                     or saved.get('root') != root or not 0 <= time() - saved['saved'] < MAX_AGE):
                 return
             packet = saved['packet']
+            policy = ('prime_only' if root in ('__prime_movies__', '__prime_tv__') else
+                      'account_library' if root == '__prime_purchases__' else 'sports')
+            if packet.get('catalog_policy') != policy:
+                return
             if not isinstance(packet.get('rows'), list) or len(packet['rows']) > 2000:
                 raise ValueError('Invalid catalog cache rows')
             for row in packet['rows']:
@@ -108,7 +112,7 @@ class StorefrontLoader:
     def _save(self, root, packet, bridge, saved):
         # Only first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
-        content = json.dumps({'schema': 2, 'epoch': self.epoch, 'root': root,
+        content = json.dumps({'schema': 3, 'epoch': self.epoch, 'root': root,
                               'saved': saved, 'packet': packet,
                               'continuations': bridge.continuations}, ensure_ascii=True)
         target = self._filename(root)

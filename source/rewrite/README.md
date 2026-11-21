@@ -1,17 +1,25 @@
-# Smooth Prime 0.2.10
+# Smooth Prime 0.2.12
 
-Same permanent add-on, based on verified 0.2.9. After a movie or episode ends
-or stops, restore its originating selected card rather than navigating Home.
-Capture the page, card identity/index, loaded view, season and Back history at
-click time, including before asynchronous title resolution. Reuse the current
-view and any appended pages where possible; otherwise restore the in-memory
-origin snapshot without another catalog request. Clear account-owned origin
-state on sign-out. Existing return-target and newer-playback guards remain.
+Same permanent application. Movies opens first; Home is removed. Top selectors:
+Movies, TV, Sports and Purchases, followed by Search, Settings and the account.
+All SP icon and ultramarine assets from verified 0.2.11 are preserved.
 
-Keep the original Kodi exit window, quiet navigation, top selectors, artwork
-fitting, TV episode browser, season selector and description/artwork preloading.
-Diagnostics correlate request IDs with expected/actual indices, card identity
-restoration, restoration source, terminal reasons and actual window outcomes.
-No simulated tests or real-device card-return success claims were made.
+Movies/TV read Amazon's published Included with Prime storefront and split its
+actual typed cards. Positive Prime benefit/offer evidence is required; generic
+entitlement, SVOD, ad-supported access and unknown access are not treated as
+Prime. Current real anonymous response parsing identifies 40 Prime movies and
+46 Prime TV titles. These counts do not prove a signed-in catalog's contents.
 
-Rebuild using tools/package_card_return_release.py and the published 0.2.9 ZIP.
+Sports uses the actual /sports storefront, with live event types retained.
+Purchases discovers the Purchases & Rentals library through Amazon's actual
+signed-in links and parses its main library collection. It does not substitute
+Watchlist, recommendations or a guessed library URL. That signed-in flow has
+not been observed with a live account; unknown structures fail with diagnostics.
+
+Four account-scoped readers warm the first two actual pages. Cache schema 3
+invalidates old mixed-title records. Sign-out still purges the account cache.
+Card return/position/history, episode browsing, descriptions and artwork prefetch
+and the existing player remain. Diagnostics record access/type coverage and the
+library discovery/HTTP/parser chain. No simulated Kodi/provider tests were run.
+
+Rebuild with tools/package_sections_release.py and the verified 0.2.11 ZIP.

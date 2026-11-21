@@ -9,10 +9,12 @@ from .category_art import apply_category_art, cached_node, first_artwork
 from .public_catalog import PublicCatalogError, STOREFRONT_HOSTS, detail_id, fetch_page, safe_url
 from .prime_diagnostics import DiagnosticLog, exception_details
 from .account_state import account_epoch, current_account
+from .catalog_access import prime_included
 
 
 HOME_CAPACITY = 8
-STOREFRONT_PAGES = {'__prime_home__': 'home', '__prime_movies__': 'movies', '__prime_tv__': 'tv'}
+STOREFRONT_PAGES = {'__prime_home__': 'movies', '__prime_movies__': 'movies', '__prime_tv__': 'tv',
+                    '__prime_sports__': 'sports', '__prime_purchases__': 'purchases'}
 LEGACY_SECTIONS = {'__legacy_profile__': 'profile', '__legacy_mystuff__': 'mystuff',
                    '__legacy_sports__': 'sports', '__legacy_news__': 'news', '__legacy_live__': 'live'}
 
@@ -55,6 +57,8 @@ def _card_info(card):
     }
     if card.landscape_url:
         info['landscape'] = card.landscape_url
+    info['primeincluded'] = prime_included(card.access_evidence)
+    info['access_evidence'] = card.access_evidence
     if card.fanart_url:
         info['fanart'] = card.fanart_url
     if card.plot:
@@ -263,7 +267,18 @@ class ProviderBridge:
         if not self._active(active):
             return None
         rows = []
+        excluded, unknown, wrong_type = 0, 0, 0
         for card in result.cards:
+            if page in ('movies', 'tv') and not prime_included(card.access_evidence):
+                excluded += 1
+                unknown += not bool(card.access_evidence)
+                continue
+            if ((page == 'movies' and card.mediatype != 'movie')
+                    or (page == 'tv' and card.mediatype not in ('tvshow', 'season', 'episode'))):
+                wrong_type += 1
+                continue
+            if page == 'purchases' and not result.library_confirmed:
+                raise PublicCatalogError('The account library could not be confirmed. Open Diagnostics for details.')
             url = safe_url(card.detail_url, STOREFRONT_HOSTS)
             identity = detail_id(url) if url else None
             if not identity:
@@ -277,8 +292,14 @@ class ProviderBridge:
         visited = previous_urls + ((continuation,) if continuation else ())
         next_path = self._continuation(page, result.next_url, visited)
         observe({'event': 'catalog_packet_ready', 'section': page, 'rows': len(rows),
+                 'source_cards': len(result.cards), 'prime_only': page in ('movies', 'tv'),
+                 'access_excluded': excluded, 'access_unknown': unknown,
+                 'type_excluded': wrong_type,
+                 'library_confirmed': result.library_confirmed,
                  'has_next': bool(next_path), 'result': 'success'})
-        return {'rows': rows, 'next': next_path}
+        return {'rows': rows, 'next': next_path, 'library_confirmed': result.library_confirmed,
+                'catalog_policy': 'prime_only' if page in ('movies', 'tv') else
+                                  'account_library' if page == 'purchases' else 'sports'}
 
     def _legacy_section(self, section, publish, active):
         self.ensure_provider()
@@ -350,8 +371,8 @@ class ProviderBridge:
         if not self._active(active):
             return
         if path == 'root' and query is None:
-            # The landing screen is the signed-in storefront, not category tiles.
-            packet = self.public_packet('home', active)
+            # Old root shortcuts now open Movies; Home is not a visible section.
+            packet = self.public_packet('movies', active)
             if packet is not None and self._active(active):
                 publish(packet)
             return

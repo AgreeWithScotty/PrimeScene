@@ -227,7 +227,10 @@ def _browse_path(pluginid, url):
     return None
 
 
-_SECTION_PATHS = {'root', '__prime_home__', '__prime_movies__', '__prime_tv__'}
+_PRIMARY_SECTIONS = {'__prime_movies__': ('movies', 'Movies'), '__prime_tv__': ('tv', 'TV'),
+                     '__prime_sports__': ('sports', 'Sports'), '__prime_purchases__': ('purchases', 'Purchases')}
+_NAV_VALUES = ('movies', 'tv', 'sports', 'purchases')
+_SECTION_PATHS = set(_PRIMARY_SECTIONS) | {'root', '__prime_home__', '__legacy_sports__'}
 _DETAIL_KEYS = ('plot', 'year', 'duration', 'runtime', 'mpaa', 'rating', 'genre', 'genres',
                 'seasons', 'season', 'episode', 'premiered', 'mediatype', 'fanart', 'thumb', 'poster')
 
@@ -514,7 +517,8 @@ def _top_selector_row(pluginid, row):
     # Only navigation entries: real titles called Home retain their identity.
     return (not row.get('identity') and not row.get('detail_url') and not row.get('video')
             and not _kind(row.get('info'))
-            and str(row.get('title') or '').strip().casefold() in ('home', 'movie', 'movies', 'tv', 'tv shows'))
+            and str(row.get('title') or '').strip().casefold() in
+            ('home', 'movie', 'movies', 'tv', 'tv shows', 'sports', 'purchases', 'purchases & rentals'))
 
 
 def _clock(seconds):
@@ -561,10 +565,10 @@ class AuroraHome(xbmcgui.WindowXML):
         self.generation = 0
         self.rows = []
         self.history = []
-        self.path = 'root'
+        self.path = '__prime_movies__'
         self.query = None
-        self.heading = 'Home'
-        self.nav = 'home'
+        self.heading = 'Movies'
+        self.nav = 'movies'
         self.next_path = None
         self.pending_path = None
         self.prefetch_at = 0
@@ -652,8 +656,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
-        self.nav = 'home'
-        self.navigate('root', remember=False, heading='Home')
+        self.nav = 'movies'
+        self.navigate('__prime_movies__', remember=False, heading='Movies')
         self.setFocusId(200)
         self.worker.start()
         self.detail_worker.start()
@@ -683,7 +687,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.description_cache = None
             self.detail_cache.clear()
             self.series_context = None
-            self.path, self.query, self.next_path = 'root', None, None
+            self.path, self.query, self.next_path = '__prime_movies__', None, None
             self.busy = False
             self.nav = ''
         self.clearList()
@@ -791,7 +795,7 @@ class AuroraHome(xbmcgui.WindowXML):
                                       save_current=False)
                         source = 'origin_snapshot'
                     self.history = list(origin['history'])
-                    self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
+                    self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
                     self._section_label()
                 selected = self._selected_index()
                 identity_found = False
@@ -873,19 +877,18 @@ class AuroraHome(xbmcgui.WindowXML):
             return
         with self.lock:
             if (path, query) == (self.path, self.query) and self.rows:
-                self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
+                self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
                 return
             if save_current:
                 self._save_view()
             visible_cards = len(self.rows)
             if remember and (path, query) != (self.path, self.query):
-                previous_nav = {'root': 'home', '__prime_home__': 'home', '__prime_movies__': 'movies',
-                                '__prime_tv__': 'tv'}.get(self.path, self.nav)
+                previous_nav = _PRIMARY_SECTIONS.get(self.path, (self.nav, ''))[0]
                 self.history.append((self.path, self.query, self.heading, previous_nav, self._selected_index(),
                                      deepcopy(self.series_context)))
             self.path = path
             self.query = query
-            self.heading = heading or 'Home'
+            self.heading = heading or 'Movies'
             self.generation += 1
             self.rows = []
             self.items, self.row_keys = [], set()
@@ -899,10 +902,10 @@ class AuroraHome(xbmcgui.WindowXML):
             cached = self.views.get((path, query))
             self.series_context = deepcopy(cached.get('series')) if cached else deepcopy(series)
         self.performance({'event': 'navigation_started', 'generation': token,
-                          'section': self.nav if self.nav in ('home', 'movies', 'tv') else 'detail_or_search',
+                          'section': self.nav if self.nav in _NAV_VALUES else 'detail_or_search',
                           'cached_view': bool(cached), 'retained_visible_cards': visible_cards,
                           'progress_chrome': False})
-        self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
+        self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
         self._section_label()
         self._season_properties()
         if cached:
@@ -1013,8 +1016,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _work(self):
         try:
-            # The landing dashboard does not need the playback provider. Movies,
-            # TV and legacy sections ask the bridge for it when they are opened.
+            # All four primary sections use independent account-scoped readers.
             bridge = ProviderBridge(None, self.g, initialize_provider=self.initialize_provider)
             self.bridge = bridge
             self.loader = StorefrontLoader(self.g)
@@ -1081,12 +1083,15 @@ class AuroraHome(xbmcgui.WindowXML):
                     if token == self.generation and not self.stop.is_set():
                         if path.endswith('/nextPage') and len(self.rows) > page_start:
                             self.prefetch_at = page_start
-                        if not self.rows:
+                        if not self.rows and not self.next_path:
                             self.clearList()
                             self._replace_rail = False
                             self._set_hero_status('SMOOTH PRIME',
                                                   'NO EPISODES WERE RETURNED FOR THIS SEASON. OPEN DIAGNOSTICS.'
-                                                  if self.series_context else 'NO TITLES WERE RETURNED. TRY HOME OR SEARCH.')
+                                                  if self.series_context else
+                                                  'YOUR PURCHASES & RENTALS LIBRARY IS EMPTY.' if self.nav == 'purchases' else
+                                                  'NO PRIME-INCLUDED TITLES WERE RETURNED.' if self.nav in ('movies', 'tv') else
+                                                  'NO TITLES WERE RETURNED. CHOOSE A SECTION OR SEARCH.')
             except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
@@ -1564,16 +1569,13 @@ class AuroraHome(xbmcgui.WindowXML):
         self.navigate('search', query=phrase.strip(), heading='Search')
 
     def onClick(self, control_id):
-        if control_id == 301:
-            self.nav = 'home'
+        primary = {301: '__prime_movies__', 302: '__prime_tv__',
+                   303: '__prime_sports__', 308: '__prime_purchases__'}
+        if control_id in primary:
+            path = primary[control_id]
+            self.nav, heading = _PRIMARY_SECTIONS[path]
             self.history.clear()
-            self.navigate('root', remember=False, heading='Home')
-        elif control_id == 302:
-            self.nav = 'movies'
-            self.navigate('__prime_movies__', heading='Movies')
-        elif control_id == 303:
-            self.nav = 'tv'
-            self.navigate('__prime_tv__', heading='TV')
+            self.navigate(path, remember=False, heading=heading)
         elif control_id == 304:
             self._search()
         elif control_id == 307:
@@ -1640,7 +1642,7 @@ class AuroraHome(xbmcgui.WindowXML):
         action_id = action.getId()
         if action_id not in _BACK or self.stop.is_set():
             return
-        if self.path != 'root' and self.history:
+        if self.path not in _SECTION_PATHS and self.history:
             record(self.g, 'catalog_back')
             path, query, heading, nav, selected, series = self.history.pop()
             self.nav = nav

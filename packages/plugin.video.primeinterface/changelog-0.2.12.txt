@@ -1,0 +1,10 @@
+0.2.12
+- Remove Home and open Movies by default.
+- Use Movies, TV, Sports and Purchases as the four main selectors.
+- Read Movies/TV from Amazon's Included with Prime feed, split by title type and explicit Prime evidence.
+- Exclude unconfirmed, channel-only, rent/buy-only, preview-only and free-with-ads-only entries from Movies/TV.
+- Sports reads Amazon's actual sports storefront and preserves live-event title types.
+- Purchases follows Amazon's signed-in Purchases & Rentals library link; it does not substitute Watchlist.
+- Warm the first two real pages for each section and invalidate old mixed-catalog page caches.
+- Preserve the new SP icon, ultramarine styling, episode browser, descriptions/artwork read-ahead and return to the playing card.
+- Record access/filter counts, library discovery, HTTP/redirect/parser details and explicit failures.

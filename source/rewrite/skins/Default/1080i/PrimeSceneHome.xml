@@ -66,12 +66,12 @@
             <label>S M O O T H   P R I M E</label>
         </control>
         <control type="button" id="301">
-            <left>700</left>
+            <left>650</left>
             <top>26</top>
             <width>140</width>
             <height>44</height>
             <font>Nav</font>
-            <label>HOME</label>
+            <label>MOVIES</label>
             <textcolor>FFB7BEC6</textcolor>
             <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
@@ -83,21 +83,21 @@
             <ondown>200</ondown>
         </control>
         <control type="image">
-            <left>738</left>
+            <left>678</left>
             <top>74</top>
-            <width>64</width>
+            <width>84</width>
             <height>3</height>
             <texture>white.png</texture>
             <colordiffuse>FFC5CCD3</colordiffuse>
-            <visible>String.IsEqual(Window.Property(Nav),home)</visible>
+            <visible>String.IsEqual(Window.Property(Nav),movies)</visible>
         </control>
         <control type="button" id="302">
-            <left>848</left>
+            <left>798</left>
             <top>26</top>
-            <width>170</width>
+            <width>90</width>
             <height>44</height>
             <font>Nav</font>
-            <label>MOVIES</label>
+            <label>TV</label>
             <textcolor>FFB7BEC6</textcolor>
             <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
@@ -109,33 +109,7 @@
             <ondown>200</ondown>
         </control>
         <control type="image">
-            <left>885</left>
-            <top>74</top>
-            <width>96</width>
-            <height>3</height>
-            <texture>white.png</texture>
-            <colordiffuse>FFC5CCD3</colordiffuse>
-            <visible>String.IsEqual(Window.Property(Nav),movies)</visible>
-        </control>
-        <control type="button" id="303">
-            <left>1026</left>
-            <top>26</top>
-            <width>110</width>
-            <height>44</height>
-            <font>Nav</font>
-            <label>TV</label>
-            <textcolor>FFB7BEC6</textcolor>
-            <focusedcolor>FF14181C</focusedcolor>
-            <align>center</align>
-            <textoffsetx>0</textoffsetx>
-            <texturefocus border="16">focus-pill.png</texturefocus>
-            <texturenofocus>blank.png</texturenofocus>
-            <onleft>302</onleft>
-            <onright>304</onright>
-            <ondown>200</ondown>
-        </control>
-        <control type="image">
-            <left>1061</left>
+            <left>823</left>
             <top>74</top>
             <width>40</width>
             <height>3</height>
@@ -143,10 +117,62 @@
             <colordiffuse>FFC5CCD3</colordiffuse>
             <visible>String.IsEqual(Window.Property(Nav),tv)</visible>
         </control>
-        <control type="button" id="304">
-            <left>1144</left>
+        <control type="button" id="303">
+            <left>896</left>
             <top>26</top>
-            <width>160</width>
+            <width>144</width>
+            <height>44</height>
+            <font>Nav</font>
+            <label>SPORTS</label>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
+            <align>center</align>
+            <textoffsetx>0</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
+            <texturenofocus>blank.png</texturenofocus>
+            <onleft>302</onleft>
+            <onright>308</onright>
+            <ondown>200</ondown>
+        </control>
+        <control type="image">
+            <left>924</left>
+            <top>74</top>
+            <width>88</width>
+            <height>3</height>
+            <texture>white.png</texture>
+            <colordiffuse>FFC5CCD3</colordiffuse>
+            <visible>String.IsEqual(Window.Property(Nav),sports)</visible>
+        </control>
+        <control type="button" id="308">
+            <left>1048</left>
+            <top>26</top>
+            <width>184</width>
+            <height>44</height>
+            <font>Nav</font>
+            <label>PURCHASES</label>
+            <textcolor>FFB7BEC6</textcolor>
+            <focusedcolor>FF14181C</focusedcolor>
+            <align>center</align>
+            <textoffsetx>0</textoffsetx>
+            <texturefocus border="16">focus-pill.png</texturefocus>
+            <texturenofocus>blank.png</texturenofocus>
+            <onleft>303</onleft>
+            <onright>304</onright>
+            <ondown>200</ondown>
+        </control>
+        <control type="image">
+            <left>1074</left>
+            <top>74</top>
+            <width>132</width>
+            <height>3</height>
+            <texture>white.png</texture>
+            <colordiffuse>FFC5CCD3</colordiffuse>
+            <visible>String.IsEqual(Window.Property(Nav),purchases)</visible>
+        </control>
+        <control type="button" id="304">
+            <left>1240</left>
+            <top>26</top>
+            <width>148</width>
             <height>44</height>
             <font>Nav</font>
             <label>SEARCH</label>
@@ -156,14 +182,14 @@
             <textoffsetx>0</textoffsetx>
             <texturefocus border="16">focus-pill.png</texturefocus>
             <texturenofocus>blank.png</texturenofocus>
-            <onleft>303</onleft>
+            <onleft>308</onleft>
             <onright>305</onright>
             <ondown>200</ondown>
         </control>
         <control type="button" id="305">
-            <left>1312</left>
+            <left>1396</left>
             <top>26</top>
-            <width>190</width>
+            <width>166</width>
             <height>44</height>
             <font>Nav</font>
             <label>SETTINGS</label>
@@ -178,9 +204,9 @@
             <ondown>200</ondown>
         </control>
         <control type="button" id="306">
-            <left>1520</left>
+            <left>1570</left>
             <top>26</top>
-            <width>340</width>
+            <width>280</width>
             <height>44</height>
             <font>Nav</font>
             <label>$INFO[Window.Property(AccountLabel)]</label>

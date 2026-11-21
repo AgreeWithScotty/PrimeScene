@@ -13,12 +13,17 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 try:
     from .prime_diagnostics import exception_details, route
+    from .catalog_access import access_evidence, merge_evidence, prime_included
 except ImportError:
     from prime_diagnostics import exception_details, route
+    from catalog_access import access_evidence, merge_evidence, prime_included
 
 
 ORIGIN = 'https://www.primevideo.com'
-PAGES = {'home': '/storefront', 'movies': '/movie', 'tv': '/tv'}
+# Use Amazon's published Prime membership storefront, then split by title type.
+# The broad /movie and /tv feeds also market rentals, channels and free-with-ads.
+PAGES = {'home': '/storefront', 'movies': '/storefront/subscription/prime',
+         'tv': '/storefront/subscription/prime', 'sports': '/sports', 'purchases': '/mystuff'}
 STOREFRONT_HOSTS = {'www.primevideo.com', 'primevideo.com', 'na.primevideo.com'}
 IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
 MAX_PAGE_BYTES = 8 * 1024 * 1024
@@ -31,7 +36,10 @@ def _protocol_shape(document):
     known = set(('props pageProps state widgets collections items titles results result data content '
                  'viewOutput page pagination paginator nextPage nextPageUrl paginationTargetUrl '
                  'paginationToken paginationServiceToken nextToken error errors message code '
-                 'status statusCode body components resources entities').split())
+                 'status statusCode body components resources entities features library legacy-library '
+                 'view-filter filters viewType active applied isCurrentlyApplied baseOutput containers '
+                 'emptyState errorCode errorType entitlementCues offerClassification providerLogo '
+                 'entitlementType offerType').split())
     stack, result = [('$', document, 0)], []
     while stack and len(result) < 60:
         path, value, depth = stack.pop()
@@ -39,12 +47,12 @@ def _protocol_shape(document):
             keys = sorted(key for key in value if key in known)
             result.append({'path': path, 'type': 'object', 'known_fields': keys,
                            'other_field_count': len(value) - len(keys)})
-            if depth < 3:
+            if depth < 7:
                 stack.extend((path + '.' + key, value[key], depth + 1) for key in reversed(keys)
                              if isinstance(value[key], (dict, list)))
         elif isinstance(value, list):
             result.append({'path': path, 'type': 'array', 'length': len(value)})
-            if value and depth < 3 and isinstance(value[0], (dict, list)):
+            if value and depth < 7 and isinstance(value[0], (dict, list)):
                 stack.append((path + '[]', value[0], depth + 1))
     return result
 
@@ -66,12 +74,14 @@ class Card:
     episode: str = ''
     seasons: str = ''
     landscape_url: str = ''
+    access_evidence: str = ''
 
 
 @dataclass(frozen=True)
 class CatalogPage:
     cards: list
     next_url: str = None
+    library_confirmed: bool = False
 
 
 def _remember_card(cards, key, card):
@@ -83,6 +93,11 @@ def _remember_card(cards, key, card):
     updates = {}
     for field in fields(Card):
         old, new = getattr(previous, field.name), getattr(card, field.name)
+        if field.name == 'access_evidence':
+            combined = merge_evidence(old, new)
+            if combined != old:
+                updates[field.name] = combined
+            continue
         if new and (not old or field.name == 'plot' and len(new) > len(old)):
             updates[field.name] = new
     if updates:
@@ -289,6 +304,7 @@ def _media_value(node):
         'tvshow': 'tvshow', 'tvseries': 'tvshow',
         'season': 'season', 'tv season': 'season', 'tvseason': 'season',
         'episode': 'episode', 'tv episode': 'episode', 'tvepisode': 'episode',
+        'event': 'event', 'live': 'live', 'live event': 'event',
     }
     for key in ('titleType', 'entityType', 'contentType', 'catalogType', 'mediaType', 'mediatype'):
         value = _text(node.get(key)).casefold().replace('_', ' ').replace('-', ' ').strip()
@@ -369,7 +385,8 @@ def _json_card(node, page_url):
                                         else node.get('season')),
                     episode=_count_value(node.get('episodeNumber') if node.get('episodeNumber') not in (None, '')
                                          else node.get('episode')),
-                    seasons=_seasons_value(node), landscape_url=landscape)
+                    seasons=_seasons_value(node), landscape_url=landscape,
+                    access_evidence=access_evidence(node))
     return None
 
 
@@ -627,13 +644,15 @@ def _read_page(data, content_type, page_url):
     next_url, count = _next_url(links, page_url)
     details.update(cards=len(cards), descriptions_ready=sum(bool(card.plot) for card in cards.values()),
                    landscape_variants=sum(bool(card.landscape_url) for card in cards.values()),
+                   prime_confirmed=sum(prime_included(card.access_evidence) for card in cards.values()),
+                   access_unknown=sum(not card.access_evidence for card in cards.values()),
                    descriptions_missing=sum(not card.plot for card in cards.values()),
                    continuation_candidates=count, continuation_ambiguous=count > 1,
                    unknown_structure=not cards, next_address=route(next_url) if next_url else None)
     return CatalogPage(list(cards.values()), next_url), details
 
 
-def fetch_page(page, opener=None, continuation=None, observer=None):
+def fetch_page(page, opener=None, continuation=None, observer=None, _library_depth=0):
     """Fetch one server page; continuation must be an actual link from its predecessor."""
     started = perf_counter()
     address, stage = '', 'validate_request'
@@ -664,11 +683,27 @@ def fetch_page(page, opener=None, continuation=None, observer=None):
                 raise PublicCatalogError('Prime Video returned more storefront data than expected.')
             data = raw.decode(response.headers.get_content_charset() or 'utf-8', errors='replace')
         stage = 'parse_response'
-        result, details = _read_page(data, content_type, final_url)
+        if page == 'purchases':
+            from .purchases_catalog import read_library
+            result, details, library_link = read_library(data, content_type, final_url,
+                                                       selected=continuation is not None)
+            _emit(observer, dict(details, event='library_response_parsed', stage=stage,
+                status=status, address=route(final_url), bytes=len(raw),
+                elapsed_ms=round((perf_counter() - started) * 1000)))
+            if library_link and _library_depth < 3:
+                _emit(observer, {'event': 'library_navigation_followed', 'stage': 'library_discovery',
+                    'from': route(final_url), 'to': route(library_link), 'hop': _library_depth + 1,
+                    'result': 'success'})
+                return fetch_page(page, opener=opener, continuation=library_link, observer=observer,
+                                  _library_depth=_library_depth + 1)
+            if result is None:
+                raise PublicCatalogError('Amazon did not expose a recognized Purchases & Rentals library. Open Diagnostics for the report.')
+        else:
+            result, details = _read_page(data, content_type, final_url)
         _emit(observer, dict(details, event='catalog_page_parsed', stage=stage, bytes=len(raw),
                              status=status, address=route(final_url),
                              elapsed_ms=round((perf_counter() - started) * 1000)))
-        if not result.cards and result.next_url is None:
+        if not result.cards and result.next_url is None and not result.library_confirmed:
             raise PublicCatalogError('No title cards or page continuation were found in the catalog response.')
         _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'success',
                          'cards': len(result.cards), 'has_next': result.next_url is not None,
@@ -700,7 +735,7 @@ def fetch_cards(page, *, opener=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('page', choices=PAGES, default='home', nargs='?')
+    parser.add_argument('page', choices=PAGES, default='movies', nargs='?')
     parser.add_argument('--limit', type=int, default=5)
     args = parser.parse_args()
     if args.limit < 0:
