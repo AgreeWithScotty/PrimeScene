@@ -65,6 +65,7 @@ class Card:
     season: str = ''
     episode: str = ''
     seasons: str = ''
+    landscape_url: str = ''
 
 
 @dataclass(frozen=True)
@@ -189,6 +190,11 @@ def _shot_map(node):
             url = safe_url(value, IMAGE_HOSTS) if isinstance(value, str) else _image(value)
             if url:
                 found[str(name).casefold()] = url
+    for name in ('landscape', 'thumbnail', 'thumb', 'packshot', 'wide', 'poster', 'fanart', 'heroshot'):
+        if name not in found:
+            url = _image(node.get(name))
+            if url:
+                found[name] = url
     return found
 
 
@@ -276,18 +282,25 @@ def _genre_value(node):
 
 
 def _media_value(node):
-    raw = ''
-    for key in ('titleType', 'entityType', 'contentType', 'catalogType'):
-        raw = _text(node.get(key))
-        if raw:
-            break
-    key = raw.casefold().replace('_', ' ').replace('-', ' ').strip()
-    return {
+    aliases = {
         'movie': 'movie', 'film': 'movie', 'movies': 'movie',
         'tv show': 'tvshow', 'tvshow': 'tvshow', 'show': 'tvshow', 'series': 'tvshow',
         'tv series': 'tvshow', 'tv': 'tvshow',
-        'season': 'season', 'episode': 'episode',
-    }.get(key, '')
+        'tvshow': 'tvshow', 'tvseries': 'tvshow',
+        'season': 'season', 'tv season': 'season', 'tvseason': 'season',
+        'episode': 'episode', 'tv episode': 'episode', 'tvepisode': 'episode',
+    }
+    for key in ('titleType', 'entityType', 'contentType', 'catalogType', 'mediaType', 'mediatype'):
+        value = _text(node.get(key)).casefold().replace('_', ' ').replace('-', ' ').strip()
+        if value in aliases:
+            return aliases[value]
+    if _count_value(node.get('episodeNumber')):
+        return 'episode'
+    if _count_value(node.get('seasonNumber')):
+        return 'season'
+    if _seasons_value(node):
+        return 'tvshow'
+    return ''
 
 
 def _seasons_value(node):
@@ -336,7 +349,8 @@ def _json_card(node, page_url):
         if title:
             break
     shots = _shot_map(node)
-    artwork = _first_shot(shots, ('packshot', 'thumbnail', 'thumb', 'landscape', 'wide', 'image', 'src'))
+    landscape = _first_shot(shots, ('landscape', 'packshot', 'thumbnail', 'thumb', 'wide'))
+    artwork = landscape or _first_shot(shots, ('image', 'src'))
     poster = _first_shot(shots, ('titleshot', 'covershot', 'poster', 'cover', 'boxart', 'tall'))
     fanart = _first_shot(shots, ('heroshot', 'hero', 'fanart', 'background', 'backdrop'))
     if not artwork:
@@ -355,7 +369,7 @@ def _json_card(node, page_url):
                                         else node.get('season')),
                     episode=_count_value(node.get('episodeNumber') if node.get('episodeNumber') not in (None, '')
                                          else node.get('episode')),
-                    seasons=_seasons_value(node))
+                    seasons=_seasons_value(node), landscape_url=landscape)
     return None
 
 
@@ -612,6 +626,7 @@ def _read_page(data, content_type, page_url):
         raise PublicCatalogError('Prime Video returned an unsupported catalog content type.')
     next_url, count = _next_url(links, page_url)
     details.update(cards=len(cards), descriptions_ready=sum(bool(card.plot) for card in cards.values()),
+                   landscape_variants=sum(bool(card.landscape_url) for card in cards.values()),
                    descriptions_missing=sum(not card.plot for card in cards.values()),
                    continuation_candidates=count, continuation_ambiguous=count > 1,
                    unknown_structure=not cards, next_address=route(next_url) if next_url else None)

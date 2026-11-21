@@ -31,7 +31,7 @@ class DescriptionCache:
                 if path.stat().st_size > 256 * 1024:
                     raise ValueError('Description cache exceeds its size limit')
                 data = json.loads(path.read_text(encoding='utf-8'))
-                if (data.get('schema') == 1 and data.get('epoch') == self.epoch
+                if (data.get('schema') == 2 and data.get('epoch') == self.epoch
                         and 0 <= time() - data['saved'] < MAX_AGE
                         and isinstance(data.get('info'), dict)):
                     candidate = {field: data['info'][field] for field in FIELDS if field in data['info']}
@@ -49,7 +49,7 @@ class DescriptionCache:
         if not isinstance(info.get('plot'), str) or not info['plot'].strip():
             return
         try:
-            content = json.dumps({'schema': 1, 'epoch': self.epoch, 'saved': time(), 'info': info},
+            content = json.dumps({'schema': 2, 'epoch': self.epoch, 'saved': time(), 'info': info},
                                  ensure_ascii=True)
             if len(content.encode()) > 256 * 1024:
                 raise ValueError('Description cache exceeds its size limit')

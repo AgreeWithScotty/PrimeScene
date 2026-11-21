@@ -4,7 +4,7 @@ from os.path import join
 import re
 from secrets import token_hex
 from time import monotonic
-from urllib.parse import urlencode, urljoin, urlsplit
+from urllib.parse import urlencode, urljoin, urlsplit, unquote_plus, quote_plus
 from .category_art import apply_category_art, cached_node, first_artwork
 from .public_catalog import PublicCatalogError, STOREFRONT_HOSTS, detail_id, fetch_page, safe_url
 from .prime_diagnostics import DiagnosticLog, exception_details
@@ -52,10 +52,12 @@ def is_title_card(info, playable=False):
 def _card_info(card):
     """Listing fields the storefront actually returned. Missing fields stay absent."""
     info = {
-        'thumb': card.artwork_url,
+        'thumb': card.landscape_url or card.artwork_url,
         'poster': card.poster_url or card.artwork_url,
         'mediatype': card.mediatype or 'storefront',
     }
+    if card.landscape_url:
+        info['landscape'] = card.landscape_url
     if card.fanart_url:
         info['fanart'] = card.fanart_url
     if card.plot:
@@ -132,9 +134,73 @@ class ProviderBridge:
         # Storefront detail URLs remain the exact server links. The established
         # detail parser supplies the actual title/episode playback identifiers.
         details = getattr(self.provider, '_prime_scene_details', {})
-        details.update(self.details)
+        for key, value in self.details.items():
+            details.setdefault(key, value)
         self.provider._prime_scene_details = details
         return self.provider
+
+    def title_context(self, path):
+        """Read the selected title's metadata and actual linked seasons."""
+        provider = self.provider
+        parts = [unquote_plus(part) for part in path.split('/')]
+        identifier = parts[-1] if parts else ''
+        mapping = provider._videodata.get('urn2gti', {})
+        resolved = mapping.get(identifier, identifier)
+        data = provider._videodata.get(resolved, {})
+        node = ({'__storefront__': getattr(provider, '_prime_scene_details', {})}
+                if parts and parts[0] == '__storefront__' else provider._catalog)
+        for part in parts:
+            node = node.get(part, {}) if isinstance(node, dict) else {}
+        if not data and isinstance(node, dict):
+            compact = detail_id(node.get('ref') or node.get('lazyLoadURL') or '')
+            if compact:
+                resolved = mapping.get(compact, compact)
+                data = provider._videodata.get(resolved, {})
+        if not data:
+            data = node
+        metadata = data.get('metadata', {}) if isinstance(data, dict) else {}
+        info = dict(metadata.get('artmeta') or {})
+        info.update(metadata.get('videometa') or {})
+        if not info and isinstance(node, dict):
+            metadata = node.get('metadata') or {}
+            info.update(metadata.get('artmeta') or {})
+            info.update(metadata.get('videometa') or {})
+        kind = str(info.get('mediatype') or '').lower()
+        if kind in ('show', 'series', 'tv_show', 'tv_series'):
+            kind = 'tvshow'
+        candidates = ([resolved] + list(data.get('siblings') or []) if kind == 'season'
+                      else list(data.get('children') or []) if kind == 'tvshow' else [])
+        if kind == 'tvshow':
+            for child in list(candidates):
+                candidates.extend(provider._videodata.get(child, {}).get('siblings') or [])
+        seasons, seen = [], set()
+        for key in candidates:
+            season = provider._videodata.get(key) or {}
+            meta = season.get('metadata') or {}
+            video = dict(meta.get('videometa') or {})
+            # These IDs came from the selected show's children or the selected
+            # season's sibling group. Their actual linked season records can be
+            # present before all per-season video metadata has been populated.
+            if video.get('mediatype') not in (None, '', 'season') or key in seen:
+                continue
+            reference = season.get('ref') or season.get('lazyLoadURL')
+            if not isinstance(reference, str):
+                continue
+            reference = urljoin(self.g.BaseUrl, reference)
+            if not safe_url(reference, {urlsplit(self.g.BaseUrl).hostname}):
+                continue
+            seen.add(key)
+            video['mediatype'] = 'season'
+            entry = deepcopy(season)
+            if not entry.get('children'):
+                entry['lazyLoadURL'] = reference
+            provider._prime_scene_details.setdefault(key, entry)
+            self.details.setdefault(key, entry)
+            video.update(meta.get('artmeta') or {})
+            seasons.append({'title': season.get('title') or 'Season', 'identity': key,
+                            'url': self.g.pluginid + 'pv/browse/__storefront__/' + quote_plus(key),
+                            'video': False, 'info': video})
+        return info, seasons, resolved
 
     def _observe(self, active):
         return self.operation_observer or DiagnosticLog(
@@ -387,7 +453,9 @@ class ProviderBridge:
                     next_path = row['url'][len(prefix):]
                 else:
                     rows.append(row)
-            return {'rows': deepcopy(rows), 'next': next_path}
+            info, seasons, selected_id = self.title_context(path) if path != 'root' and query is None else ({}, [], None)
+            return {'rows': deepcopy(rows), 'next': next_path, 'info': info, 'seasons': seasons,
+                    'selected_id': selected_id}
 
         def progress(node, breadcrumb):
             if not incremental:

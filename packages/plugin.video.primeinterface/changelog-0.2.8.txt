@@ -1,0 +1,8 @@
+0.2.8
+- TV shows open their episode browser instead of playing a resume or first episode automatically.
+- Choose a season on the show page; individual episodes and movies start their own playback.
+- Keep the selected show, episode position and season when navigating back.
+- Prefer Amazon's declared landscape card art; fit complete images into uniform black card frames.
+- Keep portrait fallback art separate from the landscape card source and preserve a clear fixed focus frame.
+- Read the selected title's metadata instead of classifying a show from one of its child episodes.
+- Preserve description/artwork/page read-ahead, the Smooth Prime branding, and the existing player.

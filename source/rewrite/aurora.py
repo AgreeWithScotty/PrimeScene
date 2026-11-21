@@ -5,6 +5,7 @@ is drawn by the skin from the focused card. Playback uses the existing Prime
 Scene PlayVideo URL. No separate Kodi skin is required.
 """
 from json import dumps, load
+from copy import deepcopy
 from pathlib import Path
 from queue import Empty, Queue
 from re import IGNORECASE
@@ -71,7 +72,35 @@ def _progress(info):
 
 
 def _kind(info):
-    return str((info or {}).get('mediatype') or '').casefold()
+    value = str((info or {}).get('mediatype') or (info or {}).get('contentType') or '').casefold().replace('_', '').replace(' ', '')
+    return {'series': 'tvshow', 'show': 'tvshow', 'tvseries': 'tvshow', 'tv': 'tvshow',
+            'film': 'movie', 'tvseason': 'season', 'tvepisode': 'episode'}.get(value, value)
+
+
+def _tv_container(row):
+    info = (row or {}).get('info') or {}
+    kind = _kind(info)
+    if kind in ('tvshow', 'season'):
+        return True
+    if kind in ('movie', 'episode', 'video', 'live', 'event'):
+        return False
+    return bool(info.get('episodes') or info.get('next_episode')
+                or _count_label(info.get('seasons') or info.get('seasoncount'))
+                or _count_label(info.get('season')) and not _count_label(info.get('episode')))
+
+
+def _tv_packet(packet):
+    kind = _kind((packet or {}).get('info'))
+    if kind in ('movie', 'episode', 'video', 'live', 'event'):
+        return False
+    return (kind in ('tvshow', 'season') or bool((packet or {}).get('seasons'))
+            or any(_tv_container(row) or _kind(row.get('info')) == 'episode'
+                   for row in (packet or {}).get('rows') or []))
+
+
+def _rail_art(info):
+    """Use a declared landscape variant before any portrait-only fallback."""
+    return (info.get('landscape') or info.get('thumb') or info.get('fanart') or info.get('poster') or '')
 
 
 def _year_label(info):
@@ -232,8 +261,10 @@ def _is_season_row(row):
     info = (row or {}).get('info') or {}
     if _kind(info) == 'season':
         return True
+    if _kind(info) in ('movie', 'episode', 'video', 'live', 'event'):
+        return False
     season = info.get('season')
-    return season not in (None, '', 0, '0') and _kind(info) != 'episode'
+    return season not in (None, '', 0, '0') or bool(compile_re(r'^(?:Season|Series)\s+\d+\b', IGNORECASE).match(str(row.get('title') or '')))
 
 
 def _season_number(row):
@@ -242,22 +273,6 @@ def _season_number(row):
         return int(info.get('season') or 0)
     except (TypeError, ValueError):
         return 1 << 20
-
-
-def _season_folders(pluginid, rows):
-    folders = []
-    for row in rows or []:
-        if playback_row(row):
-            continue
-        path = _browse_path(pluginid, row.get('url'))
-        if path:
-            folders.append((path, row))
-    if not folders:
-        return []
-    if len(folders) == 1 or all(_is_season_row(row) for _path, row in folders):
-        folders.sort(key=lambda item: _season_number(item[1]))
-        return folders
-    return []
 
 
 def _fit_art(url, width):
@@ -300,62 +315,52 @@ def _episode_order(row):
     return (number(info.get('season')), number(info.get('episode')), row.get('title') or '')
 
 
-def choose_playback(rows):
-    """The one PlayVideo row a detail page can start, and why.
-
-    A movie is its feature. A series prefers the episode already in progress,
-    otherwise the earliest season and episode. No row means there is no single
-    playable episode and the caller may show the list.
-    """
+def choose_playback(rows, requested_kind='', selected_id=None):
+    """Play a movie/specific episode only; series and seasons are browse actions."""
+    if requested_kind in ('tvshow', 'season'):
+        return None, 'browse'
+    if not requested_kind and any(_tv_container(row) or _kind(row.get('info')) == 'episode' for row in rows or []):
+        return None, 'browse'
     found, seen = [], set()
     for row in rows or []:
         target = playback_row(row)
         if not target:
+            continue
+        kind = _kind(target.get('info'))
+        if requested_kind == 'movie' and kind == 'episode':
+            continue
+        if requested_kind == 'episode' and kind not in ('episode', 'video', ''):
             continue
         url = target.get('url') or ''
         if not _play_url(url) or url in seen:
             continue
         seen.add(url)
         found.append(target)
-    episodes = [row for row in found if _kind(row.get('info')) == 'episode']
-    if episodes:
-        resumed = [row for row in episodes if _progress(row.get('info')) > 0]
-        if resumed:
-            resumed.sort(key=lambda row: (_progress(row.get('info')), _episode_order(row)))
-            return resumed[-1], 'resume'
-        episodes.sort(key=_episode_order)
-        return episodes[0], 'first'
+    if selected_id:
+        exact = [row for row in found if row.get('identity') == selected_id]
+        if len(exact) == 1:
+            return exact[0], requested_kind or 'selected'
     if len(found) == 1:
         kind = _kind(found[0].get('info'))
         return found[0], 'movie' if kind in ('movie', 'video', '') else 'only'
-    if found:
-        return found[0], 'only'
     return None, 'picker'
 
 
 def playback_row(row):
-    """The PlayVideo row a card click should start, or None.
-
-    A movie or episode card already carries mode=PlayVideo. A series card
-    plays its next episode, or the first episode, when that playable row is
-    already on the card. A series with only a detail link has no single
-    playable item here.
-    """
+    """Series/season cards always browse; only explicit playable leaves play."""
     if not isinstance(row, dict):
+        return None
+    if _tv_container(row):
         return None
     if _play_url(row.get('url')):
         return row
     info = row.get('info') if isinstance(row.get('info'), dict) else {}
-    for key in ('next', 'next_episode', 'resume'):
+    if _kind(info) not in ('movie', 'episode', 'video', 'live', 'event'):
+        return None
+    for key in ('resume',):
         found = _nested_playable(info.get(key), row)
         if found:
             return found
-    episodes = info.get('episodes')
-    if isinstance(episodes, (list, tuple)):
-        for episode in episodes:
-            found = _nested_playable(episode, row)
-            if found:
-                return found
     return None
 
 
@@ -363,7 +368,7 @@ def _item(row, title_art='', image_cache=None):
     info = row.get('info') or {}
     title = (row.get('title') or 'Untitled').upper()
     item = xbmcgui.ListItem(label=title)
-    thumb = _fit_art(info.get('thumb') or info.get('poster') or info.get('fanart'), _CARD_ART)
+    thumb = _fit_art(_rail_art(info), _CARD_ART)
     poster = _fit_art(info.get('poster') or info.get('thumb'), _CARD_ART)
     fanart = _fit_art(info.get('fanart'), _HERO_ART)
     art = {}
@@ -540,6 +545,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.description_cache = None
         self.description_attempts = set()
         self._description_window = None
+        self.series_context = None
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
 
@@ -614,11 +620,13 @@ class AuroraHome(xbmcgui.WindowXML):
             self.description_attempts.clear()
             self.description_cache = None
             self.detail_cache.clear()
+            self.series_context = None
             self.path, self.query, self.next_path = 'root', None, None
             self.busy = False
             self.nav = ''
         self.clearList()
         self.setProperty('Nav', '')
+        self._season_properties()
         self.setProperty('Section', '')
         self.setProperty('AccountLabel', 'Sign in')
         self._set_hero_status('SIGN IN', 'SIGN IN TO PRIME VIDEO TO BROWSE AND WATCH.')
@@ -667,15 +675,19 @@ class AuroraHome(xbmcgui.WindowXML):
         self.description_cache = None
         self.description_attempts.clear()
         self._description_window = None
+        self.series_context = None
 
     def _save_view(self):
         if self.rows:
             self.views[(self.path, self.query)] = {'rows': list(self.rows), 'items': list(self.items),
-                'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at, 'selected': self._selected_index()}
+                'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at, 'selected': self._selected_index(),
+                'series': deepcopy(self.series_context)}
+            if self.series_context:
+                self.views[(self.series_context['root_path'], None)] = self.views[(self.path, self.query)]
             if len(self.views) > 12:
                 self.views.pop(next(iter(self.views)))
 
-    def navigate(self, path, remember=True, query=None, selection=0, heading=None):
+    def navigate(self, path, remember=True, query=None, selection=0, heading=None, series=None):
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
             return
@@ -687,7 +699,8 @@ class AuroraHome(xbmcgui.WindowXML):
             if remember and (path, query) != (self.path, self.query):
                 previous_nav = {'root': 'home', '__prime_home__': 'home', '__prime_movies__': 'movies',
                                 '__prime_tv__': 'tv'}.get(self.path, self.nav)
-                self.history.append((self.path, self.query, self.heading, previous_nav, self._selected_index()))
+                self.history.append((self.path, self.query, self.heading, previous_nav, self._selected_index(),
+                                     deepcopy(self.series_context)))
             self.path = path
             self.query = query
             self.heading = heading or 'Home'
@@ -702,11 +715,13 @@ class AuroraHome(xbmcgui.WindowXML):
             token = self.generation
             self._navigation_started = monotonic()
             cached = self.views.get((path, query))
+            self.series_context = deepcopy(cached.get('series')) if cached else deepcopy(series)
         self.performance({'event': 'navigation_started', 'generation': token,
                           'section': self.nav if self.nav in ('home', 'movies', 'tv') else 'detail_or_search',
                           'cached_view': bool(cached)})
         self.setProperty('Nav', self.nav if self.nav in ('home', 'movies', 'tv') else '')
         self.setProperty('Section', (self.heading or 'Home').upper())
+        self._season_properties()
         self.clearList()
         if cached:
             with self.lock:
@@ -720,7 +735,8 @@ class AuroraHome(xbmcgui.WindowXML):
                               'generation': token,
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
             return
-        self._set_hero_status((self.heading or 'Smooth Prime').upper(), 'LOADING TITLES')
+        self._set_hero_status((self.heading or 'Smooth Prime').upper(),
+                              'LOADING EPISODES' if self.series_context else 'LOADING TITLES')
         # Drop queued obsolete work. In-flight public requests continue only to
         # warm their cache; the worker stops waiting when generation changes.
         while True:
@@ -858,6 +874,10 @@ class AuroraHome(xbmcgui.WindowXML):
                     packet = future.result()
                     if packet:
                         self._publish(token, packet)
+                elif self.series_context and query is None:
+                    packet = self._episode_listing(path, token)
+                    if packet is not None:
+                        self._publish(token, packet)
                 else:
                     with self.bridge_lock:
                         if token != self.generation or self.stop.is_set():
@@ -872,7 +892,8 @@ class AuroraHome(xbmcgui.WindowXML):
                             self.prefetch_at = page_start
                         if not self.rows:
                             self._set_hero_status((self.heading or 'Smooth Prime').upper(),
-                                                  'NO TITLES WERE RETURNED. TRY HOME OR SEARCH.')
+                                                  'NO EPISODES WERE RETURNED FOR THIS SEASON. OPEN DIAGNOSTICS.'
+                                                  if self.series_context else 'NO TITLES WERE RETURNED. TRY HOME OR SEARCH.')
             except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
@@ -917,6 +938,104 @@ class AuroraHome(xbmcgui.WindowXML):
             return True
         return False
 
+    def _season_properties(self):
+        context = self.series_context or {}
+        self.setProperty('SeasonLabel', context.get('season_label') or '')
+        self.setProperty('SeasonSwitchable', 'true' if len(context.get('seasons') or []) > 1 else '')
+
+    def _open_series(self, row):
+        path = _browse_path(self.g.pluginid, row.get('url'))
+        if not path and row.get('identity') in self.known_details:
+            path = '__storefront__/' + row['identity']
+        if not path:
+            self.performance({'event': 'series_route_missing', 'stage': 'click', 'result': 'failure'})
+            self.g.dialog.ok('Smooth Prime', 'This show did not provide an episode-list link. Open Diagnostics for the report.')
+            return
+        context = {'title': row.get('title') or 'TV show', 'root_path': path,
+                   'opened_kind': _kind(row.get('info')), 'seasons': []}
+        if _kind(row.get('info')) == 'season':
+            context['requested_season'] = (row.get('info') or {}).get('season')
+        self.performance({'event': 'title_click', 'action': 'browse_episodes',
+                          'media_kind': _kind(row.get('info')), 'result': 'success'})
+        self.navigate(path, heading=context['title'], series=context)
+
+    def _episode_listing(self, path, token):
+        context = deepcopy(self.series_context)
+        packet = self._fetch_detail(path)
+        if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
+            return None
+        self._remember(path, None, 'browse', packet)
+        seasons = packet.get('seasons') or [row for row in packet.get('rows') or [] if _is_season_row(row)]
+        if seasons:
+            unique = {_browse_path(self.g.pluginid, row.get('url')): row for row in seasons
+                      if _browse_path(self.g.pluginid, row.get('url'))}
+            seasons = sorted(unique.values(), key=_season_number)
+            context['seasons'] = seasons
+        else:
+            seasons = context.get('seasons') or []
+        if seasons and not path.endswith('/nextPage'):
+            requested_path = context.get('requested_path')
+            requested_number = context.get('requested_season')
+            if requested_number is None and context.get('opened_kind') != 'tvshow' and _kind(packet.get('info')) == 'season':
+                requested_number = (packet.get('info') or {}).get('season')
+            chosen = next((row for row in seasons if _browse_path(self.g.pluginid, row['url']) == requested_path), None)
+            if chosen is None and requested_number is not None:
+                chosen = next((row for row in seasons if str((row.get('info') or {}).get('season')) == str(requested_number)), None)
+            if chosen is None:
+                chosen = next((row for row in seasons if 0 < _season_number(row) < 1 << 20), seasons[0])
+            season_path = _browse_path(self.g.pluginid, chosen['url'])
+            chosen_number = (chosen.get('info') or {}).get('season')
+            present_episodes = [row for row in packet.get('rows') or [] if _kind(row.get('info')) == 'episode']
+            already_listed = (chosen_number is not None and bool(present_episodes)
+                              and all(str((row.get('info') or {}).get('season')) == str(chosen_number)
+                                      for row in present_episodes))
+            if chosen.get('identity') != packet.get('selected_id') and season_path != path and not already_listed:
+                packet = self._fetch_detail(season_path)
+                if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
+                    return None
+                self._remember(season_path, None, 'browse', packet)
+            context['requested_path'] = season_path
+            context['requested_season'] = (chosen.get('info') or {}).get('season')
+            context['season_label'] = 'Season ' + str(context['requested_season']) if context['requested_season'] is not None else str(chosen['title'])
+        episodes = [row for row in packet.get('rows') or [] if _kind(row.get('info')) == 'episode']
+        if episodes:
+            episodes.sort(key=_episode_order)
+            if not context.get('season_label'):
+                number = (episodes[0].get('info') or {}).get('season')
+                context['season_label'] = 'Season ' + str(number) if number is not None else 'Episodes'
+            packet = dict(packet, rows=episodes)
+        else:
+            packet = dict(packet, rows=[])
+        self.performance({'event': 'episode_listing_ready', 'stage': 'series_navigation',
+                          'generation': token, 'season_count': len(seasons), 'episode_count': len(episodes),
+                          'row_count': len(packet.get('rows') or []),
+                          'selected_kind': _kind(packet.get('info')), 'result': 'success' if episodes else 'unclassified'})
+        if token == self.generation:
+            self.series_context = context
+            self._season_properties()
+        return packet
+
+    def _choose_season(self):
+        context = deepcopy(self.series_context)
+        seasons = (context or {}).get('seasons') or []
+        if len(seasons) < 2:
+            return
+        labels = [str(row.get('title') or 'Season ' + str((row.get('info') or {}).get('season', ''))) for row in seasons]
+        selected = self.g.dialog.select('Choose season', labels)
+        if selected is None or selected < 0 or selected >= len(seasons):
+            return
+        row = seasons[selected]
+        path = _browse_path(self.g.pluginid, row['url'])
+        if not path:
+            return
+        context['requested_path'] = path
+        context['requested_season'] = (row.get('info') or {}).get('season')
+        context['season_label'] = labels[selected]
+        # A season change stays within this show's page. Back returns to the
+        # catalog, keeping the original show's selected position.
+        self.navigate(path, remember=False, heading=context['title'], series=context)
+        self.setFocusId(200)
+
     def _visual_loop(self):
         """Keep expensive title drawing and image downloads away from input/binding."""
         while not self.stop.is_set():
@@ -932,7 +1051,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 urls = []
                 for offset, (_position, row, _item_ref) in enumerate(nearby):
                     info = row.get('info') or {}
-                    urls.append(_fit_art(info.get('thumb') or info.get('poster') or info.get('fanart'), _CARD_ART))
+                    urls.append(_fit_art(_rail_art(info), _CARD_ART))
                     if offset < 3:
                         urls.append(_fit_art(info.get('fanart'), _HERO_ART))
                 if self.image_cache is not None:
@@ -954,7 +1073,7 @@ class AuroraHome(xbmcgui.WindowXML):
                     if self.image_cache is None:
                         continue
                     info = row.get('info') or {}
-                    thumb = _fit_art(info.get('thumb') or info.get('poster') or info.get('fanart'), _CARD_ART)
+                    thumb = _fit_art(_rail_art(info), _CARD_ART)
                     local = self.image_cache.local(thumb)
                     if local and local != thumb and item.getProperty('LocalThumb') != local:
                         item.setArt({'thumb': local, 'landscape': local})
@@ -1085,29 +1204,43 @@ class AuroraHome(xbmcgui.WindowXML):
         if packet is None:
             self.detail_cache[path] = {'playable': None, 'how': 'error', 'info': {}}
             return
-        playable, how = choose_playback(packet.get('rows'))
+        playable, how = choose_playback(packet.get('rows'), _kind(packet.get('info')), packet.get('selected_id'))
         self._remember(path, playable, how if playable is not None else 'metadata', packet)
 
     def _fetch_detail(self, path):
         bridge = self.bridge
         if bridge is None or self.stop.is_set():
             return 'wait'
-        packet = {'rows': []}
+        cached = self.detail_cache.get(path) or {}
+        if cached.get('packet') is not None:
+            self.performance({'event': 'title_packet_cache_hit', 'result': 'success'})
+            return deepcopy(cached['packet'])
+        packet = {'rows': [], 'next': None, 'info': {}, 'seasons': []}
 
         def publish(part):
             if part:
                 packet['rows'].extend(part.get('rows') or [])
+                for key in ('next', 'info', 'seasons', 'selected_id'):
+                    if key in part:
+                        packet[key] = part[key]
 
         try:
             with self.bridge_lock:
                 if self.stop.is_set():
                     return 'wait'
                 with self.lock:
-                    bridge.details.update(self.known_details)
+                    for key, value in self.known_details.items():
+                        bridge.details.setdefault(key, value)
                 bridge.browse_progressive(path, publish, lambda: not self.stop.is_set())
         except Exception as error:
             xbmc.log('[Prime Scene] Detail lookup failed: ' + type(error).__name__, xbmc.LOGERROR)
             return None
+        if self.account_generation is not None:
+            from .account_state import current_account
+            if not current_account(self.g.DATA_PATH, self.account_generation):
+                return None
+        record = self.detail_cache.setdefault(path, {'playable': None, 'how': 'metadata', 'info': {}})
+        record['packet'] = deepcopy(packet)
         return packet
 
     def _resolve_playable(self, path, depth=0):
@@ -1117,29 +1250,29 @@ class AuroraHome(xbmcgui.WindowXML):
         if packet is None:
             return None, 'error', None
         rows = packet.get('rows') or []
-        playable, how = choose_playback(rows)
-        if playable is not None or depth >= 1:
-            return playable, how if playable is not None else 'picker', packet
-        folders = _season_folders(self.g.pluginid, rows)
-        if not folders:
-            return None, 'picker' if rows else 'empty', packet
-        child = folders[0][0]
-        if not child or child == path:
-            return None, 'picker', packet
-        nested, nested_how, nested_packet = self._resolve_playable(child, depth + 1)
-        merged = {'rows': rows + ((nested_packet or {}).get('rows') or [])}
-        if nested is not None:
-            label = 'first' if _kind(nested.get('info')) == 'episode' else nested_how
-            return nested, label, merged
-        return None, 'picker', packet
+        if _tv_packet(packet):
+            return None, 'browse', packet
+        playable, how = choose_playback(rows, _kind(packet.get('info')), packet.get('selected_id'))
+        return playable, how if playable is not None else 'picker' if rows else 'empty', packet
 
     def _remember(self, path, playable, how, packet):
         if self.account_generation is not None:
             from .account_state import current_account
             if not current_account(self.g.DATA_PATH, self.account_generation):
                 return
-        info = _richer((packet or {}).get('rows'))
-        self.detail_cache[path] = {'playable': playable, 'how': how, 'info': info}
+        info = dict((packet or {}).get('info') or {})
+        if _tv_packet(packet):
+            playable, how = None, 'browse'
+            if _kind(info) not in ('tvshow', 'season'):
+                info['mediatype'] = 'tvshow'
+            # A show's description belongs to the show, not an arbitrary child
+            # episode selected by "longest synopsis" aggregation.
+        else:
+            for key, value in _richer((packet or {}).get('rows')).items():
+                if info.get(key) in (None, '', [], {}):
+                    info[key] = value
+        self.detail_cache[path] = {'playable': playable, 'how': how, 'info': info,
+                                   'packet': deepcopy(packet)}
         if self.description_cache is not None:
             self.description_cache.save(path, info)
         xbmc.log('[Prime Scene] Playback choice for %s: %s' % (path, how), xbmc.LOGINFO)
@@ -1160,6 +1293,7 @@ class AuroraHome(xbmcgui.WindowXML):
             current = dict(row.get('info') or {})
             for key, value in info.items():
                 if value not in (None, '', [], {}) and (current.get(key) in (None, '', [], {})
+                        or key == 'mediatype' and _kind(current) == 'storefront'
                         or key == 'plot' and len(_plain(str(value))) > len(_plain(str(current.get(key) or '')))):
                     current[key] = value
             with self.lock:
@@ -1176,9 +1310,10 @@ class AuroraHome(xbmcgui.WindowXML):
             item.setProperty('Runtime', _runtime_label(runtime))
             item.setProperty('Rating', _rating_label(current))
             item.setProperty('Genre', _genre_label(current))
+            item.setProperty('MediaType', _kind(current))
             art = {}
             fanart = _fit_art(current.get('fanart'), _HERO_ART)
-            thumb = _fit_art(current.get('thumb') or current.get('poster'), _CARD_ART)
+            thumb = _fit_art(_rail_art(current), _CARD_ART)
             if fanart:
                 art['fanart'] = fanart
             if thumb:
@@ -1204,6 +1339,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
             playable = (cached or {}).get('playable')
             how = (cached or {}).get('how')
+            if how == 'browse' or _tv_packet((cached or {}).get('packet')):
+                self._open_series({'title': title, 'url': self.g.pluginid + 'pv/browse/' + path,
+                                   'info': (cached or {}).get('info') or {}})
+                return
             if playable is not None:
                 xbmc.log('[Prime Scene] Playing %s (%s) without a detail page' % (path, how), xbmc.LOGINFO)
                 play_row(playable, self.g.DATA_PATH)
@@ -1211,7 +1350,10 @@ class AuroraHome(xbmcgui.WindowXML):
             if how == 'picker':
                 self.navigate(path, heading=title or 'Smooth Prime')
                 return
-            self.g.dialog.ok('Smooth Prime', 'This title did not return a video to play.')
+            message = ('This movie or episode did not return its playback item.'
+                       if _kind((cached or {}).get('info')) in ('movie', 'episode') else
+                       'The title details could not be loaded. Open Diagnostics for the report.')
+            self.g.dialog.ok('Smooth Prime', message)
         finally:
             if token == self._play_token:
                 self.setProperty('Busy', '')
@@ -1237,6 +1379,8 @@ class AuroraHome(xbmcgui.WindowXML):
             self.navigate('__prime_tv__', heading='TV')
         elif control_id == 304:
             self._search()
+        elif control_id == 307:
+            self._choose_season()
         elif control_id == 305:
             self.g.addon.openSettings()
             self.update_account_button()
@@ -1268,13 +1412,18 @@ class AuroraHome(xbmcgui.WindowXML):
             row = self._selected_row()
             if not row:
                 return
-            target = playback_row(row)
             path = _detail_path(self.g.pluginid, row)
+            cached = self.detail_cache.get(path) if path else None
+            if _tv_container(row) or cached and (cached.get('how') == 'browse' or _tv_packet(cached.get('packet'))):
+                self._open_series(row)
+                return
+            target = playback_row(row)
             if target is None and path:
-                cached = self.detail_cache.get(path)
                 if cached and cached.get('playable') is not None:
                     target = cached['playable']
             if target is not None:
+                self.performance({'event': 'title_click', 'action': 'play',
+                                  'media_kind': _kind(target.get('info')), 'result': 'success'})
                 play_row(target, self.g.DATA_PATH)
                 return
             if not path:
@@ -1296,9 +1445,9 @@ class AuroraHome(xbmcgui.WindowXML):
             return
         if self.path != 'root' and self.history:
             record(self.g, 'catalog_back')
-            path, query, heading, nav, selected = self.history.pop()
+            path, query, heading, nav, selected, series = self.history.pop()
             self.nav = nav
-            self.navigate(path, remember=False, query=query, heading=heading, selection=selected)
+            self.navigate(path, remember=False, query=query, heading=heading, selection=selected, series=series)
         else:
             self.stop.set()
             record(self.g, 'window_exit_to_kodi_home')
