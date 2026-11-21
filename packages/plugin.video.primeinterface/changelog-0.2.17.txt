@@ -1,0 +1,2 @@
+0.2.17
+- Removed custom playback control bar; Kodi's standard player controls restored.

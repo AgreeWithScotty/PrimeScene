@@ -1,21 +1,11 @@
-# Smooth Prime 0.2.16
+# Smooth Prime 0.2.17
 
-The existing WindowXML survives playback in Python while Kodi may free/recreate
-its native resources. The previous ready guard skipped native onInit work,
-leaving view 200 unselected/unbound and the window blank after video. Restore
-the native view and rebind the retained card objects on each reactivation;
-select/focus the originating card after the actual initialization callback.
-Preserve the existing window's Kodi exit target, with no new catalog fetch.
+Playback of a Smooth Prime title hands off to Kodi through the existing
+PlayVideo URL. Kodi's own OSD, seek bar, pause, stop, info, subtitles and
+audio menus, and Back behaviour are the controls. The custom playback bar is
+not installed and nothing closes Kodi's player dialogs.
 
-Report actual native/logical card counts, view/focus/index and window IDs,
-worker state, stage timings and exception frames. A correct window ID alone
-no longer establishes successful return. All playback/resolver/overlay, sign-out,
-episode, preloading and SMOOTH artwork paths are preserved. Source/artifact
-checks do not establish a Kodi-device return success. No mocked tests were run.
+The catalog window is unchanged. After Kodi finishes the title, the service
+still returns that same window to the card that started playback.
 
-Home/Continue Watching is a user design proposal, not a shipped feature in this
-repair. Amazon supports per-profile watch progress and Continue Watching;
-signed-in progress reading/availability must be established before claiming
-cross-device history support.
-
-Rebuild with tools/package_reactivation_release.py and the verified 0.2.15 ZIP.
+Rebuild with tools/package_player_release.py and the verified 0.2.16 ZIP.
