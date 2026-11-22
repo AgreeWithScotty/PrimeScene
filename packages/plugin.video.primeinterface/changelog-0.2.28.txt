@@ -1,0 +1,9 @@
+0.2.28
+- Use Amazon's category-navigation cover images and name overlays directly, without opening any genre catalog to obtain artwork.
+- Seed all 12 current public category covers for immediate binding; refresh one shared Categories response for Movies and TV.
+- Remove the per-genre preview queue, unrelated-section warming, and duplicate grid thumbnail downloader.
+- Start on Movies, the first top-menu item, with its genre grid. Do not fetch In Progress or full catalog pages at startup.
+- Refresh category metadata/artwork on existing tile objects without resetting the grid or its selection.
+- Show genre names only inside the graphic; remove duplicated below-art labels/captions and fill that space with artwork.
+- Empty-view restoration returns to the active section's menu instead of jumping to In Progress.
+- Preserve the established layout, individual Extras services, TV seasons/episodes, selected-category first-two-page lookahead, focus, fonts, account purge and playback behavior.

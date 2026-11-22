@@ -25,8 +25,6 @@ class StorefrontLoader:
         self.stop = Event()
         self.lock = RLock()
         self.pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix='PrimePages')
-        self.preview_pool=ThreadPoolExecutor(max_workers=2,thread_name_prefix='PrimeTilePreview')
-        self.preview_paths=set();self.promoted=set()
         self.readers = {root: (CatalogGateway(g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
         self.cache, self.futures = {}, {}
@@ -57,18 +55,6 @@ class StorefrontLoader:
                 self.routes[path]=path
                 self.readers[path]=(CatalogGateway(self.g),Lock())
 
-    def request_preview(self,path):
-        """Share a first-page result, without warming two pages of every genre."""
-        path=self.canonical(path)
-        with self.lock:
-            if path.startswith(('__genre__/','__service__/')):self.register_genre(path)
-            future=self.futures.get(path);entry=self.cache.get(path)
-            if future is not None and (not future.done() or entry and time()-entry[0]<FRESH_SECONDS):return future
-            if self.stop.is_set():raise RuntimeError('The catalog session has ended')
-            self.preview_paths.add(path)
-            self.futures[path]=self.preview_pool.submit(self._load,path,True)
-            return self.futures[path]
-
     def handles(self, path):
         with self.lock:
             return self.canonical(path) in self.routes
@@ -85,9 +71,6 @@ class StorefrontLoader:
         path = self.canonical(path)
         with self.lock:
             future = self.futures.get(path)
-            if path in self.preview_paths:
-                self.promoted.add(path)
-                if future is not None and not future.done() and future.cancel():future=None
             if path == '__watching__':
                 self.cache.pop(path,None)
                 if future is not None and not future.done(): future.cancel()
@@ -101,13 +84,6 @@ class StorefrontLoader:
                 raise RuntimeError('The catalog session has ended')
             self.futures[path] = self.pool.submit(self._load, path)
             return self.futures[path]
-
-    def warm(self):
-        with self.lock:
-            if self._warm_started:return
-            self._warm_started=True
-        for root in ROOTS:
-            if root != '__watching__': self.request(root)
 
     def _filename(self, path):
         return self.folder / (hashlib.sha256(path.encode()).hexdigest() + '.json')
@@ -189,7 +165,7 @@ class StorefrontLoader:
         stored = persist_if_current(self.g.DATA_PATH, self.epoch, write)
         self.report({'event': 'catalog_cache_saved', 'section': self.diagnostic_section(root), 'stored': stored})
 
-    def _load(self, path, first_only=False):
+    def _load(self, path):
         started = monotonic()
         with self.lock:
             root = self.routes[path]
@@ -233,12 +209,12 @@ class StorefrontLoader:
                                      'exception': exception_details(error), 'result': 'failure'})
             self.report({'event': 'catalog_page_ready', 'section': self.diagnostic_section(root), 'source': source,
                          'cards': len(packet.get('rows') or []), 'has_next': bool(packet.get('next')), 'fresh_provider_request':fresh,
-                         'service_tiles':len(packet.get('tiles') or []),'preview_only':first_only,
+                         'service_tiles':len(packet.get('tiles') or []),
                          'saved_or_memory_cache_used':not fresh and source == 'cache',
                          'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'success'})
             # Warm exactly the first two actual pages. Page three is requested
             # by the UI on entering page two, and so on for later pages.
-            if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and not fresh and packet.get('next') and self.current() and (not first_only or path in self.promoted):
+            if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and not fresh and packet.get('next') and self.current():
                 self.request(packet['next'])
             return deepcopy(packet)
         except Exception as error:
@@ -253,10 +229,8 @@ class StorefrontLoader:
             for future in self.futures.values():
                 future.cancel()
         self.pool.shutdown(wait=True)
-        self.preview_pool.shutdown(wait=True)
         with self.lock:
             self.cache.clear()
             self.futures.clear()
             self.routes.clear()
             self.readers.clear()
-            self.preview_paths.clear();self.promoted.clear()

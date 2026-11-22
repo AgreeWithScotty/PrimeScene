@@ -1,35 +1,32 @@
-# Smooth Prime 0.2.27: actual title previews and individual services
+# Smooth Prime 0.2.28: navigation metadata, not catalog previews
 
-Movies/TV keep the full grid, with the first matching title's Amazon artwork
-instead of the old premade illustrations. Preview requests use the same catalog
-reader and shared cache as selection, first page only, with two preview workers.
-Selecting a queued preview promotes it to the foreground pool; running requests
-are shared. Images update existing tile objects without resetting grid selection.
-Only nearby Extras logos warm. Artwork/state is account-epoch guarded and purged.
+The first-title instruction is superseded. Amazon Categories returns all 12 genre
+cover images and overlay-name presentation in one response. genre_catalog parses
+the native nested link and cover fields. Current public metadata is seeded, then
+one session request refreshes the shared Movies/TV snapshot. No genre catalog is
+opened for artwork. Actual metadata response: HTTP 200, 321,877 bytes, 500 ms in
+this public observation. All 12 actual sized image URLs returned images, 29,977
+bytes combined in 750 ms. These timings are observations, not Kodi UI guarantees.
 
-Extras now contains Sports plus individual services from Amazon's actual Browse
-all subscriptions directory, not a generic mixed-title subscriptions feed. It
-lists all available services, without checking subscription ownership (the user's
-latest correction). Only actual channel/subscription catalog links qualify;
-sign-up offer/checkout links are excluded. Real directory data contains 102 services
-including HBO Max, Apple TV, Paramount+, MGM+, STARZ and AMC+. The selected service
-opens its own provider catalog. The actual STARZ browse link returned 91 public
-cards and a next-page link. This is not a signed-in access or playback claim.
+The per-genre request queue and preview pool are removed. Unrelated section warming
+is removed. A selected category still warms its first two actual pages and arms
+the existing early lookahead. Grid images use Kodi's asynchronous background texture
+cache rather than a duplicate application downloader. Current public art binds
+without waiting for the navigation refresh. Metadata updates reuse existing tile
+objects and preserve focus. The app-created All/Sports choices use clear text
+tiles; actual genre covers use the provider's title overlays, as its native UI does.
+Genre art fills each existing grid cell. Only the in-graphic name is shown;
+the duplicated below-art label/caption is removed. Extras service presentation
+retains its existing layout. The clear focused outline remains.
 
-Native WindowXML labels resolve skin font names. Simply editing a bundled TTF
-or its unused Font.xml would not change those labels. font_coverage.py reads the
-active skin's font13 TrueType/OpenType cmap and logs fontset/name/hash/coverage.
-Its map reader matched the actual maps of all four bundled font files. Supported
-letters remain, common punctuation normalizes, unsupported glyphs transliterate
-where possible or become whitespace, and invalid/control/private-use characters
-cannot render tofu. Every display path uses cleanup; source IDs/URLs stay intact.
-The missing U+25BE season symbol is replaced by native geometric chevron art.
-Bundled font/image bytes and the original blue glow style are unchanged.
+Startup selects Movies (301), the first menu item, and opens its genre grid. It
+does not call In Progress or open a content catalog before a genre/All selection.
+Empty native-view restoration targets the active section's menu, not always 309.
+No redesign of the menu/grid, original glow, Extras directory or card layout.
 
-Logs distinguish active-font failure/fallback, codepoints/replacement reasons,
-directory HTTP/parser stages, preview source/index/pages and exceptions. They
-exclude passwords, codes, cookies, tokens and private account identifiers.
-No simulated provider/Kodi test, no remote visual-success claim. Authentication,
-playback, first-two-page/early paging, title hierarchy, sign-out purge and fresh
-in-place In Progress behavior remain. Package bytes and public download verified
-separately during publication; previous releases remain immutable.
+50 Python/4 XML and 174 relative import edges checked. Ten established season,
+episode, publish/progress, playback-origin and lookahead methods are unchanged;
+21 named native/auth/media/font/service modules and all 41 skin assets retain
+their 27 bytes. Logs identify category-art sources/counts, zero catalog-image
+requests, startup selection, metadata updates and failures without secrets.
+No simulated Kodi/provider tests and no remote visual-success claim.

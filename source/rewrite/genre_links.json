@@ -1,18 +1,79 @@
 {
   "source": "https://www.primevideo.com/categories",
-  "verified": "2026-11-21",
+  "verified": "2026-11-22",
+  "artwork_source": "provider_category_navigation",
   "rows": [
-    {"title":"Kids & family","address":"https://www.primevideo.com/kids?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_1"},
-    {"title":"Action & adventure","address":"https://www.primevideo.com/genre/action?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_2"},
-    {"title":"Comedy","address":"https://www.primevideo.com/genre/comedy?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_3"},
-    {"title":"Documentary","address":"https://www.primevideo.com/genre/documentary?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_4"},
-    {"title":"Horror","address":"https://www.primevideo.com/genre/horror?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_5"},
-    {"title":"Drama","address":"https://www.primevideo.com/genre/drama?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_6"},
-    {"title":"Mystery & thriller","address":"https://www.primevideo.com/genre/suspense?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_7"},
-    {"title":"Romance","address":"https://www.primevideo.com/genre/romance?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_8"},
-    {"title":"Fantasy","address":"https://www.primevideo.com/genre/fantasy?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_9"},
-    {"title":"Science fiction","address":"https://www.primevideo.com/genre/science-fiction?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_10"},
-    {"title":"Historical","address":"https://www.primevideo.com/genre/historical?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_11"},
-    {"title":"Anime","address":"https://www.primevideo.com/genre/anime?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_12"}
+    {
+      "title": "Action & adventure",
+      "address": "https://www.primevideo.com/genre/action?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_2",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_action_adv/6bce998c-56e9-4711-ac0f-af4e2aa991c6._UR1920,1080_.png",
+      "artwork_label": "Action & adventure"
+    },
+    {
+      "title": "Anime",
+      "address": "https://www.primevideo.com/genre/anime?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_12",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_anime/e846e8e9-01af-4480-bc22-9f371478c61e._UR1920,1080_.png",
+      "artwork_label": "Anime"
+    },
+    {
+      "title": "Comedy",
+      "address": "https://www.primevideo.com/genre/comedy?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_3",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_comedy/5e49df3b-16ff-4d58-9adc-33d1e851aa3a._UR1920,1080_.png",
+      "artwork_label": "Comedy"
+    },
+    {
+      "title": "Documentary",
+      "address": "https://www.primevideo.com/genre/documentary?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_4",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_documentary/322bc0be-9b57-44dd-a78f-e82c633a57e4._UR1920,1080_.png",
+      "artwork_label": "Documentary"
+    },
+    {
+      "title": "Drama",
+      "address": "https://www.primevideo.com/genre/drama?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_6",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_drama/523ae41b-dfc8-49a9-a78c-816a738fe152._UR1920,1080_.png",
+      "artwork_label": "Drama"
+    },
+    {
+      "title": "Fantasy",
+      "address": "https://www.primevideo.com/genre/fantasy?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_9",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_fantasy/9b9f84d3-b3c4-400b-8256-66e0d06c4e89._UR1920,1080_.png",
+      "artwork_label": "Fantasy"
+    },
+    {
+      "title": "Historical",
+      "address": "https://www.primevideo.com/genre/historical?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_11",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_historical/e53f8022-5f16-4b09-a14f-b6b2401c5198._UR1920,1080_.png",
+      "artwork_label": "Historical"
+    },
+    {
+      "title": "Horror",
+      "address": "https://www.primevideo.com/genre/horror?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_5",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_horror/f0ccae66-feda-4ae0-b1f9-ff478e8af3d2._UR1920,1080_.png",
+      "artwork_label": "Horror"
+    },
+    {
+      "title": "Kids & family",
+      "address": "https://www.primevideo.com/kids?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_1",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_kids/064b0425-5b9b-4a9e-9ae9-f8c2eeced661._UR1920,1080_.png",
+      "artwork_label": "Kids & family"
+    },
+    {
+      "title": "Mystery & thriller",
+      "address": "https://www.primevideo.com/genre/suspense?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_7",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_suspense/5736ffa5-1904-4b3b-8967-97d659d95c1b._UR1920,1080_.png",
+      "artwork_label": "Mystery & thriller"
+    },
+    {
+      "title": "Romance",
+      "address": "https://www.primevideo.com/genre/romance?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_8",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_romance/a008caaf-c3d8-43e6-a6c4-ae9f977d843f._UR1920,1080_.png",
+      "artwork_label": "Romance"
+    },
+    {
+      "title": "Science fiction",
+      "address": "https://www.primevideo.com/genre/science-fiction?jic=8%7CEgNhbGw%3D&ref_=atv_ge_all_c_YyAsEb_1_10",
+      "artwork": "https://m.media-amazon.com/images/S/sonata-images-prod/genre_background_science_fiction/08523d1e-196f-45f9-9c66-53a0ec7edfb7._UR1920,1080_.png",
+      "artwork_label": "Science fiction"
+    }
   ]
 }

@@ -4,7 +4,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 from .detail_catalog import documents
-from .public_catalog import ORIGIN,STOREFRONT_HOSTS,safe_url,_text,_protocol_shape
+from .public_catalog import ORIGIN,STOREFRONT_HOSTS,IMAGE_HOSTS,safe_url,_text,_protocol_shape
 
 NAMES={'action':'Action','actionandadventure':'Action & adventure','adventure':'Adventure',
     'animation':'Animation','anime':'Anime','comedy':'Comedy','documentary':'Documentary',
@@ -62,7 +62,11 @@ def genre_name(text):
 class Anchors(HTMLParser):
     def __init__(self):super().__init__();self.current=None;self.links=[]
     def handle_starttag(self,tag,attrs):
-        if tag=='a':self.current=[dict(attrs).get('href',''),'']
+        attributes=dict(attrs)
+        if tag=='a':self.current=[attributes.get('href',''),'','']
+        elif tag=='img' and self.current is not None:
+            self.current[2]=safe_url(attributes.get('src') or attributes.get('data-src'),IMAGE_HOSTS) or ''
+            if not self.current[1]:self.current[1]=attributes.get('alt') or ''
     def handle_data(self,data):
         if self.current:self.current[1]+=data
     def handle_endtag(self,tag):
@@ -74,43 +78,46 @@ def navigation(data,content_type,address,observer):
         node=stack.pop();visited+=1
         if visited>100000:raise ValueError('Genre navigation exceeds its structure limit')
         if isinstance(node,dict):
-            label=next((_text(node.get(k)) for k in ('label','text','title','heading','displayName') if _text(node.get(k))), '')
-            link=next((safe_url(node.get(k),STOREFRONT_HOSTS,address) for k in ('url','href','link','targetUrl')
-                if safe_url(node.get(k),STOREFRONT_HOSTS,address)),None)
+            label=next((_text(node.get(k)) for k in ('displayTitle','label','text','title','heading','displayName') if _text(node.get(k))), '')
+            raw_link=node.get('link')
+            linked=raw_link.get('url') if isinstance(raw_link,dict) else raw_link
+            link=next((target for target in (safe_url(node.get('url'),STOREFRONT_HOSTS,address),
+                safe_url(node.get('href'),STOREFRONT_HOSTS,address),safe_url(linked,STOREFRONT_HOSTS,address),
+                safe_url(node.get('targetUrl'),STOREFRONT_HOSTS,address)) if target),None)
+            images=node.get('images') or {}
+            artwork=next((target for key in ('cover','hero','logo') if isinstance(images,dict) and isinstance(images.get(key),dict)
+                for target in [safe_url(images[key].get('url'),IMAGE_HOSTS)] if target),'')
             if link:
-                candidates.append((link,label))
-                if (node.get('enrichNav')=='GET_CATEGORIES' or label.casefold() in ('categories','genres')):
-                    categories.append(link)
+                candidates.append((link,label,artwork,bool(node.get('overlayTextPosition'))))
+                if node.get('enrichNav')=='GET_CATEGORIES' or label.casefold() in ('categories','genres'):categories.append(link)
             stack.extend(v for v in node.values() if isinstance(v,(dict,list)))
         elif isinstance(node,list):stack.extend(node)
     if not content_type.endswith('json'):
-        anchors=Anchors();anchors.feed(data);anchors.close();candidates.extend(anchors.links)
-    rows=[];seen=set()
-    for link,label in candidates:
+        anchors=Anchors();anchors.feed(data);anchors.close();candidates.extend(tuple(row)+(False,) for row in anchors.links)
+    rows={}
+    for link,label,artwork,overlay in candidates:
         target=safe_url(link,STOREFRONT_HOSTS,address);name=genre_name(label)
         if not target or not name or not any(p in urlsplit(target).path for p in ('/genre/','/kids')):continue
-        if (name,target) in seen:continue
-        seen.add((name,target));rows.append({'title':name,'address':target})
+        key=(name,target);row={'title':name,'address':target}
+        if artwork:
+            row['artwork']=artwork
+            if overlay:row['artwork_label']=name
+        if key not in rows or artwork and not rows[key].get('artwork'):rows[key]=row
+    result=list(rows.values())
     observer({'event':'genre_navigation_parsed','stage':'genre_discovery','documents':len(docs),
-        'linked_genres':len(rows),'category_links':len(set(categories)),
-        'protocol_structure':[_protocol_shape(d) for d in docs[:1]],'result':'success'})
-    return rows,list(dict.fromkeys(categories))
+        'linked_genres':len(result),'artwork_supplied':sum(bool(row.get('artwork')) for row in result),
+        'category_links':len(set(categories)),'protocol_structure':[_protocol_shape(d) for d in docs[:1]],'result':'success'})
+    return result,list(dict.fromkeys(categories))
 
 def discover(client,section,observer):
-    from .public_catalog import PAGES
-    response=client.request(ORIGIN+PAGES[section],stage='genre_navigation_fetch')
-    rows,links=navigation(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address,observer)
-    if links:
-        for address in links[:2]:
-            response=client.request(address,stage='genre_categories_fetch')
-            found,_=navigation(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address,observer)
-            rows.extend(found)
-    # Keep separate movie/TV links where the provider supplied them. Generic
-    # genre links are valid too; the card reader still enforces type and Prime.
+    # This is Amazon's published category-navigation page. Its Grid supplies
+    # both genre targets and cover art; no genre/title pages are needed here.
+    response=client.request(ORIGIN+'/categories',stage='genre_categories_fetch')
+    rows,_=navigation(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address,observer)
     result={}
     for row in rows:
         path=urlsplit(row['address']).path.lower()
-        wrong=('/tv/' in path and section=='movies') or ('/movie/' in path and section=='tv')
-        if wrong:continue
-        result.setdefault(row['title'],row)
+        if ('/tv/' in path and section=='movies') or ('/movie/' in path and section=='tv'):continue
+        old=result.get(row['title'])
+        if old is None or row.get('artwork') and not old.get('artwork'):result[row['title']]=row
     return sorted(result.values(),key=lambda row:row['title'])

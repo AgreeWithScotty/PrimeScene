@@ -1,0 +1,185 @@
+{
+  "version": "0.2.28",
+  "sha256": "5bb2e8e2cb1e78f55f76b14fb4c8a6d5b44a868371f77af48e938b1d0ffd2d2b",
+  "bytes": 32170969,
+  "files": 109,
+  "concrete_checks": {
+    "python_files_parsed": 50,
+    "xml_files_parsed": 4,
+    "relative_import_edges_checked": 174,
+    "actual_categories_response_covers": 12,
+    "public_seed_has_all_category_covers": true,
+    "provider_category_name_overlays": 12,
+    "genre_graphics_fill_tiles_without_duplicate_below_art_names_or_captions": true,
+    "category_discovery_request_sites": 1,
+    "individual_genre_catalog_requests_for_art": 0,
+    "duplicate_grid_image_downloader_removed": true,
+    "unrelated_section_warming_removed": true,
+    "startup_control": 301,
+    "startup_section": "Movies",
+    "startup_catalog_navigation_calls": 0,
+    "unchanged_methods": [
+      "_open_series",
+      "_episode_listing",
+      "_read_tv_detail",
+      "_choose_season",
+      "_open_browse",
+      "_capture_playback_origin",
+      "_publish",
+      "_publish_progress_refresh",
+      "_prefetch",
+      "_start_playback"
+    ],
+    "unchanged_modules": [
+      "media_resources",
+      "media_proxy",
+      "playback_engine",
+      "playback_progress",
+      "http_transport",
+      "prime_login",
+      "prime_signin",
+      "account_auth",
+      "accounts",
+      "account_state",
+      "session_store",
+      "prime_device",
+      "account_region",
+      "home_catalog",
+      "watch_home",
+      "collection_paging",
+      "title_art",
+      "display_text",
+      "font_coverage",
+      "service_catalog",
+      "catalog_gateway"
+    ],
+    "unchanged_skin_assets": 41,
+    "mocked_provider_or_kodi_tests": false,
+    "kodi_ui_outcome_observed": false
+  },
+  "actual_category_response": {
+    "status": 200,
+    "bytes": 321877,
+    "elapsed_ms": 500,
+    "genre_covers": 12,
+    "individual_genre_requests": 0
+  },
+  "actual_cover_downloads": {
+    "actual_provider_image_results": [
+      {
+        "genre": "Action & adventure",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2631,
+        "elapsed_ms": 266,
+        "result": "success"
+      },
+      {
+        "genre": "Anime",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2394,
+        "elapsed_ms": 250,
+        "result": "success"
+      },
+      {
+        "genre": "Comedy",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2742,
+        "elapsed_ms": 266,
+        "result": "success"
+      },
+      {
+        "genre": "Documentary",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2688,
+        "elapsed_ms": 266,
+        "result": "success"
+      },
+      {
+        "genre": "Drama",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2407,
+        "elapsed_ms": 234,
+        "result": "success"
+      },
+      {
+        "genre": "Fantasy",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2147,
+        "elapsed_ms": 218,
+        "result": "success"
+      },
+      {
+        "genre": "Historical",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2736,
+        "elapsed_ms": 218,
+        "result": "success"
+      },
+      {
+        "genre": "Horror",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2140,
+        "elapsed_ms": 234,
+        "result": "success"
+      },
+      {
+        "genre": "Kids & family",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2622,
+        "elapsed_ms": 235,
+        "result": "success"
+      },
+      {
+        "genre": "Mystery & thriller",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2244,
+        "elapsed_ms": 235,
+        "result": "success"
+      },
+      {
+        "genre": "Romance",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2422,
+        "elapsed_ms": 235,
+        "result": "success"
+      },
+      {
+        "genre": "Science fiction",
+        "status": 200,
+        "content_type": "image/jpeg",
+        "bytes": 2804,
+        "elapsed_ms": 250,
+        "result": "success"
+      }
+    ],
+    "elapsed_ms": 750,
+    "images_confirmed": 12,
+    "bytes": 29977,
+    "individual_genre_or_title_requests": 0,
+    "kodi_ui_outcome_observed": false
+  },
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_tiles.py",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/genre_links.json",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "device_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false
+}

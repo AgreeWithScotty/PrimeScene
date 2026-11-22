@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <window>
-    <defaultcontrol always="true">309</defaultcontrol>
+    <defaultcontrol always="true">301</defaultcontrol>
     <views>200</views>
     <controls>
         <control type="group" id="9000">
@@ -2173,109 +2173,235 @@
                     <onright>noop</onright>
                     <ondown>noop</ondown>
                     <itemlayout width="354" height="270">
-                        <control type="image">
-                            <left>8</left>
-                            <top>8</top>
-                            <width>338</width>
-                            <height>190</height>
-                            <texture>white.png</texture>
-                            <colordiffuse>FF000000</colordiffuse>
+                        <control type="group">
+                            <description>Service tile layout</description>
+                            <visible>String.IsEqual(Window.Property(Nav),extras)</visible>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>190</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FF000000</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>190</height>
+                                <aspectratio>keep</aspectratio>
+                                <texture>$INFO[ListItem.Art(thumb)]</texture>
+                                <colordiffuse>FFE6E8EB</colordiffuse>
+                            </control>
+                            <control type="label">
+                                <left>16</left>
+                                <top>75</top>
+                                <width>322</width>
+                                <height>48</height>
+                                <font>font16</font>
+                                <align>center</align>
+                                <label>$INFO[ListItem.Property(GridLabel)]</label>
+                                <textcolor>FFFFFFFF</textcolor>
+                                <visible>!String.IsEmpty(ListItem.Property(GridLabel))</visible>
+                            </control>
+                            <control type="label">
+                                <left>10</left>
+                                <top>207</top>
+                                <width>334</width>
+                                <height>28</height>
+                                <font>Card</font>
+                                <label>$INFO[ListItem.Label]</label>
+                                <textcolor>FFE6E8EB</textcolor>
+                            </control>
+                            <control type="label">
+                                <left>10</left>
+                                <top>237</top>
+                                <width>334</width>
+                                <height>23</height>
+                                <font>Meta</font>
+                                <label>$INFO[ListItem.Property(Caption)]</label>
+                                <textcolor>FFB7BEC6</textcolor>
+                            </control>
                         </control>
-                        <control type="image">
-                            <left>8</left>
-                            <top>8</top>
-                            <width>338</width>
-                            <height>190</height>
-                            <aspectratio>keep</aspectratio>
-                            <texture>$INFO[ListItem.Art(thumb)]</texture>
-                            <colordiffuse>FFE6E8EB</colordiffuse>
-                        </control>
-                        <control type="label">
-                            <left>10</left>
-                            <top>207</top>
-                            <width>334</width>
-                            <height>28</height>
-                            <font>Card</font>
-                            <label>$INFO[ListItem.Label]</label>
-                            <textcolor>FFE6E8EB</textcolor>
-                        </control>
-                        <control type="label">
-                            <left>10</left>
-                            <top>237</top>
-                            <width>334</width>
-                            <height>23</height>
-                            <font>Meta</font>
-                            <label>$INFO[ListItem.Property(Caption)]</label>
-                            <textcolor>FFB7BEC6</textcolor>
+                        <control type="group">
+                            <description>Genre artwork only</description>
+                            <visible>String.IsEqual(Window.Property(Nav),movies) | String.IsEqual(Window.Property(Nav),tv)</visible>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>250</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FF000000</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>250</height>
+                                <aspectratio>scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                                <colordiffuse>FFE6E8EB</colordiffuse>
+                            </control>
+                            <control type="label">
+                                <left>16</left>
+                                <top>109</top>
+                                <width>322</width>
+                                <height>48</height>
+                                <font>font16</font>
+                                <align>center</align>
+                                <label>$INFO[ListItem.Property(GridLabel)]</label>
+                                <textcolor>FFFFFFFF</textcolor>
+                                <visible>!String.IsEmpty(ListItem.Property(GridLabel))</visible>
+                            </control>
                         </control>
                     </itemlayout>
                     <focusedlayout width="354" height="270">
-                        <control type="image">
-                            <left>8</left>
-                            <top>8</top>
-                            <width>338</width>
-                            <height>190</height>
-                            <texture>white.png</texture>
-                            <colordiffuse>FF000000</colordiffuse>
+                        <control type="group">
+                            <description>Service tile layout</description>
+                            <visible>String.IsEqual(Window.Property(Nav),extras)</visible>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>190</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FF000000</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>190</height>
+                                <aspectratio>keep</aspectratio>
+                                <texture>$INFO[ListItem.Art(thumb)]</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="label">
+                                <left>16</left>
+                                <top>75</top>
+                                <width>322</width>
+                                <height>48</height>
+                                <font>font16</font>
+                                <align>center</align>
+                                <label>$INFO[ListItem.Property(GridLabel)]</label>
+                                <textcolor>FFFFFFFF</textcolor>
+                                <visible>!String.IsEmpty(ListItem.Property(GridLabel))</visible>
+                            </control>
+                            <control type="label">
+                                <left>10</left>
+                                <top>207</top>
+                                <width>334</width>
+                                <height>28</height>
+                                <font>Card</font>
+                                <label>$INFO[ListItem.Label]</label>
+                                <textcolor>FFFFFFFF</textcolor>
+                            </control>
+                            <control type="label">
+                                <left>10</left>
+                                <top>237</top>
+                                <width>334</width>
+                                <height>23</height>
+                                <font>Meta</font>
+                                <label>$INFO[ListItem.Property(Caption)]</label>
+                                <textcolor>FFB7BEC6</textcolor>
+                            </control>
+                            <control type="image">
+                                <left>4</left>
+                                <top>4</top>
+                                <width>346</width>
+                                <height>5</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>4</left>
+                                <top>198</top>
+                                <width>346</width>
+                                <height>5</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>4</left>
+                                <top>4</top>
+                                <width>5</width>
+                                <height>199</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>345</left>
+                                <top>4</top>
+                                <width>5</width>
+                                <height>199</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
                         </control>
-                        <control type="image">
-                            <left>8</left>
-                            <top>8</top>
-                            <width>338</width>
-                            <height>190</height>
-                            <aspectratio>keep</aspectratio>
-                            <texture>$INFO[ListItem.Art(thumb)]</texture>
-                            <colordiffuse>FFFFFFFF</colordiffuse>
-                        </control>
-                        <control type="label">
-                            <left>10</left>
-                            <top>207</top>
-                            <width>334</width>
-                            <height>28</height>
-                            <font>Card</font>
-                            <label>$INFO[ListItem.Label]</label>
-                            <textcolor>FFFFFFFF</textcolor>
-                        </control>
-                        <control type="label">
-                            <left>10</left>
-                            <top>237</top>
-                            <width>334</width>
-                            <height>23</height>
-                            <font>Meta</font>
-                            <label>$INFO[ListItem.Property(Caption)]</label>
-                            <textcolor>FFB7BEC6</textcolor>
-                        </control>
-                        <control type="image">
-                            <left>4</left>
-                            <top>4</top>
-                            <width>346</width>
-                            <height>5</height>
-                            <texture>white.png</texture>
-                            <colordiffuse>FFFFFFFF</colordiffuse>
-                        </control>
-                        <control type="image">
-                            <left>4</left>
-                            <top>198</top>
-                            <width>346</width>
-                            <height>5</height>
-                            <texture>white.png</texture>
-                            <colordiffuse>FFFFFFFF</colordiffuse>
-                        </control>
-                        <control type="image">
-                            <left>4</left>
-                            <top>4</top>
-                            <width>5</width>
-                            <height>199</height>
-                            <texture>white.png</texture>
-                            <colordiffuse>FFFFFFFF</colordiffuse>
-                        </control>
-                        <control type="image">
-                            <left>345</left>
-                            <top>4</top>
-                            <width>5</width>
-                            <height>199</height>
-                            <texture>white.png</texture>
-                            <colordiffuse>FFFFFFFF</colordiffuse>
+                        <control type="group">
+                            <description>Genre artwork only</description>
+                            <visible>String.IsEqual(Window.Property(Nav),movies) | String.IsEqual(Window.Property(Nav),tv)</visible>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>250</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FF000000</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>8</left>
+                                <top>8</top>
+                                <width>338</width>
+                                <height>250</height>
+                                <aspectratio>scale</aspectratio>
+                                <texture background="true">$INFO[ListItem.Art(thumb)]</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="label">
+                                <left>16</left>
+                                <top>109</top>
+                                <width>322</width>
+                                <height>48</height>
+                                <font>font16</font>
+                                <align>center</align>
+                                <label>$INFO[ListItem.Property(GridLabel)]</label>
+                                <textcolor>FFFFFFFF</textcolor>
+                                <visible>!String.IsEmpty(ListItem.Property(GridLabel))</visible>
+                            </control>
+                            <control type="image">
+                                <left>4</left>
+                                <top>4</top>
+                                <width>346</width>
+                                <height>5</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>4</left>
+                                <top>258</top>
+                                <width>346</width>
+                                <height>5</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>4</left>
+                                <top>4</top>
+                                <width>5</width>
+                                <height>259</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <left>345</left>
+                                <top>4</top>
+                                <width>5</width>
+                                <height>259</height>
+                                <texture>white.png</texture>
+                                <colordiffuse>FFFFFFFF</colordiffuse>
+                            </control>
                         </control>
                     </focusedlayout>
                     <onup condition="String.IsEqual(Window.Property(Nav),movies)">301</onup>
