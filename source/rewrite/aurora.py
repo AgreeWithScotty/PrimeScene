@@ -222,7 +222,7 @@ def _browse_path(pluginid, url):
     return None
 
 
-_PRIMARY_SECTIONS = {'__watching__': ('home', 'Continue Watching'), '__prime_movies__': ('movies', 'Movies'), '__prime_tv__': ('tv', 'TV'),
+_PRIMARY_SECTIONS = {'__watching__': ('home', 'In Progress'), '__prime_movies__': ('movies', 'Movies'), '__prime_tv__': ('tv', 'TV'),
                      '__prime_sports__': ('sports', 'Sports'), '__prime_purchases__': ('purchases', 'Purchases')}
 _NAV_VALUES = ('home', 'movies', 'tv', 'sports', 'purchases')
 _SECTION_PATHS = set(_PRIMARY_SECTIONS) | {'root', '__prime_home__', '__legacy_sports__'}
@@ -729,7 +729,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
         self.nav = 'home'
-        self.navigate('__watching__', remember=False, heading='Continue Watching')
+        self.navigate('__watching__', remember=False, heading='In Progress')
         self.setFocusId(200)
         self.worker.start()
         self.detail_worker.start()
@@ -1215,7 +1215,7 @@ class AuroraHome(xbmcgui.WindowXML):
                             self._set_hero_status('SMOOTH PRIME',
                                                   'NO EPISODES WERE RETURNED FOR THIS SEASON. OPEN DIAGNOSTICS.'
                                                   if self.series_context else
-                                                  'NOTHING TO CONTINUE YET. CHOOSE MOVIES OR TV.' if self.nav == 'home' else
+                                                  'Your in-progress movies or TV shows will display here.' if self.nav == 'home' else
                                                   'YOUR PURCHASES & RENTALS LIBRARY IS EMPTY.' if self.nav == 'purchases' else
                                                   'NO PRIME-INCLUDED TITLES WERE RETURNED.' if self.nav in ('movies', 'tv') else
                                                   'NO TITLES WERE RETURNED. CHOOSE A SECTION OR SEARCH.')

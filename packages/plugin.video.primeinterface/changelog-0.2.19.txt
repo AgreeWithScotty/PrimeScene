@@ -1,0 +1,4 @@
+0.2.19
+- Rename Home to In Progress.
+- Show: Your in-progress movies or TV shows will display here.
+- Fit the longer selector label without overlapping Movies.

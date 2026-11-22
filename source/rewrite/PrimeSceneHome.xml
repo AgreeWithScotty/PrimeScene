@@ -68,19 +68,19 @@
         <control type="label">
             <left>72</left>
             <top>34</top>
-            <width>460</width>
+            <width>380</width>
             <height>28</height>
             <font>Wordmark</font>
             <textcolor>FFE6E8EB</textcolor>
             <label>S M O O T H   P R I M E</label>
         </control>
         <control type="button" id="309">
-            <left>545</left>
+            <left>470</left>
             <top>26</top>
-            <width>100</width>
+            <width>170</width>
             <height>44</height>
             <font>Nav</font>
-            <label>HOME</label>
+            <label>IN PROGRESS</label>
             <textcolor>FFB7BEC6</textcolor>
             <focusedcolor>FF14181C</focusedcolor>
             <align>center</align>
@@ -526,9 +526,9 @@
             <onup condition="!String.IsEqual(Window.Property(SeasonSwitchable),true)">301</onup>
         </control>
         <control type="image">
-            <left>561</left>
+            <left>486</left>
             <top>74</top>
-            <width>68</width>
+            <width>138</width>
             <height>3</height>
             <texture>white.png</texture>
             <colordiffuse>FFC5CCD3</colordiffuse>
