@@ -12,7 +12,7 @@ from .catalog_gateway import CatalogGateway
 from .prime_diagnostics import DiagnosticLog, exception_details
 from .public_catalog import STOREFRONT_HOSTS, safe_url
 
-ROOTS = ('__watching__', '__prime_movies__', '__prime_tv__', '__prime_sports__', '__prime_channels__', '__prime_purchases__')
+ROOTS = ('__watching__', '__prime_movies__', '__prime_tv__', '__prime_sports__', '__service_directory__', '__prime_purchases__')
 FRESH_SECONDS = 15 * 60
 MAX_AGE = 24 * 60 * 60
 
@@ -25,6 +25,8 @@ class StorefrontLoader:
         self.stop = Event()
         self.lock = RLock()
         self.pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix='PrimePages')
+        self.preview_pool=ThreadPoolExecutor(max_workers=2,thread_name_prefix='PrimeTilePreview')
+        self.preview_paths=set();self.promoted=set()
         self.readers = {root: (CatalogGateway(g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
         self.cache, self.futures = {}, {}
@@ -42,12 +44,30 @@ class StorefrontLoader:
     def canonical(path):
         return '__prime_movies__' if path in ('root', '__prime_home__') else path
 
+    @staticmethod
+    def diagnostic_section(path):
+        if path.startswith('__genre__/'):return 'genre_'+path.split('/',2)[1]
+        if path.startswith('__service__/'):return 'service'
+        return path
+
     def register_genre(self,path):
-        if not path.startswith('__genre__/'):raise ValueError('Invalid genre route')
+        if not path.startswith(('__genre__/','__service__/')):raise ValueError('Invalid catalog route')
         with self.lock:
             if path not in self.routes:
                 self.routes[path]=path
                 self.readers[path]=(CatalogGateway(self.g),Lock())
+
+    def request_preview(self,path):
+        """Share a first-page result, without warming two pages of every genre."""
+        path=self.canonical(path)
+        with self.lock:
+            if path.startswith(('__genre__/','__service__/')):self.register_genre(path)
+            future=self.futures.get(path);entry=self.cache.get(path)
+            if future is not None and (not future.done() or entry and time()-entry[0]<FRESH_SECONDS):return future
+            if self.stop.is_set():raise RuntimeError('The catalog session has ended')
+            self.preview_paths.add(path)
+            self.futures[path]=self.preview_pool.submit(self._load,path,True)
+            return self.futures[path]
 
     def handles(self, path):
         with self.lock:
@@ -65,6 +85,9 @@ class StorefrontLoader:
         path = self.canonical(path)
         with self.lock:
             future = self.futures.get(path)
+            if path in self.preview_paths:
+                self.promoted.add(path)
+                if future is not None and not future.done() and future.cancel():future=None
             if path == '__watching__':
                 self.cache.pop(path,None)
                 if future is not None and not future.done(): future.cancel()
@@ -72,6 +95,7 @@ class StorefrontLoader:
                 return future
             entry = self.cache.get(path)
             if path != '__watching__' and future is not None and entry and time() - entry[0] < FRESH_SECONDS:
+                if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and entry[1].get('next'):self.request(entry[1]['next'])
                 return future
             if self.stop.is_set():
                 raise RuntimeError('The catalog session has ended')
@@ -103,13 +127,13 @@ class StorefrontLoader:
             if path.stat().st_size > 8 * 1024 * 1024:
                 raise ValueError('Catalog cache exceeds its size limit')
             saved = json.loads(path.read_text(encoding='utf-8'))
-            if (saved.get('schema') != 6 or saved.get('epoch') != self.epoch
+            if (saved.get('schema') != 7 or saved.get('epoch') != self.epoch
                     or saved.get('root') != root or not 0 <= time() - saved['saved'] < MAX_AGE):
                 return
             packet = saved['packet']
             policy = ('prime_only' if root in ('__prime_movies__', '__prime_tv__') else
                       'account_library' if root == '__prime_purchases__' else 'watch_progress' if root == '__watching__' else
-                      'channels' if root=='__prime_channels__' else 'sports')
+                      'services' if root=='__service_directory__' else 'sports')
             if packet.get('catalog_policy') != policy:
                 return
             if not isinstance(packet.get('rows'), list) or len(packet['rows']) > 2000:
@@ -119,6 +143,9 @@ class StorefrontLoader:
                         or not str(row.get('url', '')).startswith(self.g.pluginid)):
                     raise ValueError('Invalid cached title route')
             bridge, _ = self.readers[root]
+            if root=='__service_directory__':
+                from .service_catalog import service_address
+                if any(not service_address(row.get('address')) for row in packet.get('tiles') or []):raise ValueError('Invalid cached service catalog route')
             for alias, state in saved.get('continuations', {}).items():
                 if (not alias.startswith('__prime_page__/') or not alias.endswith('/nextPage')
                         or len(state) != 4 or state[0] != self.epoch
@@ -127,10 +154,10 @@ class StorefrontLoader:
                 bridge.continuations[alias] = (state[0], state[1], state[2], tuple(state[3]))
                 self.routes[alias] = root
             self.cache[root] = (saved['saved'], packet)
-            self.report({'event': 'saved_catalog_loaded', 'section': root, 'cards': len(packet['rows']),
+            self.report({'event': 'saved_catalog_loaded', 'section': self.diagnostic_section(root), 'cards': len(packet['rows']),
                          'age_seconds': round(time() - saved['saved']), 'result': 'success'})
         except Exception as error:
-            self.report({'event': 'saved_catalog_load_failed', 'section': root,
+            self.report({'event': 'saved_catalog_load_failed', 'section': self.diagnostic_section(root),
                          'exception': exception_details(error), 'result': 'failure'})
 
     def release(self, path, future):
@@ -149,7 +176,7 @@ class StorefrontLoader:
         if root == '__watching__': return
         # Only first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
-        content = json.dumps({'schema': 6, 'epoch': self.epoch, 'root': root,
+        content = json.dumps({'schema': 7, 'epoch': self.epoch, 'root': root,
                               'saved': saved, 'packet': packet,
                               'continuations': bridge.continuations}, ensure_ascii=True)
         target = self._filename(root)
@@ -160,9 +187,9 @@ class StorefrontLoader:
             temporary.write_text(content, encoding='utf-8')
             temporary.replace(target)
         stored = persist_if_current(self.g.DATA_PATH, self.epoch, write)
-        self.report({'event': 'catalog_cache_saved', 'section': root, 'stored': stored})
+        self.report({'event': 'catalog_cache_saved', 'section': self.diagnostic_section(root), 'stored': stored})
 
-    def _load(self, path):
+    def _load(self, path, first_only=False):
         started = monotonic()
         with self.lock:
             root = self.routes[path]
@@ -202,19 +229,20 @@ class StorefrontLoader:
                     try:
                         self._save(root, packet, bridge, saved)
                     except Exception as error:
-                        self.report({'event': 'catalog_cache_save_failed', 'section': root,
+                        self.report({'event': 'catalog_cache_save_failed', 'section': self.diagnostic_section(root),
                                      'exception': exception_details(error), 'result': 'failure'})
-            self.report({'event': 'catalog_page_ready', 'section': root, 'source': source,
+            self.report({'event': 'catalog_page_ready', 'section': self.diagnostic_section(root), 'source': source,
                          'cards': len(packet.get('rows') or []), 'has_next': bool(packet.get('next')), 'fresh_provider_request':fresh,
+                         'service_tiles':len(packet.get('tiles') or []),'preview_only':first_only,
                          'saved_or_memory_cache_used':not fresh and source == 'cache',
                          'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'success'})
             # Warm exactly the first two actual pages. Page three is requested
             # by the UI on entering page two, and so on for later pages.
-            if (path in ROOTS or path.startswith('__genre__/')) and not fresh and packet.get('next') and self.current():
+            if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and not fresh and packet.get('next') and self.current() and (not first_only or path in self.promoted):
                 self.request(packet['next'])
             return deepcopy(packet)
         except Exception as error:
-            self.report({'event': 'catalog_page_failed', 'section': root,
+            self.report({'event': 'catalog_page_failed', 'section': self.diagnostic_section(root),
                          'elapsed_ms': round((monotonic() - started) * 1000),
                          'exception': exception_details(error), 'result': 'failure'})
             raise
@@ -225,8 +253,10 @@ class StorefrontLoader:
             for future in self.futures.values():
                 future.cancel()
         self.pool.shutdown(wait=True)
+        self.preview_pool.shutdown(wait=True)
         with self.lock:
             self.cache.clear()
             self.futures.clear()
             self.routes.clear()
             self.readers.clear()
+            self.preview_paths.clear();self.promoted.clear()

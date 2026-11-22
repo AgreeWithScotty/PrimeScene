@@ -134,6 +134,12 @@ class CatalogGateway:
     def browse_progressive(self,path,publish,active,query=None):
         if not self._active(active):return
         if query is not None:packet=self.search(query,active)
+        elif path=='__service_directory__':packet=self.services(active)
+        elif path.startswith('__service__/'):
+            from .service_catalog import service_address
+            address=service_address(unquote_plus(path[len('__service__/'):]))
+            if not address:raise PublicCatalogError('The service has no trusted catalog address. Open Diagnostics.')
+            packet=self.public_packet('channels',active,address)
         elif path in STOREFRONT_PAGES:packet=self.public_packet(STOREFRONT_PAGES[path],active)
         elif path.startswith('__genre__/'):
             _,section,encoded=path.split('/',2)
@@ -167,6 +173,14 @@ class CatalogGateway:
         else:raise PublicCatalogError('Unsupported catalog route. Reopen a top category.')
         if packet is not None and self._active(active):publish(packet)
         return packet
+
+    def services(self,active):
+        from .service_catalog import discover
+        observe=self._observe(active)
+        with self.session(active,observe) as client:tiles,complete=discover(client,observe)
+        if not self._active(active):return None
+        if not tiles:raise PublicCatalogError('Amazon did not return its service directory. Open Diagnostics.')
+        return {'rows':[],'tiles':tiles,'next':None,'catalog_policy':'services','directory_complete':complete}
 
     def _continuation(self, page, next_url, previous_urls):
         if not next_url:

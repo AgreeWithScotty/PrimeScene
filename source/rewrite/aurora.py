@@ -27,7 +27,7 @@ from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
 from .description_cache import DescriptionCache
-from .prime_diagnostics import DiagnosticLog, exception_details
+from .prime_diagnostics import DiagnosticLog, exception_details, route
 
 _BACK = (9, 10, 92)
 # The visible scrim stays on one matte tone. It does not cycle, and it never
@@ -211,7 +211,7 @@ def _meta(row):
         bits.append(genre)
     if info.get('access_label'):
         bits.append(info['access_label'])
-    return '  ·  '.join(bits)
+    return clean('  ·  '.join(bits))
 
 
 def _detail_meta(row):
@@ -371,7 +371,7 @@ def playback_row(row):
 
 def _item(row, title_art='', image_cache=None):
     info = row.get('info') or {}
-    title = (row.get('title') or 'Untitled').upper()
+    title = (clean(row.get('title') or '') or 'Untitled').upper()
     item = xbmcgui.ListItem(label=title)
     thumb = _fit_art(_rail_art(info), _CARD_ART)
     poster = _fit_art(info.get('poster') or info.get('thumb'), _CARD_ART)
@@ -396,8 +396,8 @@ def _item(row, title_art='', image_cache=None):
     item.setProperty('Plot', plot)
     item.setProperty('Year', _year_label(info))
     item.setProperty('Runtime', _runtime_label(info.get('duration') if info.get('duration') not in (None, '') else info.get('runtime')))
-    item.setProperty('Rating', _rating_label(info))
-    item.setProperty('Genre', _genre_label(info))
+    item.setProperty('Rating', clean(_rating_label(info)))
+    item.setProperty('Genre', clean(_genre_label(info)))
     item.setProperty('MediaType', _kind(info))
     item.setProperty('Id', str(row.get('url') or ''))
     item.setProperty('Identity', str(row.get('identity') or ''))
@@ -582,6 +582,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.genre_requested = set()
         self.genre_owner = None
         self._genre_rows = []
+        self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={};self._tile_jobs={}
         self.bridge = None
         self.bridge_lock = Lock()
         self.detail_cache = {}
@@ -745,6 +746,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
             active=lambda: report_epoch is None or current_account(self.g.DATA_PATH, report_epoch),
             operation='interface_performance')
+        from .display_text import configure
+        configure(self.performance)
         self._set_hero_status('', '')
         self.setProperty('ShowSplash', '1')
         self.interface_session = token_hex(8)
@@ -775,9 +778,12 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else 'Sign out' if name else 'Sign in')
 
     def show_signed_out(self):
+        from .display_text import reset_account_observations
+        reset_account_observations();self._reported_display_signature=None
         self._progress_refresh_generation=None
         self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
         self.genre_cache.clear();self.genre_requested.clear();self._genre_rows=[];self.genre_owner=None
+        self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={};self._tile_jobs={}
         self.setProperty('GenrePanel','')
         self._pending_progress_return = self._progress_return_request = None
         self._resume_selection = None
@@ -819,6 +825,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroTitleArt', self.title_cache.get(title.upper(), ''))
 
     def pause_catalog(self, status='Signing out...'):
+        from .display_text import reset_account_observations
+        reset_account_observations();self._reported_display_signature=None
         self._progress_refresh_generation=None
         self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
         self._pending_progress_return = self._progress_return_request = None
@@ -851,6 +859,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.genre_requested.clear()
         self.genre_owner = None
         self._genre_rows = []
+        self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={};self._tile_jobs={}
         self.setProperty('GenrePanel','')
         self.visual_worker = None
         self.return_worker = None
@@ -872,6 +881,7 @@ class AuroraHome(xbmcgui.WindowXML):
         with self.performance.lock:
             self.performance.lines.clear()
             self.performance.values.clear()
+        reset_account_observations();self._reported_display_signature=None
 
     def _unregister_return(self):
         registry = xbmcgui.Window(10000)
@@ -998,7 +1008,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'series_context': bool(origin['series']), 'result': 'success'})
 
     def _section_label(self):
-        self.setProperty('Section', '' if self.path in _SECTION_PATHS else (self.heading or '').upper())
+        self.setProperty('Section', '' if self.path in _SECTION_PATHS else clean(self.heading or '').upper())
 
     def _save_view(self):
         if self.path == '__watching__' or (self.series_context or {}).get('watching_only'):
@@ -1133,13 +1143,19 @@ class AuroraHome(xbmcgui.WindowXML):
                 'control_id': control_id, 'selected_index': self._selected_index(),
                 'result': 'success' if self._selected_index() == 0 else 'failure'})
 
-    def _note_artwork(self, info):
-        from .display_text import observations
-        codepoints=sorted(observations())[:64]
-        if codepoints!=getattr(self,'_reported_display_codepoints',[]):
-            self._reported_display_codepoints=codepoints
+    def _report_display_text(self):
+        from .display_text import observations,replacement_report
+        codepoints=sorted(observations())
+        replacements=replacement_report()
+        signature=(tuple(codepoints),tuple(sorted(replacements['replacements'])),replacements['coverage_source'])
+        if signature!=getattr(self,'_reported_display_signature',None):
+            self._reported_display_signature=signature
             self.performance({'event':'display_text_glyph_inventory','stage':'text_rendering',
-                'non_ascii_codepoints':codepoints,'declared_font':'Body','control_id':330,'result':'success'})
+                'non_ascii_codepoints':codepoints,'font_and_replacements':replacements,
+                'declared_font':'Body','native_fallback_font':'font13','control_id':330,'result':'success'})
+
+    def _note_artwork(self, info):
+        self._report_display_text()
         art = {key: info[key] for key in ('thumb', 'poster', 'fanart') if info.get(key)}
         used = set(art.values())
         used.update(_fit_art(value, width) for value in art.values() for width in (_CARD_ART, _HERO_ART))
@@ -1422,7 +1438,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _season_properties(self):
         context = self.series_context or {}
-        self.setProperty('SeasonLabel', context.get('season_label') or '')
+        self.setProperty('SeasonLabel', clean(context.get('season_label') or ''))
         self.setProperty('SeasonSwitchable', 'true' if len(context.get('seasons') or []) > 1 else '')
 
     def _open_series(self, row):
@@ -1577,7 +1593,7 @@ class AuroraHome(xbmcgui.WindowXML):
         seasons = (context or {}).get('seasons') or []
         if len(seasons) < 2:
             return
-        labels = [str(row.get('title') or 'Season ' + str((row.get('info') or {}).get('season', ''))) for row in seasons]
+        labels = [clean(str(row.get('title') or 'Season ' + str((row.get('info') or {}).get('season', '')))) for row in seasons]
         selected = self.g.dialog.select('Choose season', labels)
         if selected is None or selected < 0 or selected >= len(seasons):
             return
@@ -1596,6 +1612,12 @@ class AuroraHome(xbmcgui.WindowXML):
     def _visual_loop(self):
         """Keep expensive title drawing and image downloads away from input/binding."""
         while not self.stop.is_set():
+            self._report_display_text()
+            if self.genre_owner is not None:
+                try:self._refresh_tile_art()
+                except Exception as error:self.performance({'event':'browse_tile_art_failed','stage':'tile_artwork','exception':exception_details(error),'result':'failure'})
+                self.stop.wait(.1)
+                continue
             with self.lock:
                 token = self.generation
                 index = self._selected_index() if self.rows else 0
@@ -1616,7 +1638,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 for offset, (position, row, item) in enumerate(nearby):
                     if self.stop.is_set() or token != self.generation:
                         break
-                    title = (row.get('title') or 'Untitled').upper()
+                    title = (clean(row.get('title') or '') or 'Untitled').upper()
                     if offset < 3 and title not in self.title_cache:
                         started = monotonic()
                         from .account_state import persist_if_current
@@ -1950,6 +1972,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if focus_grid:self.setFocusId(410)
             return
         section={301:'movies',302:'tv',303:'extras'}[owner]
+        if owner==303 and self._service_future is False:self._service_future=None
         with self.lock:
             self._save_view()
             self.generation+=1
@@ -1966,6 +1989,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if section!='extras' and section not in self.genre_cache:
             from .genre_catalog import published_genres
             self.genre_cache[section]=published_genres()
+        self._tile_jobs={}
         self.setProperty('GenreHeading',{'movies':'Movie genres','tv':'TV genres','extras':'Extras'}[section])
         self.setProperty('GenrePanel','1')
         self._populate_genres(section)
@@ -1981,16 +2005,17 @@ class AuroraHome(xbmcgui.WindowXML):
             if self.genre_owner!={'movies':301,'tv':302,'extras':303}[section]:return
             listing=self.getControl(410);selected=max(0,listing.getSelectedPosition())
             title=self._genre_rows[selected]['title'] if selected<len(self._genre_rows) else None
-            rows=extras() if section=='extras' else genres(section,self.genre_cache.get(section,[]))
+            rows=extras(self.service_rows) if section=='extras' else genres(section,self.genre_cache.get(section,[]))
             if rows==self._genre_rows:return
             self._genre_rows=rows
             selected=next((i for i,row in enumerate(rows) if row['title']==title),0)
-            media=Path(self.g.addon.getAddonInfo('path'))/'resources/skins/Default/media'
-            items=[]
+            items=[];self._tile_items={}
             for row in rows:
-                item=xbmcgui.ListItem(label=row['title'])
-                item.setArt({'thumb':str(media/('category-'+row['art']+'.webp'))})
-                item.setProperty('Caption',row['caption']);items.append(item)
+                item=xbmcgui.ListItem(label=clean(row['title']))
+                artwork=row.get('artwork') or self._tile_art.get(row['path'],'')
+                if artwork:item.setArt({'thumb':self.image_cache.local(_fit_art(artwork,_CARD_ART)) if self.image_cache else artwork})
+                item.setProperty('Caption',clean(row['caption']));items.append(item)
+                self._tile_items[row['path']]=item
             listing.reset();listing.addItems(items);listing.selectItem(selected)
             self.performance({'event':'browse_grid_updated','section':section,'tiles':len(rows),
                 'selection_preserved':bool(title and rows[selected]['title']==title),'result':'success'})
@@ -2011,10 +2036,90 @@ class AuroraHome(xbmcgui.WindowXML):
             from urllib.parse import quote_plus
             path='__genre__/'+section+'/'+quote_plus(row['address'])
             if self.loader is not None:self.loader.register_genre(path)
+        if path.startswith('__service__/') and self.loader is not None:self.loader.register_genre(path)
         self.nav=section;self.history.clear();self.navigate(path,remember=False,heading=row['title'])
         self._focus_first_card()
         self.performance({'event':'browse_tile_selected','section':section,'provider_route':True,
             'prime_only':section in ('movies','tv'),'result':'success'})
+
+    def _track_tile_art(self,address):
+        fresh=self._note_artwork({'thumb':address})
+        if not fresh:return
+        from .account_state import persist_if_current
+        def write():
+            with (Path(self.g.DATA_PATH)/'account-artwork.jsonl').open('a',encoding='utf-8') as output:
+                output.write(''.join(dumps(value)+'\n' for value in fresh))
+        try:persist_if_current(self.g.DATA_PATH,self.account_generation,write)
+        except OSError as error:self.performance({'event':'tile_artwork_tracking_failed','stage':'tile_artwork','exception':exception_details(error),'result':'failure'})
+
+    def _refresh_tile_art(self):
+        loader=self.loader
+        if loader is None or not loader.current():return
+        owner=self.genre_owner
+        if owner==303 and not self.service_rows:
+            if self._service_future is None:self._service_future=loader.request('__service_directory__')
+            future=self._service_future
+            if future is not False and future.done():
+                try:
+                    packet=future.result()
+                    if self.stop.is_set() or not loader.current():return
+                    self.service_rows=list((packet or {}).get('tiles') or [])
+                    if not self.service_rows:raise RuntimeError('The service directory returned no service tiles')
+                    if self.genre_owner==303:self._populate_genres('extras')
+                    self.performance({'event':'service_grid_ready','stage':'service_directory','services':len(self.service_rows),
+                        'subscription_filter_applied':False,'complete':packet.get('directory_complete'),'result':'success'})
+                except Exception as error:
+                    self._service_future=False
+                    self.setProperty('GenreMessage','The service directory could not be read. Open Diagnostics for details.')
+                    self.performance({'event':'service_grid_failed','stage':'service_directory','exception':exception_details(error),'result':'failure'})
+        if owner!=self.genre_owner or self.stop.is_set():return
+        rows=list(self._genre_rows)
+        selected=max(0,self.getControl(410).getSelectedPosition())
+        for index,row in enumerate(rows):
+            if owner!=self.genre_owner or self.stop.is_set() or not loader.current():return
+            path=row['path'];item=self._tile_items.get(path)
+            if item is None:continue
+            artwork=row.get('artwork') or self._tile_art.get(path)
+            if artwork:
+                if path not in self._tile_art:
+                    self._tile_art[path]=artwork;self._track_tile_art(artwork)
+                fitted=_fit_art(artwork,_CARD_ART)
+                if self.image_cache:
+                    if max(0,selected-5)<=index<selected+20:self.image_cache.warm([fitted])
+                    fitted=self.image_cache.local(fitted)
+                if item.getProperty('TileArt')!=fitted:
+                    item.setArt({'thumb':fitted});item.setProperty('TileArt',fitted)
+                continue
+            job=self._tile_jobs.get(path)
+            if job is None:
+                self._tile_jobs[path]={'future':loader.request_preview(path),'pages':1,'done':False}
+                continue
+            if job['done'] or not job['future'].done():continue
+            try:
+                packet=job['future'].result()
+                if owner!=self.genre_owner or not loader.current():return
+                cards=(packet or {}).get('rows') or []
+                if cards:
+                    info=cards[0].get('info') or {};artwork=_rail_art(info) or info.get('fanart')
+                    if artwork:
+                        self._tile_art[path]=artwork;self._track_tile_art(artwork)
+                        fitted=_fit_art(artwork,_CARD_ART)
+                        if self.image_cache:self.image_cache.warm([fitted]);fitted=self.image_cache.local(fitted)
+                        item.setArt({'thumb':fitted});item.setProperty('TileArt',fitted)
+                    job['done']=True
+                    self.performance({'event':'genre_preview_ready','stage':'tile_artwork','section':self.nav,'tile_index':index,
+                        'first_card_used':True,'has_artwork':bool(artwork),'pages':job['pages'],
+                        'artwork_address':route(artwork) if artwork else None,'result':'success' if artwork else 'unavailable'})
+                elif packet and packet.get('next') and job['pages']<8:
+                    job.update(future=loader.request_preview(packet['next']),pages=job['pages']+1)
+                else:
+                    job['done']=True
+                    self.performance({'event':'genre_preview_unavailable','stage':'tile_artwork','section':self.nav,
+                        'tile_index':index,'pages':job['pages'],'has_next':bool((packet or {}).get('next')),'result':'unavailable'})
+            except Exception as error:
+                job['done']=True
+                self.performance({'event':'genre_preview_failed','stage':'tile_artwork','tile_index':index,
+                    'exception':exception_details(error),'result':'failure'})
 
     def _genre_loop(self):
         from .genre_catalog import discover

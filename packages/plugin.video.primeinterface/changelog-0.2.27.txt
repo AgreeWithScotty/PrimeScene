@@ -1,0 +1,9 @@
+0.2.27
+- Genre tiles use the artwork of their first matching Prime movie/TV card; remove premade genre illustrations from the grid.
+- Load previews asynchronously through shared first-page requests, with two background workers and foreground priority when a genre is selected.
+- Extras displays Amazon's individual subscription services, including unsubscribed services, with provider branding and actual catalog links.
+- Follow Browse all subscriptions instead of flattening promoted shows into a generic subscription section.
+- Read the active Kodi skin font's Unicode coverage, preserve supported text and normalize or replace missing glyphs gracefully.
+- Draw the season chevron using native geometry so it cannot become a missing-font box; allow more space for In Progress.
+- Record actual font identity/coverage, replacement codepoints, preview failures and service-directory stages without account or authentication secrets.
+- Preserve existing glow textures, pagination, focus retention, fresh In Progress, sign-out purge and native login/playback implementations.

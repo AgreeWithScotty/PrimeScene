@@ -1,20 +1,14 @@
-"""Presentation-only tiles; provider addresses remain in discovered navigation."""
-ART={'Action & adventure':'action','Action':'action','Adventure':'action','Anime':'popular',
-    'Animation':'family','Comedy':'comedy','Documentary':'documentary','Drama':'drama',
-    'Fantasy':'home','Historical':'my-stuff','Horror':'horror','Kids & family':'family',
-    'Mystery':'mystery','Mystery & thriller':'mystery','Suspense':'mystery','Thriller':'mystery',
-    'Romance':'romance','Romantic comedy':'romance','Science fiction':'sci-fi',
-    'Science fiction & fantasy':'sci-fi','Western':'action','Musicals':'tv','Music':'tv','Crime':'mystery'}
+"""Provider-led tile routes. Artwork comes from titles or service branding."""
+from urllib.parse import quote_plus
+
+def genre_path(section,address):
+    return '__genre__/'+section+'/'+quote_plus(address) if address else '__prime_movies__' if section=='movies' else '__prime_tv__'
 
 def genres(section,rows):
     all_row={'title':'All movies' if section=='movies' else 'All TV shows','address':None,
-        'art':'cinema' if section=='movies' else 'tv','caption':'Included with Prime'}
-    return [all_row]+[dict(row,art=ART.get(row['title'],'cinema'),caption='Included with Prime') for row in rows]
+        'path':genre_path(section,None),'caption':'Included with Prime'}
+    return [all_row]+[dict(row,path=genre_path(section,row['address']),caption='Included with Prime') for row in rows]
 
-def extras():
-    return [
-        {'title':'Sports','path':'__prime_sports__','art':'sports',
-            'caption':'Prime, subscriptions & pay-per-view'},
-        {'title':'Add-on subscriptions','path':'__prime_channels__','art':'new-releases',
-            'caption':'Additional subscription required'},
-    ]
+def extras(services=()):
+    return [{'title':'Sports','path':'__prime_sports__','caption':'Prime, subscriptions & pay-per-view'}]+[
+        dict(row,path='__service__/'+quote_plus(row['address'])) for row in services]

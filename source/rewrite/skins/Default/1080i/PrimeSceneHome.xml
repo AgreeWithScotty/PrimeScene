@@ -88,7 +88,7 @@
                 <label>S M O O T H   P R I M E</label>
             </control>
             <control type="image">
-                <left>548</left>
+                <left>563</left>
                 <top>-82</top>
                 <width>455</width>
                 <height>260</height>
@@ -104,7 +104,7 @@
             <control type="button" id="309">
                 <left>690</left>
                 <top>26</top>
-                <width>170</width>
+                <width>200</width>
                 <height>44</height>
                 <font>Nav</font>
                 <label>IN PROGRESS</label>
@@ -187,7 +187,7 @@
                 <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
             </control>
             <control type="image">
-                <left>737</left>
+                <left>752</left>
                 <top>-82</top>
                 <width>396</width>
                 <height>260</height>
@@ -201,9 +201,9 @@
                 <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
             </control>
             <control type="button" id="303">
-                <left>875</left>
+                <left>900</left>
                 <top>26</top>
-                <width>120</width>
+                <width>100</width>
                 <height>44</height>
                 <font>Nav</font>
                 <label>EXTRAS</label>
@@ -1953,7 +1953,7 @@
                 <top>620</top>
                 <width>310</width>
                 <height>52</height>
-                <label>$INFO[Window.Property(SeasonLabel)]  ▾</label>
+                <label>$INFO[Window.Property(SeasonLabel)]</label>
                 <font>font13</font>
                 <textcolor>FFD5DAE0</textcolor>
                 <focusedcolor>FFFFFFFF</focusedcolor>
@@ -2290,6 +2290,31 @@
                     <font>Meta</font>
                     <label>$INFO[Window.Property(GenreMessage)]</label>
                     <textcolor>FFD5DAE0</textcolor>
+                </control>
+            </control>
+            <control type="group" id="411">
+                <left>1784</left>
+                <top>644</top>
+                <width>22</width>
+                <height>16</height>
+                <visible>Control.IsVisible(307) + String.IsEmpty(Window.Property(GenrePanel))</visible>
+                <control type="image">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>12</width>
+                    <height>2</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>FFFFFFFF</colordiffuse>
+                    <animation effect="rotate" start="45" end="45" center="auto" time="0" condition="true">Conditional</animation>
+                </control>
+                <control type="image">
+                    <left>9</left>
+                    <top>0</top>
+                    <width>12</width>
+                    <height>2</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>FFFFFFFF</colordiffuse>
+                    <animation effect="rotate" start="-45" end="-45" center="auto" time="0" condition="true">Conditional</animation>
                 </control>
             </control>
         </control>

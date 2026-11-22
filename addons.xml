@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.26" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.27" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.26[CR]- Replace the genre dropdown with a full illustrated five-column grid on Movies/TV focus; show content only after a genre or All selection.[CR]- Move In Progress after TV. Group sports and add-on subscriptions under Extras, with access labels that distinguish confirmed Prime inclusion.[CR]- Recognize Amazon's genre See more links despite decorative Link Arrow text.[CR]- Follow the actual page-owned Grid PaginateCollection protocol with unchanged provider tokens and capability fields.[CR]- Preserve first-two-page warming, early lookahead and current card selection on append.[CR]- Report collection request fields, parser structure, returned counts, next state and explicit provider-declared end without exposing tokens or account identifiers.[CR]- Preserve original glow textures, title hierarchy, description cleanup, fresh in-place In Progress and all native authentication/playback code.</news>
+    <news>0.2.27[CR]- Genre tiles use the artwork of their first matching Prime movie/TV card; remove premade genre illustrations from the grid.[CR]- Load previews asynchronously through shared first-page requests, with two background workers and foreground priority when a genre is selected.[CR]- Extras displays Amazon's individual subscription services, including unsubscribed services, with provider branding and actual catalog links.[CR]- Follow Browse all subscriptions instead of flattening promoted shows into a generic subscription section.[CR]- Read the active Kodi skin font's Unicode coverage, preserve supported text and normalize or replace missing glyphs gracefully.[CR]- Draw the season chevron using native geometry so it cannot become a missing-font box; allow more space for In Progress.[CR]- Record actual font identity/coverage, replacement codepoints, preview failures and service-directory stages without account or authentication secrets.[CR]- Preserve existing glow textures, pagination, focus retention, fresh In Progress, sign-out purge and native login/playback implementations.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
