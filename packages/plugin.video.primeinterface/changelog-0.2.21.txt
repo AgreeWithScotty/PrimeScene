@@ -1,0 +1,10 @@
+0.2.21
+- Start keyboard/remote focus on the In Progress top tab.
+- Fetch In Progress from Amazon on every visit and playback return; discard old saved and visible lists.
+- Remove locally saved playback-card merging and deduplicate repeated provider product identities.
+- Keep In Progress show/season progress fresh without local completion overrides.
+- Avoid reactivating the catalog window when Kodi already restored it, and remove catalog window fades.
+- Hide the entire add-on interface during native fullscreen playback.
+- Close the optional skip-scene dialog only when it is actually shown.
+- Preserve originating-card return, stock Kodi controls, native authentication and other sections' preloading.
+- Record fresh-list/cache cleanup, native window/view/focus/selection, timing and failure diagnostics.

@@ -263,7 +263,8 @@ class ProviderBridge:
             return None
         observe = self._observe(active)
         key = (self.epoch, page, continuation)
-        cached = self.public_pages.get(key)
+        if page == 'watching': self.public_pages.pop(key,None)
+        cached = self.public_pages.get(key) if page != 'watching' else None
         if cached and monotonic() - cached[0] < 120:
             result = cached[1]
             observe({'event': 'catalog_cache_hit', 'section': page, 'cards': len(result.cards),
@@ -300,7 +301,7 @@ class ProviderBridge:
             finally:
                 if jar is not None:
                     jar.clear()
-            self.public_pages[key] = (monotonic(), result)
+            if page != 'watching': self.public_pages[key] = (monotonic(), result)
         if not self._active(active):
             return None
         rows = []
@@ -327,8 +328,11 @@ class ProviderBridge:
                          'video': False, 'identity': identity,
                          'info': _card_info(card)})
         if page == 'watching':
-            from .watch_home import decorate
-            rows = decorate(rows,self.g.DATA_PATH,self.epoch,True)
+            from .watch_home import complete
+            from .home_catalog import unique_progress_rows
+            rows, duplicates = unique_progress_rows([row for row in rows if not complete(row.get('info') or {})])
+            observe({'event':'progress_snapshot_ready','fresh':True,'source':'amazon_only',
+                'duplicates_removed':duplicates,'rows':len(rows),'result':'success'})
             for row in rows: row['watching_only'] = True
         visited = previous_urls + ((continuation,) if continuation else ())
         next_path = self._continuation(page, result.next_url, visited)

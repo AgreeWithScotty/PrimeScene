@@ -666,7 +666,9 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             raise PublicCatalogError('The catalog continuation is outside the trusted storefront.')
         _emit(observer, {'event': 'catalog_request_started', 'stage': 'fetch', 'page': page,
                          'continuation': continuation is not None, 'address': route(address), 'method': 'GET'})
-        request = Request(address, headers={'Accept': 'text/html, application/json;q=0.9'})
+        request_headers={'Accept':'text/html, application/json;q=0.9'}
+        if page == 'watching':request_headers.update({'Cache-Control':'no-cache, no-store','Pragma':'no-cache'})
+        request = Request(address, headers=request_headers)
         opener = opener if opener is not None else build_opener(StorefrontRedirect(observer))
         stage = 'fetch'
         with opener.open(request, timeout=15) as response:
@@ -674,7 +676,9 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             status = response.getcode()
             content_type = response.headers.get_content_type()
             _emit(observer, {'event': 'catalog_response_received', 'stage': stage, 'status': status,
-                             'address': route(final_url), 'content_type': content_type,
+                             'address': route(final_url), 'content_type': content_type, 'fresh_requested':page == 'watching',
+                             'cache_age':response.headers.get('Age'),'cache_control':response.headers.get('Cache-Control'),
+                             'server_date':response.headers.get('Date'),
                              'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid'),
                              'elapsed_ms': round((perf_counter() - started) * 1000)})
             if not safe_url(final_url, STOREFRONT_HOSTS):

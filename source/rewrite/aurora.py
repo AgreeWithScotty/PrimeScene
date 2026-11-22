@@ -432,7 +432,7 @@ def note_playback(profile, title, meta=''):
     target = xbmcgui.Window(10000).getProperty(_HOME_REGISTRY)
     reuse = (0 <= time() - float(previous.get('armed') or 0) < _NOTE_WINDOW
              and previous.get('target') == target)
-    note = {'watch_context': previous.get('watch_context') if reuse else None, 'title': title or 'Smooth Prime', 'meta': meta or (previous.get('meta') if reuse else '') or '',
+    note = {'title': title or 'Smooth Prime', 'meta': meta or (previous.get('meta') if reuse else '') or '',
             'armed': previous.get('armed') if reuse else time(), 'target': target,
             'request_id': previous.get('request_id') if reuse else token_hex(8)}
     try:
@@ -595,6 +595,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self._focus_receipt = None
         self._reactivation_ready = Event()
         self._resume_selection = None
+        self._pending_progress_return = None
+        self._progress_return_request = None
         self.account_monitor = _AccountMonitor(self)
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
@@ -646,6 +648,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.show_signed_out()
                 self._reactivation_ready.set()
                 return
+        if self.playback_origin and self.playback_origin.get('path') == '__watching__' and not _playing(xbmc.Player()):
+            self._refresh_progress_return(self.playback_origin)
         with self.lock:
             selected = self._resume_selection
             origin = self.playback_origin
@@ -670,13 +674,13 @@ class AuroraHome(xbmcgui.WindowXML):
             self._section_label()
             self._season_properties()
             self.update_account_button()
-            self.setFocusId(200 if self.items else 301)
+            self.setFocusId(200 if self.items else 309)
             native_count = self.getListSize()
             view = self.getCurrentContainerId()
             focus = self.getFocusId()
             position = self._selected_index()
             valid = (view == 200 and native_count == len(self.rows)
-                     and focus == (200 if self.items else 301)
+                     and focus == (200 if self.items else 309)
                      and (not self.items or position == selected))
         self.performance({'event': 'window_controls_restored', 'stage': stage,
             'request_id': (origin or {}).get('request_id'),
@@ -689,6 +693,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'result': 'success' if valid else 'failure'})
         if not valid:
             raise RuntimeError('Kodi catalog controls did not confirm the restored list and focus')
+        self._select_progress_return()
         self._reactivation_ready.set()
 
     def _initialize_controls(self):
@@ -730,7 +735,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
         self.nav = 'home'
         self.navigate('__watching__', remember=False, heading='In Progress')
-        self.setFocusId(200)
+        self.setFocusId(309)
+        self.performance({'event':'startup_focus','control_id':309,'actual_control':self.getFocusId(),'result':'success'})
         self.worker.start()
         self.detail_worker.start()
         self.visual_worker.start()
@@ -745,6 +751,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else name or 'Sign in')
 
     def show_signed_out(self):
+        self._pending_progress_return = self._progress_return_request = None
+        self._resume_selection = None
         self._unregister_return()
         self.playback_origin = None
         with self.lock:
@@ -783,6 +791,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroTitleArt', self.title_cache.get(title.upper(), ''))
 
     def pause_catalog(self, status='Signing out...'):
+        self._pending_progress_return = self._progress_return_request = None
+        self._resume_selection = None
         self.stop.set()
         self._unregister_return()
         self.playback_origin = None
@@ -834,95 +844,96 @@ class AuroraHome(xbmcgui.WindowXML):
         self.clearProperty('InterfaceSession')
         self.clearProperty(_RETURN_COMMAND)
 
+    def _refresh_progress_return(self, origin):
+        request_id=origin.get('request_id')
+        marker=request_id or id(origin)
+        with self.lock:
+            if self._progress_return_request == marker:return
+            self._progress_return_request=marker
+            self.nav='home'
+            self.navigate('__watching__',remember=False,heading='In Progress',save_current=False)
+            self._pending_progress_return={'generation':self.generation,'request_id':request_id,
+                'identity':origin.get('identity'),'url':origin.get('url'),'selected':origin['selected']}
+
+    def _select_progress_return(self):
+        pending=self._pending_progress_return
+        if not pending or not pending.get('received'):return False
+        if pending['generation'] != self.generation or xbmcgui.getCurrentWindowId()!=self.window_id:return False
+        if self.getCurrentContainerId()!=200 or self.getListSize()!=len(self.rows):return False
+        selected=next((i for i,row in enumerate(self.rows) if row.get('url')==pending['url']
+            or pending['identity'] and row.get('identity')==pending['identity']),0)
+        if self.rows:self.setCurrentListPosition(selected)
+        self.setFocusId(200 if self.rows else 309)
+        self._pending_progress_return=None
+        self._resume_selection=None
+        self.performance({'event':'fresh_progress_return_selected','request_id':pending['request_id'],
+            'generation':self.generation,'cards':len(self.rows),'selected_index':selected,
+            'focused_control':self.getFocusId(),'fresh_provider_list':True,'result':'success'})
+        return True
+
     def _return_loop(self):
-        while not self.stop.wait(0.05):
-            command = self.getProperty(_RETURN_COMMAND)
-            if not command:
-                continue
+        while not self.stop.wait(0.025):
+            command=self.getProperty(_RETURN_COMMAND)
+            if not command:continue
             self.clearProperty(_RETURN_COMMAND)
-            started = monotonic()
-            request = {}
+            started=monotonic();request={}
             try:
-                request = loads(command)
-                pending = _read_note(self.g.DATA_PATH) or {}
-                superseded = pending.get('request_id') and pending['request_id'] != request.get('request_id')
-                if (self.stop.is_set() or self.getProperty('InterfaceSession') != self.interface_session
-                        or superseded or _playing(xbmc.Player())):
-                    self.performance({'event': 'playback_card_return_cancelled',
-                        'request_id': request.get('request_id'),
-                        'reason': 'interface_invalidated_or_new_playback', 'result': 'cancelled'})
-                    continue
-                origin = self.playback_origin
-                if origin and origin.get('request_id') not in (None, request.get('request_id')):
-                    self.performance({'event': 'playback_card_return_cancelled',
-                        'request_id': request.get('request_id'), 'reason': 'origin_superseded', 'result': 'cancelled'})
-                    continue
-                self._play_token += 1
-                source = 'current_view'
-                if origin:
-                    self.nav = origin['nav']
-                    in_current_view = any(row.get('url') == origin['url'] or origin['identity']
-                        and row.get('identity') == origin['identity'] for row in self.rows)
-                    if (self.path, self.query) != (origin['path'], origin['query']) or not in_current_view:
+                request=loads(command);pending=_read_note(self.g.DATA_PATH) or {}
+                origin=self.playback_origin
+                if (self.stop.is_set() or self.getProperty('InterfaceSession')!=self.interface_session
+                    or pending.get('request_id') and pending['request_id']!=request.get('request_id')
+                    or _playing(xbmc.Player()) or origin and origin.get('request_id') not in (None,request.get('request_id'))):
+                    self.performance({'event':'playback_card_return_cancelled','request_id':request.get('request_id'),
+                        'reason':'interface_invalidated_or_new_playback','result':'cancelled'});continue
+                self._play_token+=1;source='current_view';fresh=bool(origin and origin['path']=='__watching__')
+                if fresh:self._refresh_progress_return(origin);source='fresh_amazon_progress'
+                elif origin:
+                    self.nav=origin['nav']
+                    found=any(row.get('url')==origin['url'] or origin['identity'] and row.get('identity')==origin['identity'] for row in self.rows)
+                    if (self.path,self.query)!=(origin['path'],origin['query']) or not found:
                         self._save_view()
-                        if (self.path, self.query) == (origin['path'], origin['query']):
-                            with self.lock:
-                                self.rows = []
-                        self.views.pop((origin['path'], origin['query']), None)
-                        self.views[(origin['path'], origin['query'])] = origin['view']
-                        self.navigate(origin['path'], remember=False, query=origin['query'],
-                                      selection=origin['selected'], heading=origin['heading'], series=origin['series'],
-                                      save_current=False)
-                        source = 'origin_snapshot'
-                    self.history = list(origin['history'])
-                    self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
-                    self._section_label()
-                selected = self._selected_index()
-                identity_found = False
-                if origin:
-                    with self.lock:
-                        selected = next((index for index, row in enumerate(self.rows)
-                            if row.get('url') == origin['url'] or origin['identity']
-                            and row.get('identity') == origin['identity']), origin['selected'])
-                        selected = max(0, min(selected, len(self.rows) - 1))
-                        identity_found = bool(self.rows and (self.rows[selected].get('url') == origin['url']
-                            or origin['identity'] and self.rows[selected].get('identity') == origin['identity']))
-                before = xbmcgui.getCurrentWindowId()
-                self._resume_selection = selected
-                self._focus_first_generation = None
-                self._reactivation_ready.clear()
-                # Activate the existing ID without changing WindowXML's original
-                # Kodi return window, as calling show() again would do.
-                xbmc.executebuiltin('ActivateWindow(%d)' % self.window_id, True)
-                # onInit runs again when Kodi recreates resources after full
-                # screen video. Await that callback, not a guessed sleep.
-                if before != self.window_id:
-                    self._reactivation_ready.wait(1.5)
-                if not self._reactivation_ready.is_set():
-                    self._restore_controls('playback_return_rebind')
-                current_window = xbmcgui.getCurrentWindowId()
-                native_count = self.getListSize()
-                view_id = self.getCurrentContainerId()
-                focused_control = self.getFocusId()
-                self.performance({'event': 'playback_card_returned', 'stage': 'window_restore',
-                    'request_id': request.get('request_id'), 'reason': request.get('reason'),
-                    'previous_window_id': before, 'target_window_id': self.window_id,
-                    'current_window_id': current_window,
-                    'cards': len(self.rows), 'generation': self.generation, 'source': source,
-                    'native_cards': native_count, 'view_id': view_id, 'focused_control': focused_control,
-                    'reactivation_callback_ready': self._reactivation_ready.is_set(),
-                    'expected_index': selected, 'actual_index': self._selected_index(),
-                    'origin_present': bool(origin), 'origin_identity_restored': identity_found,
-                    'elapsed_ms': round((monotonic() - started) * 1000),
-                    'result': 'success' if current_window == self.window_id and native_count == len(self.rows)
-                        and view_id == 200 and focused_control == (200 if self.rows else 301)
-                        and (not origin or identity_found and self._selected_index() == selected) else 'failure'})
-                self.playback_origin = None
-                self._resume_selection = None
+                        with self.lock:self.rows=[]
+                        self.views[(origin['path'],origin['query'])]=origin['view']
+                        self.navigate(origin['path'],remember=False,query=origin['query'],selection=origin['selected'],
+                            heading=origin['heading'],series=origin['series'],save_current=False)
+                        source='origin_snapshot'
+                    self.history=list(origin['history'])
+                before=xbmcgui.getCurrentWindowId();activated=False
+                # Kodi may already have returned. Activating that same ID forces
+                # CloseWindowSync and WINDOW_INIT again, producing the flash.
+                deadline=monotonic()+1.0
+                while xbmcgui.getCurrentWindowId()!=self.window_id and monotonic()<deadline and not self.stop.is_set():
+                    if self.stop.wait(0.025):break
+                if self.stop.is_set():continue
+                if xbmcgui.getCurrentWindowId()!=self.window_id:
+                    activated=True;self._reactivation_ready.clear()
+                    xbmc.executebuiltin('ActivateWindow(%d)'%self.window_id,True)
+                    self._reactivation_ready.wait(1.0)
+                if xbmcgui.getCurrentWindowId()!=self.window_id:raise RuntimeError('Kodi did not return to the catalog window')
+                if self.getCurrentContainerId()!=200 or self.getListSize()!=len(self.rows):
+                    self._restore_controls('return_native_binding_missing')
+                selected=self._selected_index()
+                if origin and not fresh:
+                    selected=next((i for i,row in enumerate(self.rows) if row.get('url')==origin['url']
+                        or origin['identity'] and row.get('identity')==origin['identity']),origin['selected'])
+                    selected=max(0,min(selected,max(0,len(self.rows)-1)))
+                if not fresh or not self._select_progress_return():
+                    if self.rows:self.setCurrentListPosition(selected)
+                    self.setFocusId(200 if self.rows else 309)
+                self.setProperty('Nav',self.nav if self.nav in _NAV_VALUES else '')
+                self._section_label()
+                self.performance({'event':'playback_card_returned','request_id':request.get('request_id'),
+                    'previous_window_id':before,'current_window_id':xbmcgui.getCurrentWindowId(),
+                    'target_window_id':self.window_id,'activation_required':activated,
+                    'source':source,'cards':len(self.rows),'native_cards':self.getListSize(),
+                    'view_id':self.getCurrentContainerId(),'focused_control':self.getFocusId(),
+                    'selected_index':self._selected_index(),'active_dialog_id':xbmcgui.getCurrentWindowDialogId(),
+                    'elapsed_ms':round((monotonic()-started)*1000),
+                    'result':'pending_fresh_list' if fresh and self._pending_progress_return else 'success'})
+                self.playback_origin=None;self._resume_selection=None
             except Exception as error:
-                self.performance({'event': 'playback_card_return_failed',
-                    'request_id': request.get('request_id'), 'exception': exception_details(error),
-                    'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'failure'})
+                self.performance({'event':'playback_card_return_failed','request_id':request.get('request_id'),
+                    'exception':exception_details(error),'elapsed_ms':round((monotonic()-started)*1000),'result':'failure'})
 
     def _capture_playback_origin(self):
         """Capture at click time, before asynchronous title resolution can finish."""
@@ -932,7 +943,7 @@ class AuroraHome(xbmcgui.WindowXML):
             return {'path': self.path, 'query': self.query, 'nav': self.nav,
                 'heading': self.heading, 'selected': selected, 'url': visible.get('url'),
                 'identity': visible.get('identity'), 'series': deepcopy(self.series_context),
-                'history': list(self.history), 'view': {'rows': list(self.rows), 'items': list(self.items),
+                'history': list(self.history), 'card_count':len(self.rows), 'view': {'rows': list(self.rows) if self.path!='__watching__' else [], 'items': list(self.items) if self.path!='__watching__' else [],
                     'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at,
                     'selected': selected, 'series': deepcopy(self.series_context)}}
 
@@ -942,16 +953,10 @@ class AuroraHome(xbmcgui.WindowXML):
         self.playback_origin = origin
         play_row(row, self.g.DATA_PATH)
         note = _read_note(self.g.DATA_PATH) or {}
-        from .watch_home import profile_scope
-        note['watch_context'] = {'scope':profile_scope(self.g.DATA_PATH),'epoch':self.account_generation,'row':deepcopy(row),
-            'series':deepcopy(origin.get('series'))}
-        from .account_state import persist_if_current
-        persist_if_current(self.g.DATA_PATH,self.account_generation,lambda:
-            _note_path(self.g.DATA_PATH).write_text(dumps(note),encoding='utf-8'))
         if self.playback_origin is not None:
             self.playback_origin['request_id'] = note.get('request_id')
         self.performance({'event': 'playback_card_origin_saved', 'stage': 'return_origin',
-            'request_id': note.get('request_id'), 'index': origin['selected'], 'cards': len(origin['view']['rows']),
+            'request_id': note.get('request_id'), 'index': origin['selected'], 'cards': origin['card_count'],
             'has_card_identity': bool(origin['identity'] or origin['url']),
             'series_context': bool(origin['series']), 'result': 'success'})
 
@@ -959,6 +964,9 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Section', '' if self.path in _SECTION_PATHS else (self.heading or '').upper())
 
     def _save_view(self):
+        if self.path == '__watching__' or (self.series_context or {}).get('watching_only'):
+            self.views.pop((self.path,self.query),None)
+            return
         if self.rows:
             self.views[(self.path, self.query)] = {'rows': list(self.rows), 'items': list(self.items),
                 'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at, 'selected': self._selected_index(),
@@ -1007,6 +1015,17 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
         self._section_label()
         self._season_properties()
+        if path == '__watching__':
+            for key in list(self.views):
+                if key[0] == '__watching__' or (self.views[key].get('series') or {}).get('watching_only'):
+                    self.views.pop(key,None)
+            self.clearList()
+            self._replace_rail=False
+            self._set_hero_status('IN PROGRESS','')
+            self.performance({'event':'progress_view_discarded','generation':token,'previous_cards':visible_cards,
+                'cache_reuse':False,'result':'success'})
+        else:
+            self._pending_progress_return=None
         if cached:
             self.clearList()
             self._replace_rail = False
@@ -1135,6 +1154,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 'generation': token,
                 'build_and_bind_ms': round((monotonic() - started) * 1000),
                 'since_navigation_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
+        if self.path == '__watching__':
+            pending=self._pending_progress_return
+            if pending and pending['generation']==token:pending['received']=True
+            self._select_progress_return()
 
     def _work(self):
         try:
@@ -1144,7 +1167,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self.loader = StorefrontLoader(self.g)
             self.image_cache = ImageCache(self.g, self.loader.epoch)
             self.description_cache = DescriptionCache(self.g, self.loader.epoch, self.performance)
-            self.loader.warm()
             record(self.g, 'catalog_worker_ready')
             self._catalog_loop(bridge)
         except Exception as error:
@@ -1172,27 +1194,30 @@ class AuroraHome(xbmcgui.WindowXML):
                 continue
             page_start = len(self.rows)
             started = monotonic()
+            future = packet = None
             try:
                 record(self.g, 'catalog_request_started')
-                if path == '__watching__':
-                    from .watch_home import home_rows
-                    local = home_rows(self.g.DATA_PATH,self.account_generation)
-                    if local: self._publish(token,{'rows':local,'next':None})
                 if query is None and self.loader.handles(path):
                     cached = self.loader.peek(path)
                     if cached:
                         self._publish(token, cached)
                     future = self.loader.request(path)
+                    # Queue the foreground request before other section warming.
+                    self.loader.warm()
                     while not future.done() and token == self.generation and not self.stop.is_set():
                         self.stop.wait(0.025)
                     if token != self.generation or self.stop.is_set():
                         self.performance({'event': 'navigation_wait_cancelled',
                             'generation': token,
                             'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'cancelled'})
+                        if path == '__watching__':self.loader.release(path,future)
                         continue
                     packet = future.result()
+                    if path == '__watching__' and packet is None:
+                        raise RuntimeError('The fresh In Progress request ended without a provider result')
                     if packet:
                         self._publish(token, packet)
+                    if path == '__watching__':self.loader.release(path,future)
                 elif self.series_context and query is None:
                     packet = self._episode_listing(path, token)
                     if packet is not None:
@@ -1212,7 +1237,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         if not self.rows and not self.next_path:
                             self.clearList()
                             self._replace_rail = False
-                            self._set_hero_status('SMOOTH PRIME',
+                            self._set_hero_status('IN PROGRESS' if self.nav == 'home' else 'SMOOTH PRIME',
                                                   'NO EPISODES WERE RETURNED FOR THIS SEASON. OPEN DIAGNOSTICS.'
                                                   if self.series_context else
                                                   'Your in-progress movies or TV shows will display here.' if self.nav == 'home' else
@@ -1224,6 +1249,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
                 with self.lock:
                     if token == self.generation and not self.stop.is_set():
+                        if path == '__watching__':
+                            self._pending_progress_return = None
                         message = ('USE THE ACCOUNT BUTTON AND CHOOSE SIGN IN AGAIN.'
                                    if isinstance(error, CatalogSigninRequired) else
                                    'THE CATALOG REQUEST FAILED. OPEN DIAGNOSTICS FOR DETAILS.')
@@ -1237,6 +1264,9 @@ class AuroraHome(xbmcgui.WindowXML):
                         self.busy = False
                         self.pending_path = None
                         self._prefetch()
+                if path == '__watching__':
+                    self.loader.release(path,future)
+                    packet=None;future=None
 
     def _prefetch(self):
         with self.lock:
@@ -1282,6 +1312,8 @@ class AuroraHome(xbmcgui.WindowXML):
         context = {'title': row.get('title') or 'TV show', 'root_path': path,
                    'opened_kind': _kind(row.get('info')), 'seasons': [],
                    'watching_only': bool(row.get('watching_only'))}
+        if context['watching_only'] or (self.views.get((path,None),{}).get('series') or {}).get('watching_only'):
+            self.views.pop((path,None),None)
         if _kind(row.get('info')) == 'season':
             context['requested_season'] = (row.get('info') or {}).get('season')
         self.performance({'event': 'title_click', 'action': 'browse_episodes',
@@ -1291,7 +1323,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _episode_listing(self, path, token):
         context = deepcopy(self.series_context)
         continuation = self.bridge.continuations.get(path) if self.bridge else None
-        packet = (self._read_tv_detail(path, token) if continuation and continuation[1] == 'tv_detail'
+        packet = (self._read_tv_detail(path, token) if context.get('watching_only') or continuation and continuation[1] == 'tv_detail'
                   else self._fetch_detail(path))
         if packet is None and not self.stop.is_set() and token == self.generation:
             packet = self._read_tv_detail(path, token)
@@ -1328,7 +1360,7 @@ class AuroraHome(xbmcgui.WindowXML):
                                       for row in present_episodes))
             current_season = chosen.get('identity') == packet.get('selected_id')
             if (not present_episodes or not already_listed and not current_season) and season_path != path:
-                packet = self._fetch_detail(season_path)
+                packet = self._read_tv_detail(season_path,token) if context.get('watching_only') else self._fetch_detail(season_path)
                 if packet is None and not self.stop.is_set() and token == self.generation:
                     packet = self._read_tv_detail(season_path, token)
                 if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
@@ -1353,9 +1385,9 @@ class AuroraHome(xbmcgui.WindowXML):
         if token != self.generation or self.stop.is_set():
             return None
         if context.get('watching_only'):
-            from .watch_home import decorate
+            from .watch_home import complete
             before = len(episodes)
-            episodes = decorate(episodes,self.g.DATA_PATH,self.account_generation,True)
+            episodes = [row for row in episodes if not complete(row.get('info') or {})]
             self.performance({'event':'home_episodes_filtered','stage':'series_navigation',
                 'source_episodes':before,'unfinished_episodes':len(episodes),'result':'success'})
             packet = dict(packet,rows=episodes)
@@ -1892,19 +1924,17 @@ def watch_playback(profile):
     latched = False
     active_note = None
     last_position = last_duration = 0
-    last_sample = last_save = 0
+    last_sample = 0
     while not monitor.abortRequested():
         playing = _playing(player)
         note = _read_note(profile)
         if note and (not active_note or note.get('request_id') != active_note.get('request_id')):
             active_note = note
             player.terminal = ''
-            last_position = last_duration = last_sample = last_save = 0
+            last_position = last_duration = last_sample = 0
             report({'event': 'playback_request_armed', 'stage': 'await_player',
                     'request_id': note.get('request_id'), 'has_return_target': bool(note.get('target')),
                     'current_window_id': xbmcgui.getCurrentWindowId()})
-        if note and active_note and note.get('request_id') == active_note.get('request_id') and note.get('watch_context'):
-            active_note['watch_context'] = note['watch_context']
         if _title_is_playing(playing, note or active_note, time(), latched):
             if not latched:
                 report({'event': 'playback_observed', 'stage': 'player_active',
@@ -1914,12 +1944,8 @@ def watch_playback(profile):
                 try:
                     last_position,last_duration = player.getTime(),player.getTotalTime()
                     last_sample = time()
-                    if time()-last_save >= 10:
-                        from .watch_home import save
-                        save(profile,active_note,last_position,last_duration,False,report)
-                        last_save = time()
                 except Exception as error:
-                    last_sample = last_save = time()
+                    last_sample = time()
                     report({'event':'watch_progress_failed','stage':'sample',
                         'exception':exception_details(error),'result':'failure'})
         if active_note and not playing:
@@ -1931,13 +1957,11 @@ def watch_playback(profile):
                 report({'event': 'playback_finished', 'stage': 'return_to_card',
                         'request_id': active_note.get('request_id'), 'reason': reason,
                         'current_window_id': xbmcgui.getCurrentWindowId(),
+                        'active_dialog_id': xbmcgui.getCurrentWindowDialogId(),
+                        'last_position_seconds': round(last_position, 2),
+                        'last_duration_seconds': round(last_duration, 2),
                         'since_request_ms': round(age * 1000),
                         'result': 'failure' if reason in ('error', 'start_timeout') else 'success'})
-                try:
-                    from .watch_home import save
-                    save(profile,active_note,last_position,last_duration,reason == 'ended',report)
-                except Exception as error:
-                    report({'event':'watch_progress_failed','stage':'finish','exception':exception_details(error),'result':'failure'})
                 _request_playback_return(active_note, reason, report)
                 _clear_note(profile, active_note.get('request_id'))
                 latched, active_note, player.terminal = False, None, ''

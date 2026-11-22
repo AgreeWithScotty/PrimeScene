@@ -844,6 +844,7 @@ class _SkipButton(xbmcgui.WindowDialog):
         self.skip_button = xbmcgui.ControlButton(x, y, width=500, height=30, label='', textColor='0xFFFFFFFF', focusedColor='0xFFFFA500',
                                                  disabledColor='0xFFFFA500',
                                                  shadowColor='0xFF000000', focusTexture='', noFocusTexture='', alignment=1, font='font14')
+        self._shown = False
         self.act_btn = ''
         self.btn_list = ('SHOW', 'INTRO', 'RECAP', 'INTRO_RECAP')
         self.seek_time = 0
@@ -866,6 +867,7 @@ class _SkipButton(xbmcgui.WindowDialog):
             self.skip_button.setVisible(True)
             self.setFocus(self.skip_button)
             self.show()
+            self._shown = True
             if autoskip:
                 sleep(1)
                 self.skipScene(1000)
@@ -875,7 +877,9 @@ class _SkipButton(xbmcgui.WindowDialog):
             self.removeControl(self.skip_button)
         self.act_btn = ''
         self.seek_time = 0
-        self.close()
+        if self._shown:
+            self._shown = False
+            self.close()
 
     def onControl(self, control):
         if control.getId() == self.skip_button.getId() and self.player.isPlayingVideo():
@@ -891,4 +895,4 @@ class _SkipButton(xbmcgui.WindowDialog):
 
     def onAction(self, action):
         if action in [xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK]:
-            self.close()
+            self.hide()

@@ -39,3 +39,15 @@ def read_home(data, content_type, address, observer=None):
         raise PublicCatalogError('Amazon did not expose a recognized Continue Watching collection. See Home diagnostics.')
     # Empty is valid only after the collection itself was recognized.
     return CatalogPage(list(cards.values()),None,True),details
+
+
+def unique_progress_rows(rows):
+    """Collapse repeated actual product identities, never unrelated same-name films."""
+    from .public_catalog import detail_id
+    result=[];seen=set();duplicates=0
+    for row in rows:
+        identity=detail_id(row.get('detail_url') or '') or row.get('identity') or row.get('url')
+        if identity in seen:
+            duplicates+=1;continue
+        seen.add(identity);result.append(row)
+    return result,duplicates

@@ -206,7 +206,7 @@ def fetch_tv_page(address, pluginid, opener, observer):
     status = None
     observer({'event': 'tv_request_started', 'stage': stage, 'address': route(address), 'method': 'GET'})
     try:
-        with opener.open(Request(address, headers={'Accept': 'text/html, application/json;q=0.9'}), timeout=15) as response:
+        with opener.open(Request(address, headers={'Accept': 'text/html, application/json;q=0.9','Cache-Control':'no-cache','Pragma':'no-cache'}), timeout=15) as response:
             status, final = response.getcode(), response.geturl()
             content_type = response.headers.get_content_type()
             observer({'event': 'tv_response_received', 'stage': stage, 'status': status,

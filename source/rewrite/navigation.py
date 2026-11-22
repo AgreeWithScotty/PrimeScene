@@ -28,6 +28,7 @@ class StorefrontLoader:
         self.readers = {root: (ProviderBridge(None, g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
         self.cache, self.futures = {}, {}
+        self._warm_started = False
         self.folder = Path(g.DATA_PATH) / 'navigation-cache'
         self.report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'),
                                     active=self.current, operation='navigation')
@@ -47,6 +48,8 @@ class StorefrontLoader:
 
     def peek(self, path):
         """Memory lookup only: no filesystem, account database or network on click."""
+        if self.canonical(path) == '__watching__':
+            return None
         with self.lock:
             entry = self.cache.get(self.canonical(path))
             return deepcopy(entry[1]) if entry else None
@@ -55,10 +58,13 @@ class StorefrontLoader:
         path = self.canonical(path)
         with self.lock:
             future = self.futures.get(path)
-            if future is not None and not future.done():
+            if path == '__watching__':
+                self.cache.pop(path,None)
+                if future is not None and not future.done(): future.cancel()
+            if path != '__watching__' and future is not None and not future.done():
                 return future
             entry = self.cache.get(path)
-            if future is not None and entry and time() - entry[0] < FRESH_SECONDS:
+            if path != '__watching__' and future is not None and entry and time() - entry[0] < FRESH_SECONDS:
                 return future
             if self.stop.is_set():
                 raise RuntimeError('The catalog session has ended')
@@ -66,13 +72,23 @@ class StorefrontLoader:
             return self.futures[path]
 
     def warm(self):
+        with self.lock:
+            if self._warm_started:return
+            self._warm_started=True
         for root in ROOTS:
-            self.request(root)
+            if root != '__watching__': self.request(root)
 
     def _filename(self, path):
         return self.folder / (hashlib.sha256(path.encode()).hexdigest() + '.json')
 
     def _load_saved(self, root):
+        if root == '__watching__':
+            try:
+                from .progress_cache import discard_stored
+                discard_stored(self.g.DATA_PATH,self.epoch,self.report)
+            except Exception as error:
+                self.report({'event':'progress_cache_cleanup_failed','exception':exception_details(error),'result':'failure'})
+            return
         path = self._filename(root)
         if not path.exists():
             return
@@ -109,7 +125,13 @@ class StorefrontLoader:
             self.report({'event': 'saved_catalog_load_failed', 'section': root,
                          'exception': exception_details(error), 'result': 'failure'})
 
+    def release(self, path, future):
+        if path == '__watching__':
+            with self.lock:
+                if self.futures.get(path) is future: self.futures.pop(path,None)
+
     def _save(self, root, packet, bridge, saved):
+        if root == '__watching__': return
         # Only first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
         content = json.dumps({'schema': 3, 'epoch': self.epoch, 'root': root,
@@ -131,7 +153,15 @@ class StorefrontLoader:
             root = self.routes[path]
             entry = self.cache.get(path)
         bridge, reader_lock = self.readers[root]
+        fresh = root == '__watching__'
         try:
+            if fresh:
+                from .progress_cache import discard_stored
+                discard_stored(self.g.DATA_PATH,self.epoch,self.report)
+                bridge,reader_lock=ProviderBridge(None,self.g),Lock()
+                bridge.operation_observer=DiagnosticLog(self.g.DATA_PATH,self.g.addon.getAddonInfo('version'),
+                    active=self.current,operation='in_progress')
+                entry=None
             if entry and 0 <= time() - entry[0] < FRESH_SECONDS:
                 packet = deepcopy(entry[1])
                 source = 'cache'
@@ -150,21 +180,22 @@ class StorefrontLoader:
                 source = 'network'
                 saved = time()
                 with self.lock:
-                    self.cache[path] = (saved, deepcopy(packet))
+                    if not fresh: self.cache[path] = (saved, deepcopy(packet))
                     if packet.get('next'):
                         self.routes[packet['next']] = root
-                if path in ROOTS:
+                if path in ROOTS and not fresh:
                     try:
                         self._save(root, packet, bridge, saved)
                     except Exception as error:
                         self.report({'event': 'catalog_cache_save_failed', 'section': root,
                                      'exception': exception_details(error), 'result': 'failure'})
             self.report({'event': 'catalog_page_ready', 'section': root, 'source': source,
-                         'cards': len(packet.get('rows') or []), 'has_next': bool(packet.get('next')),
+                         'cards': len(packet.get('rows') or []), 'has_next': bool(packet.get('next')), 'fresh_provider_request':fresh,
+                         'saved_or_memory_cache_used':not fresh and source == 'cache',
                          'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'success'})
             # Warm exactly the first two actual pages. Page three is requested
             # by the UI on entering page two, and so on for later pages.
-            if path in ROOTS and packet.get('next') and self.current():
+            if path in ROOTS and not fresh and packet.get('next') and self.current():
                 self.request(packet['next'])
             return deepcopy(packet)
         except Exception as error:

@@ -1,27 +1,29 @@
-# Smooth Prime 0.2.20: authentication replacement
+# Smooth Prime 0.2.21
 
-The old login.py and users.py modules are deleted from the current app/archive.
-Native sign-in, account reads/writes, region discovery, credentials and device
-token renewal use independent modules, with no login/users/common/network
-imports in their conservative import closure. Existing-session challenges use
-the native form engine rather than MechanicalSoup or the former MFA UI.
-Only the canonical scoped CookieJar supplies website authentication. Token
-renewal uses the registered Amazon device wire protocol; DeviceLegacy is a
-provider protocol value, not a legacy module fallback. Background requests do
-not initiate a password login. Explicit account switching purges before login.
+In Progress requests a new Amazon snapshot on every visit, including return
+from playback. Memory/disk/bridge caches are bypassed; the obsolete local
+watch-progress store and saved Home page are deleted under the account epoch
+guard. No saved playback-card ledger is merged. Repeated actual product IDs
+are collapsed without guessing that unrelated same-title editions are equal.
+Provider completion fields are read fresh for In Progress series/season views.
+Normal Movies/TV/Sports/Purchases caching and preloading remain.
 
-Account writes and token renewal respect generation invalidation; concurrent
-authorization is serialized with the native sign-in lock. Reports capture real
-request/attempt IDs, stages/timings, status/redacted redirects, protocol/error
-structure and exception locations, excluding passwords/codes/tokens/cookies
-and private account identifiers. Raw auth-page HTTP dumps are removed.
+Initial focus is the In Progress top tab; clicking a category still moves to
+its first card. Native playback return waits for Kodi's natural restoration
+and activates the catalog only if it is still inactive. No catalog window
+fade animations remain. Every app control is in a group hidden during native
+fullscreen video. The optional skip dialog closes once, only if shown.
+Normal section return preserves the existing originating card/view/history;
+In Progress return selects the matching card from the new provider snapshot.
 
-Concrete evidence covers all Python/XML parsing, relative import/export closure,
-absence of old modules/symbols, unchanged player logic apart from credential
-adapter names, unchanged other distributed bytes, ZIP CRC/hash, and an actual
-anonymous Amazon startup response. None establishes signed-in authentication
-or playback success. No mocked provider/Kodi tests were run.
+Diagnostics cover cleanup, cache bypass, request/attempt IDs, real HTTP status
+and redacted redirects/structure, window/view/card counts, focus/selection,
+active dialog and elapsed times. Failures retain exception locations without
+private account identifiers, passwords, codes, tokens or cookie values.
 
-Remaining catalog compatibility, network, player/proxy and shared backend code
-is still derived and attributed in NOTICE.md. The entire backend is NOT yet
-original. Historical published ZIPs are immutable upgrade/rollback evidence.
+Concrete checks cover syntax, relative imports/exports, exact baseline byte
+preservation, unchanged authentication and unchanged player code except the
+skip-dialog lifecycle, archive CRC/hash and actual publication downloads.
+The supplied pre-change recording and Kodi window-manager source informed the
+repair. No simulated provider/Kodi tests or post-change device-success claims.
+Full backend original-code replacement remains unfinished; keep NOTICE.md.
