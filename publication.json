@@ -1,10 +1,10 @@
 {
   "base_url": "https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/",
-  "app_version": "0.2.21",
+  "app_version": "0.2.22",
   "files": {
     ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "addons.xml": "94575e0f35483b3fbc44d4ada0e0a449198eeeb28d3fb9f9d2828583f3f93e28",
-    "addons.xml.md5": "d9390ca03bf19af5575e7f98c2daea146cfc2ec5ce92b35efe2b40e60073f20b",
+    "addons.xml": "688e2bfae3d95d7b332baf5f42546e4346a1b9fe35e1671ff85bca32a4b286e0",
+    "addons.xml.md5": "74682f2fcab9873f70367d793e37c1ff3d4bed77ceec05ce0bcbb8ca79e43f57",
     "LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
     "README.md": "5d75f8586ff461cc525da034cc1f53fd9a3221ef9ffd2db6e3b9ceb547fb184c",
     "packages/plugin.video.primeinterface/changelog-0.1.10.txt": "fa191eda67ad1b1eacb5e7a0cdbbe3040ba3f0d1579d6882e52f7eb3b9498edf",
@@ -82,7 +82,7 @@
     "source/rewrite/aurora.py": "1aae7663bef074a1c02455c6fb27e72050fa7a2203bc59aef953aa43fac7fcf8",
     "tools/test_aurora_ui.py": "fe3c790a36068f1006421fa3e3f9822f25d1510cddb855155bdc0abc9a40b021",
     "source/rewrite/skins/Default/1080i/Font.xml": "250adc59a22e683831bd94f0f30d7823a2e4c58661b75f94f068ca21f554878e",
-    "source/rewrite/skins/Default/1080i/PrimeSceneHome.xml": "2cf3d6d21a3b1dec5ef9c50f663270ba572b5353f87915a3346f2e7ab4af525c",
+    "source/rewrite/skins/Default/1080i/PrimeSceneHome.xml": "3f91d2bfa6d26af0d9a965402bc7481622d916e6bd386eb44b23405e6128d8ea",
     "packages/plugin.video.primeinterface/changelog-0.2.1.txt": "04bac59dc5f076bad34eb1de7a38da8b353bf2268ba8b053737c6f817b9ea827",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.1.zip": "571d4aff34f570bdc6b87ce2a2e427de2199827fd789a943e0a09e932b61bdfd",
     "packages/plugin.video.primeinterface/changelog-0.2.2.txt": "5f8eab048a915d382324c240de5a01cc1a62830821c1bc2fe9a67458acf32c08",
@@ -159,7 +159,7 @@
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.18.zip": "c0a933dc6f11f42cf0c4be4c1916815547b47364041640110dadbea3945b29bd",
     "source/rewrite/home-0.2.18.json": "876280f772176ae85dab9f8c4f89e0c3e8af00cd52834eb25e817875f6401d9f",
     "source/rewrite/home_catalog.py": "14d6e7c85d322dc29727f417722e8ca12583f48897c54c2d2adb31e7dbda7830",
-    "source/rewrite/PrimeSceneHome.xml": "a7e37b68a9f7ec8e4b277113b6229b6585a3d8c0de324f24ec09392fef9ed688",
+    "source/rewrite/PrimeSceneHome.xml": "3f91d2bfa6d26af0d9a965402bc7481622d916e6bd386eb44b23405e6128d8ea",
     "source/rewrite/watch_home.py": "d7eea64c859bf57e64745b7e57de801899b1c59a811ee7d16c9cd4ecadcc1003",
     "packages/plugin.video.primeinterface/changelog-0.2.19.txt": "bac3a2deb0972dc526acf304da3adc09603b6d5bfdced7628e43e909babc61e1",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.19.zip": "6cab2f087c5a465938b4f2cea85f1ff898a46fd0b9e3f13334bcdecdb096a24f",
@@ -184,6 +184,16 @@
     "packages/plugin.video.primeinterface/changelog-0.2.21.txt": "7a06424344ae58ad5b3764ffba3aefe76df37e17ebaa0040990fe4f663f11d4f",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.21.zip": "eaf808c32bfa4c8f52a58b0c67e764fd86d57ce150e1c8189943b593278a6d7f",
     "source/rewrite/navigation-0.2.21.json": "71a1c39e1b162ff438f890d77e9f89b95407f4ed7dcd41b2aba09e2a819ded35",
-    "source/rewrite/progress_cache.py": "ef59c7aefe451c3145499177c558ef375b0d123cf5a383b0fc9d064076e48875"
+    "source/rewrite/progress_cache.py": "ef59c7aefe451c3145499177c558ef375b0d123cf5a383b0fc9d064076e48875",
+    "packages/plugin.video.primeinterface/changelog-0.2.22.txt": "b962664fd19c9ae5285aa385556ae7b6f590577594eeb1ac23f90014f77fe0b0",
+    "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.22.zip": "2dd3755c3f62fd1f9cf92a77639d1502833f225ccc73b1128c29e4391483ccda",
+    "tools/package_menu_focus_release.py": "4a10f7775bae055937988315990bb5c99a5a55ce6c8890d39abb50cf655b12a2",
+    "source/rewrite/skins/Default/media/nav-glow-in-progress.png": "aa747457d18f16a84c406a2e0f53790ab99ad113db244824caee5fd79efa32d4",
+    "source/rewrite/skins/Default/media/nav-glow-movies.png": "dd6ee5ec4aa1a1ebd140a4b9a79c5a6d1ed9500b7bd2998267ced03daad0d041",
+    "source/rewrite/skins/Default/media/nav-glow-tv.png": "f6764b8e800cc40dae8ddc8b8e0107e8932c172c8bdcd0b2e377612d7b59209e",
+    "source/rewrite/skins/Default/media/nav-glow-sports.png": "54be0655249dd5185ebdb78462a2cf8375b599aff68a668e20c0adc12098e5c2",
+    "source/rewrite/skins/Default/media/nav-glow-purchases.png": "d24112ac6e6efb3896a89568b06a575ee1d887914a7cf3c3748e75430df3cfa4",
+    "source/rewrite/skins/Default/media/nav-glow-search.png": "4ec3dbfacbdf29beb35f6075bce988d010069b39ba3123106861d2719c1668f3",
+    "source/rewrite/skins/Default/media/nav-glow-settings.png": "01b12f6f332eae5782b5df933de7eae96b211768d8db6687372973bfa0f09703"
   }
 }

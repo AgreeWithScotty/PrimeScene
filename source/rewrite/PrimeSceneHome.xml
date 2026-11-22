@@ -74,6 +74,20 @@
                 <textcolor>FFE6E8EB</textcolor>
                 <label>S M O O T H   P R I M E</label>
             </control>
+            <control type="image">
+                <left>418</left>
+                <top>-26</top>
+                <width>274</width>
+                <height>148</height>
+                <aspectratio>stretch</aspectratio>
+                <fadetime>0</fadetime>
+                <texture>nav-glow-in-progress.png</texture>
+                <visible>Control.HasFocus(309)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
             <control type="button" id="309">
                 <left>470</left>
                 <top>26</top>
@@ -82,14 +96,30 @@
                 <font>Nav</font>
                 <label>IN PROGRESS</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
                 <textoffsetx>0</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>306</onleft>
                 <onright>301</onright>
                 <ondown>200</ondown>
+            </control>
+            <control type="image">
+                <left>603</left>
+                <top>-26</top>
+                <width>234</width>
+                <height>148</height>
+                <aspectratio>stretch</aspectratio>
+                <fadetime>0</fadetime>
+                <texture>nav-glow-movies.png</texture>
+                <visible>Control.HasFocus(301)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
             </control>
             <control type="button" id="301">
                 <left>655</left>
@@ -99,11 +129,13 @@
                 <font>Nav</font>
                 <label>MOVIES</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
                 <textoffsetx>0</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>309</onleft>
                 <onright>302</onright>
                 <ondown>200</ondown>
@@ -117,6 +149,20 @@
                 <colordiffuse>FFC5CCD3</colordiffuse>
                 <visible>String.IsEqual(Window.Property(Nav),movies)</visible>
             </control>
+            <control type="image">
+                <left>743</left>
+                <top>-26</top>
+                <width>174</width>
+                <height>148</height>
+                <aspectratio>stretch</aspectratio>
+                <fadetime>0</fadetime>
+                <texture>nav-glow-tv.png</texture>
+                <visible>Control.HasFocus(302)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
             <control type="button" id="302">
                 <left>795</left>
                 <top>26</top>
@@ -125,11 +171,13 @@
                 <font>Nav</font>
                 <label>TV</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
                 <textoffsetx>0</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>301</onleft>
                 <onright>303</onright>
                 <ondown>200</ondown>
@@ -143,6 +191,20 @@
                 <colordiffuse>FFC5CCD3</colordiffuse>
                 <visible>String.IsEqual(Window.Property(Nav),tv)</visible>
             </control>
+            <control type="image">
+                <left>823</left>
+                <top>-26</top>
+                <width>224</width>
+                <height>148</height>
+                <aspectratio>stretch</aspectratio>
+                <fadetime>0</fadetime>
+                <texture>nav-glow-sports.png</texture>
+                <visible>Control.HasFocus(303)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
             <control type="button" id="303">
                 <left>875</left>
                 <top>26</top>
@@ -151,11 +213,13 @@
                 <font>Nav</font>
                 <label>SPORTS</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
                 <textoffsetx>0</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>302</onleft>
                 <onright>308</onright>
                 <ondown>200</ondown>
@@ -169,6 +233,20 @@
                 <colordiffuse>FFC5CCD3</colordiffuse>
                 <visible>String.IsEqual(Window.Property(Nav),sports)</visible>
             </control>
+            <control type="image">
+                <left>953</left>
+                <top>-26</top>
+                <width>274</width>
+                <height>148</height>
+                <aspectratio>stretch</aspectratio>
+                <fadetime>0</fadetime>
+                <texture>nav-glow-purchases.png</texture>
+                <visible>Control.HasFocus(308)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
             <control type="button" id="308">
                 <left>1005</left>
                 <top>26</top>
@@ -177,11 +255,13 @@
                 <font>Nav</font>
                 <label>PURCHASES</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
                 <textoffsetx>0</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>303</onleft>
                 <onright>304</onright>
                 <ondown>200</ondown>
@@ -195,6 +275,20 @@
                 <colordiffuse>FFC5CCD3</colordiffuse>
                 <visible>String.IsEqual(Window.Property(Nav),purchases)</visible>
             </control>
+            <control type="image">
+                <left>1133</left>
+                <top>-26</top>
+                <width>224</width>
+                <height>148</height>
+                <aspectratio>stretch</aspectratio>
+                <fadetime>0</fadetime>
+                <texture>nav-glow-search.png</texture>
+                <visible>Control.HasFocus(304)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
             <control type="button" id="304">
                 <left>1185</left>
                 <top>26</top>
@@ -203,14 +297,30 @@
                 <font>Nav</font>
                 <label>SEARCH</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
                 <textoffsetx>0</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>308</onleft>
                 <onright>305</onright>
                 <ondown>200</ondown>
+            </control>
+            <control type="image">
+                <left>1263</left>
+                <top>-26</top>
+                <width>244</width>
+                <height>148</height>
+                <aspectratio>stretch</aspectratio>
+                <fadetime>0</fadetime>
+                <texture>nav-glow-settings.png</texture>
+                <visible>Control.HasFocus(305)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
             </control>
             <control type="button" id="305">
                 <left>1315</left>
@@ -220,14 +330,1545 @@
                 <font>Nav</font>
                 <label>SETTINGS</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
                 <textoffsetx>0</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>304</onleft>
                 <onright>306</onright>
                 <ondown>200</ondown>
+            </control>
+            <control type="group">
+                <left>1465</left>
+                <top>26</top>
+                <width>385</width>
+                <height>44</height>
+                <visible>Control.HasFocus(306)</visible>
+                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+                <control type="label">
+                    <left>0</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1F05070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2605070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1F05070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2605070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>4405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>5205070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>4405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2605070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1505070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>3805070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>6405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>7905070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>6405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>3805070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1505070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1505070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>3805070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>6405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>7905070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>6405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>3805070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1505070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2605070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>4405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>5205070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>4405070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2605070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1F05070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2605070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1F05070E</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>-10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>-10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>-10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>-10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>-10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>-10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>-10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>5C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>-8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-10</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>504F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>9B4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>504F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>-6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-10</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>A74F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>E04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>A74F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>-4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-10</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>-2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-10</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>5C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>9B4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>E04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>E04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>9B4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>5C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>0</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-10</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>FF4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>2</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-10</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>A74F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>E04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>D04F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>A74F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>4</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-10</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>504F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>9B4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>904F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>734F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>504F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>10</left>
+                    <top>6</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-8</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>5C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>564F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>454F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>8</left>
+                    <top>8</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>1C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-6</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-4</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>-2</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>0</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2F4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>2</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>2C4F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>4</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>234F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
+                <control type="label">
+                    <left>6</left>
+                    <top>10</top>
+                    <width>385</width>
+                    <height>44</height>
+                    <font>Nav</font>
+                    <textcolor>184F5BFF</textcolor>
+                    <align>right</align>
+                    <textoffsetx>18</textoffsetx>
+                    <label>$INFO[Window.Property(AccountLabel)]</label>
+                </control>
             </control>
             <control type="button" id="306">
                 <left>1465</left>
@@ -237,11 +1878,13 @@
                 <font>Nav</font>
                 <label>$INFO[Window.Property(AccountLabel)]</label>
                 <textcolor>FFB7BEC6</textcolor>
-                <focusedcolor>FF14181C</focusedcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>right</align>
                 <textoffsetx>18</textoffsetx>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
+                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
+                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>305</onleft>
                 <onright>309</onright>
                 <ondown>200</ondown>
@@ -336,7 +1979,7 @@
                 <font>font13</font>
                 <textcolor>FFD5DAE0</textcolor>
                 <focusedcolor>FFFFFFFF</focusedcolor>
-                <texturefocus border="16">focus-pill.png</texturefocus>
+                <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
                 <onleft>301</onleft>
                 <onright>301</onright>
