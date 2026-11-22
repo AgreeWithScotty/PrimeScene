@@ -1,0 +1,10 @@
+0.2.24
+- Show a show's season cards first; selecting a season opens its episodes.
+- Preserve season/episode Back navigation even when both share Amazon's detail URL.
+- Display Sign out at the far right and sign out directly when selected.
+- Load content sections automatically as the top navigation gains focus.
+- Open a genre drawer with Down on Movies or TV, using 12 verified Amazon category links and live navigation refresh.
+- Follow actual genre collection links; preserve Prime-only/type filtering and first-two-page preloading.
+- Match the entire focused word with native font glow, including the first and last letters.
+- Remove invisible/private-use/invalid display characters and decode HTML entities in descriptions.
+- Record season/genre/focus/text-glyph diagnostics; preserve authentication, media resolution and playback bytes.

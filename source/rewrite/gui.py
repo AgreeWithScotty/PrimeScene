@@ -16,10 +16,8 @@ def main(launch_diagnostics=None):
             sign_out(g,before_cleanup=before_sign_out);return True
         name=account_name()
         if name:
-            choice=g.dialog.select(name,['Sign out','Sign in again','Cancel'])
-            if choice not in (0,1):return False
             sign_out(g,before_cleanup=before_sign_out)
-            if choice==0:return True
+            return True
         return LogIn() is not False
     record(g,'gui_script_started')
     return open_interface(g,Preferences(g.addon),account_name=account_name,account_action=account_action,

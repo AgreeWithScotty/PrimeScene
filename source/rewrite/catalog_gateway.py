@@ -134,6 +134,12 @@ class CatalogGateway:
         if not self._active(active):return
         if query is not None:packet=self.search(query,active)
         elif path in STOREFRONT_PAGES:packet=self.public_packet(STOREFRONT_PAGES[path],active)
+        elif path.startswith('__genre__/'):
+            _,section,encoded=path.split('/',2)
+            if section not in ('movies','tv'):raise PublicCatalogError('Invalid genre section')
+            address=safe_url(unquote_plus(encoded),STOREFRONT_HOSTS)
+            if not address:raise PublicCatalogError('Invalid provider genre address')
+            packet=self.public_packet(section,active,address)
         elif path.startswith('__prime_page__/'):
             saved=self.continuations.get(path)
             if not saved or saved[0]!=self.epoch:raise PublicCatalogError('This page expired. Reopen its category.')

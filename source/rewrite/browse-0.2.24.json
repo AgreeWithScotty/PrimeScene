@@ -1,0 +1,73 @@
+{
+  "version": "0.2.24",
+  "sha256": "0bdc3a5b54123abc2bbdce0f176fade20079861c69d656836a5f1d942011b1dd",
+  "bytes": 32156482,
+  "files": 105,
+  "source_checks": {
+    "python_files_parsed": 46,
+    "xml_files_parsed": 4,
+    "import_export_edges_checked": 157,
+    "media_and_authentication_files_byte_identical": [
+      "media_resources",
+      "media_proxy",
+      "playback_engine",
+      "playback_progress",
+      "http_transport",
+      "prime_login",
+      "prime_signin",
+      "account_auth",
+      "accounts",
+      "account_state",
+      "session_store",
+      "prime_device",
+      "account_region"
+    ],
+    "actual_tv_response_structure": [
+      {
+        "sample": 0,
+        "season_links": 1,
+        "episodes": 6
+      },
+      {
+        "sample": 1,
+        "season_links": 5,
+        "episodes": 22
+      },
+      {
+        "sample": 2,
+        "season_links": 1,
+        "episodes": 8
+      }
+    ],
+    "nonrendering_characters_in_actual_episode_plots": {},
+    "published_amazon_genre_links": 12,
+    "genre_source": "https://www.primevideo.com/categories",
+    "genre_links_verified_date": "2026-11-21",
+    "genre_drawer_has_native_focusable_list": true,
+    "native_caption_glow_layers_per_button": 17,
+    "initial_in_progress_focus_preserved": true,
+    "mocked_device_or_provider_tests": false,
+    "device_ui_outcome_observed": false
+  },
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/gui.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/display_text.py",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/genre_links.json",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "genre_primary_source": "https://www.primevideo.com/categories",
+  "anonymous_categories_request": {
+    "status": 503,
+    "authenticated_run_observed": false
+  },
+  "device_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests_run": false
+}

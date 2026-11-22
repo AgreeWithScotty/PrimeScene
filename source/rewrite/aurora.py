@@ -21,6 +21,7 @@ import xbmcaddon
 import xbmcgui
 
 from .catalog_gateway import CatalogSigninRequired, CatalogGateway
+from .display_text import clean
 from .interface_diagnostics import record
 from .title_art import render_title
 from .navigation import StorefrontLoader
@@ -168,7 +169,7 @@ def _genre_label(info):
 
 
 def _plain(text):
-    return ' '.join((text or '').split())
+    return ' '.join(clean(text or '').split())
 
 
 def _count_label(value):
@@ -571,6 +572,12 @@ class AuroraHome(xbmcgui.WindowXML):
         self._restore = None
         self.detail_jobs = Queue()
         self.detail_worker = None
+        self.genre_worker = None
+        self.genre_jobs = Queue()
+        self.genre_cache = {}
+        self.genre_requested = set()
+        self.genre_owner = None
+        self._genre_rows = []
         self.bridge = None
         self.bridge_lock = Lock()
         self.detail_cache = {}
@@ -735,6 +742,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
+        self.genre_worker = Thread(target=self._genre_loop,name='PrimeGenres',daemon=True)
         self.nav = 'home'
         self.navigate('__watching__', remember=False, heading='In Progress')
         self.setFocusId(309)
@@ -742,6 +750,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.worker.start()
         self.detail_worker.start()
         self.visual_worker.start()
+        self.genre_worker.start()
         self.return_worker.start()
         if self.launch_diagnostics is not None:
             self.launch_diagnostics({'event': 'interface_ready', 'signed_in': True,
@@ -750,9 +759,11 @@ class AuroraHome(xbmcgui.WindowXML):
     def update_account_button(self):
         from .account_state import needs_cleanup
         name = self.account_name() if self.account_name is not None else ''
-        self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else name or 'Sign in')
+        self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else 'Sign out' if name else 'Sign in')
 
     def show_signed_out(self):
+        self.genre_cache.clear();self.genre_requested.clear();self._genre_rows=[];self.genre_owner=None
+        self.setProperty('GenrePanel','')
         self._pending_progress_return = self._progress_return_request = None
         self._resume_selection = None
         self._unregister_return()
@@ -811,12 +822,19 @@ class AuroraHome(xbmcgui.WindowXML):
             self.title_cache.clear()
             self.known_details.clear()
         self.clearList()
-        for worker in (self.worker, self.detail_worker, self.visual_worker, self.return_worker):
+        for worker in (self.worker, self.detail_worker, self.visual_worker, self.return_worker, self.genre_worker):
             if worker is not None and worker is not current_thread():
                 while worker.is_alive():
                     worker.join(0.1)
         self.worker = None
         self.detail_worker = None
+        self.genre_worker = None
+        self.genre_jobs = Queue()
+        self.genre_cache.clear()
+        self.genre_requested.clear()
+        self.genre_owner = None
+        self._genre_rows = []
+        self.setProperty('GenrePanel','')
         self.visual_worker = None
         self.return_worker = None
         self.bridge = None
@@ -985,13 +1003,15 @@ class AuroraHome(xbmcgui.WindowXML):
             self.show_signed_out()
             return
         with self.lock:
-            if path != '__watching__' and (path, query) == (self.path, self.query) and self.rows:
+            series_changed=series is not None and (series.get('view'),series.get('requested_season')) != (
+                (self.series_context or {}).get('view'),(self.series_context or {}).get('requested_season'))
+            if path != '__watching__' and (path, query) == (self.path, self.query) and self.rows and not series_changed:
                 self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
                 return
             if save_current:
                 self._save_view()
             visible_cards = len(self.rows)
-            if remember and (path, query) != (self.path, self.query):
+            if remember and ((path, query) != (self.path, self.query) or series_changed):
                 previous_nav = _PRIMARY_SECTIONS.get(self.path, (self.nav, ''))[0]
                 self.history.append((self.path, self.query, self.heading, previous_nav, self._selected_index(),
                                      deepcopy(self.series_context)))
@@ -1008,6 +1028,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self._restore = selection or None
             token = self.generation
             self._navigation_started = monotonic()
+            if series_changed:self.views.pop((path,query),None)
             cached = self.views.get((path, query)) if path != '__watching__' else None
             self.series_context = deepcopy(cached.get('series')) if cached else deepcopy(series)
         self.performance({'event': 'navigation_started', 'generation': token,
@@ -1074,6 +1095,9 @@ class AuroraHome(xbmcgui.WindowXML):
                           'cards': len(self.rows), 'expected_index': 0, 'target_control': 200})
 
     def onFocus(self, control_id):
+        if control_id in (309,301,302,303,308) and self.worker is not None and self.worker.is_alive():
+            self._focus_first_generation=None
+            self._activate_section(control_id)
         if control_id == 200 and self._focus_receipt == self.generation:
             self._focus_receipt = None
             self.performance({'event': 'category_focus_observed', 'generation': self.generation,
@@ -1081,6 +1105,12 @@ class AuroraHome(xbmcgui.WindowXML):
                 'result': 'success' if self._selected_index() == 0 else 'failure'})
 
     def _note_artwork(self, info):
+        from .display_text import observations
+        codepoints=sorted(observations())[:64]
+        if codepoints!=getattr(self,'_reported_display_codepoints',[]):
+            self._reported_display_codepoints=codepoints
+            self.performance({'event':'display_text_glyph_inventory','stage':'text_rendering',
+                'non_ascii_codepoints':codepoints,'declared_font':'Body','control_id':330,'result':'success'})
         art = {key: info[key] for key in ('thumb', 'poster', 'fanart') if info.get(key)}
         used = set(art.values())
         used.update(_fit_art(value, width) for value in art.values() for width in (_CARD_ART, _HERO_ART))
@@ -1313,7 +1343,8 @@ class AuroraHome(xbmcgui.WindowXML):
             return
         context = {'title': row.get('title') or 'TV show', 'root_path': path,
                    'opened_kind': _kind(row.get('info')), 'seasons': [],
-                   'watching_only': bool(row.get('watching_only'))}
+                   'watching_only': bool(row.get('watching_only')),
+                   'view':'episodes' if row.get('season_choice') else 'seasons'}
         if context['watching_only'] or (self.views.get((path,None),{}).get('series') or {}).get('watching_only'):
             self.views.pop((path,None),None)
         if _kind(row.get('info')) == 'season':
@@ -1340,6 +1371,22 @@ class AuroraHome(xbmcgui.WindowXML):
             context['seasons'] = seasons
         else:
             seasons = context.get('seasons') or []
+        if context.get('view')=='seasons':
+            if not seasons:
+                self.performance({'event':'series_seasons_missing','stage':'season_listing',
+                    'selected_kind':_kind(packet.get('info')),'rows':len(packet.get('rows') or []),'result':'failure'})
+                raise RuntimeError('Amazon did not return season links for this show. Open Diagnostics.')
+            rows=[]
+            for season in seasons:
+                info=dict(packet.get('info') or {})
+                info.update({k:v for k,v in (season.get('info') or {}).items() if v not in (None,'',[],{})})
+                info['mediatype']='season'
+                rows.append(dict(season,info=info,video=False,season_choice=True,watching_only=context.get('watching_only',False)))
+            context['seasons']=seasons;context['season_label']=''
+            self.series_context=context;self._season_properties()
+            self.performance({'event':'series_seasons_published','stage':'season_listing','season_count':len(rows),
+                'automatic_episode_selection':False,'result':'success'})
+            return dict(packet,rows=rows,next=None)
         if seasons and not path.endswith('/nextPage'):
             requested_path = context.get('requested_path')
             requested_number = context.get('requested_season')
@@ -1791,15 +1838,90 @@ class AuroraHome(xbmcgui.WindowXML):
         self.nav = ''
         self.navigate('search', query=phrase.strip(), heading='Search')
 
+    def _activate_section(self,control_id,focus_cards=False):
+        primary={309:'__watching__',301:'__prime_movies__',302:'__prime_tv__',303:'__prime_sports__',308:'__prime_purchases__'}
+        path=primary[control_id]
+        self.nav,heading=_PRIMARY_SECTIONS[path]
+        if self.genre_owner is not None and self.genre_owner!=control_id:self._hide_genres(restore=False)
+        if self.path!=path or self.query is not None or focus_cards and path=='__watching__' and not self.busy:
+            self.history.clear();self.navigate(path,remember=False,heading=heading)
+            self.performance({'event':'menu_focus_section_activated','control_id':control_id,'section':self.nav,'result':'success'})
+        if focus_cards:self._focus_first_card()
+
+    def _show_genres(self,owner):
+        if self.account_name is not None and not self.account_name():return
+        self.genre_owner=owner
+        self.setProperty('GenreMessage','')
+        section='movies' if owner==301 else 'tv'
+        if section not in self.genre_cache:
+            from .genre_catalog import published_genres
+            self.genre_cache[section]=published_genres()
+        self.setProperty('GenreHeading','Movie genres' if owner==301 else 'TV genres')
+        self.setProperty('GenrePanel','1')
+        self._populate_genres(section)
+        self.setFocusId(410)
+        if section not in self.genre_requested:
+            self.genre_requested.add(section);self.genre_jobs.put(section)
+        self.performance({'event':'genre_drawer_opened','section':section,'available_genres':len(self.genre_cache.get(section,[])),'result':'success'})
+
+    def _populate_genres(self,section):
+        with self.lock:
+            listing=self.getControl(410);selected=max(0,listing.getSelectedPosition())
+            title=self._genre_rows[selected]['title'] if selected<len(self._genre_rows) else None
+            self._genre_rows=[{'title':'All movies' if section=='movies' else 'All TV shows','address':None}]+self.genre_cache.get(section,[])
+            selected=next((i for i,row in enumerate(self._genre_rows) if row['title']==title),0)
+            listing.reset();listing.addItems([xbmcgui.ListItem(label=row['title']) for row in self._genre_rows])
+            listing.selectItem(selected)
+
+    def _hide_genres(self,restore=True):
+        owner=self.genre_owner;self.genre_owner=None;self.setProperty('GenrePanel','')
+        if restore and owner is not None:self.setFocusId(owner)
+
+    def _choose_genre(self):
+        if self.genre_owner not in (301,302):return
+        owner=self.genre_owner;section='movies' if owner==301 else 'tv'
+        index=self.getControl(410).getSelectedPosition()
+        if not 0<=index<len(self._genre_rows):return
+        row=self._genre_rows[index];self._hide_genres(restore=False)
+        if not row['address']:
+            self._activate_section(owner,focus_cards=True);return
+        from urllib.parse import quote_plus
+        path='__genre__/'+section+'/'+quote_plus(row['address'])
+        if self.loader is not None:self.loader.register_genre(path)
+        self.nav=section;self.history.clear();self.navigate(path,remember=False,heading=row['title'])
+        self._focus_first_card()
+        self.performance({'event':'genre_selected','section':section,'provider_route':True,'prime_only':True,'result':'success'})
+
+    def _genre_loop(self):
+        from .genre_catalog import discover
+        gateway=CatalogGateway(self.g)
+        while not self.stop.is_set():
+            try:section=self.genre_jobs.get(timeout=.15)
+            except Empty:continue
+            report=gateway._observe(lambda:not self.stop.is_set())
+            try:
+                with gateway.session(lambda:not self.stop.is_set(),report) as client:
+                    rows=discover(client,section,report)
+                if self.stop.is_set() or not gateway._active(lambda:True):continue
+                if not rows:raise RuntimeError('Amazon returned no recognized genre navigation')
+                self.genre_cache[section]=rows
+                if self.genre_owner==(301 if section=='movies' else 302):self._populate_genres(section)
+                self.performance({'event':'genres_ready','section':section,'genres':len(rows),'result':'success'})
+            except Exception as error:
+                self.genre_requested.discard(section)
+                self.performance({'event':'genre_discovery_failed','section':section,'stage':'genre_drawer',
+                    'exception':exception_details(error),'result':'failure'})
+                if not self.stop.is_set() and not self.genre_cache.get(section) and self.genre_owner==(301 if section=='movies' else 302):
+                    self.setProperty('GenreMessage','Genres unavailable. Open Diagnostics for details.')
+
     def onClick(self, control_id):
         primary = {309: '__watching__', 301: '__prime_movies__', 302: '__prime_tv__',
                    303: '__prime_sports__', 308: '__prime_purchases__'}
         if control_id in primary:
             path = primary[control_id]
-            self.nav, heading = _PRIMARY_SECTIONS[path]
-            self.history.clear()
-            self.navigate(path, remember=False, heading=heading)
-            self._focus_first_card()
+            self._activate_section(control_id,focus_cards=True)
+        elif control_id == 410:
+            self._choose_genre()
         elif control_id == 304:
             self._search()
         elif control_id == 307:
@@ -1864,6 +1986,16 @@ class AuroraHome(xbmcgui.WindowXML):
         # Left and right belong to the list. The hero reads Container(200),
         # so updating it from here only delays the move.
         action_id = action.getId()
+        focus=self.getFocusId()
+        if action_id==4 and focus in (301,302):
+            self._show_genres(focus)
+            return
+        if self.getProperty('GenrePanel') and action_id in _BACK+(1,2):
+            self._hide_genres()
+            return
+        if self.getProperty('GenrePanel') and action_id==3 and focus==410 and self.getControl(410).getSelectedPosition()==0:
+            self._hide_genres()
+            return
         if action_id not in _BACK or self.stop.is_set():
             return
         if self.path not in _SECTION_PATHS and self.history:
@@ -1988,7 +2120,7 @@ def open_interface(globals_instance, settings_instance, account_name=None,
         window.account_monitor.window = None
         window._unregister_return()
         for worker in (window.worker, getattr(window, 'detail_worker', None),
-                       getattr(window, 'visual_worker', None), window.return_worker):
+                       getattr(window, 'visual_worker', None), window.return_worker, window.genre_worker):
             if worker is not None:
                 while worker.is_alive():
                     worker.join(0.1)

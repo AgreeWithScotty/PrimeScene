@@ -42,6 +42,13 @@ class StorefrontLoader:
     def canonical(path):
         return '__prime_movies__' if path in ('root', '__prime_home__') else path
 
+    def register_genre(self,path):
+        if not path.startswith('__genre__/'):raise ValueError('Invalid genre route')
+        with self.lock:
+            if path not in self.routes:
+                self.routes[path]=path
+                self.readers[path]=(CatalogGateway(self.g),Lock())
+
     def handles(self, path):
         with self.lock:
             return self.canonical(path) in self.routes
@@ -195,7 +202,7 @@ class StorefrontLoader:
                          'elapsed_ms': round((monotonic() - started) * 1000), 'result': 'success'})
             # Warm exactly the first two actual pages. Page three is requested
             # by the UI on entering page two, and so on for later pages.
-            if path in ROOTS and not fresh and packet.get('next') and self.current():
+            if (path in ROOTS or path.startswith('__genre__/')) and not fresh and packet.get('next') and self.current():
                 self.request(packet['next'])
             return deepcopy(packet)
         except Exception as error:

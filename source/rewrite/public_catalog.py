@@ -140,13 +140,15 @@ def _emit(observer, event):
             logging.getLogger(__name__).error('catalog_diagnostic_write_failed %s', type(error).__name__)
 
 
+from .display_text import clean
+
 def _text(value):
     if isinstance(value, str):
-        return ' '.join(value.split())
+        return ' '.join(clean(value).split())
     if isinstance(value, dict):
         for key in ('text', 'value', 'title', 'label'):
             if isinstance(value.get(key), str):
-                return ' '.join(value[key].split())
+                return ' '.join(clean(value[key]).split())
     return ''
 
 
@@ -262,7 +264,7 @@ def _duration_value(node):
         if isinstance(value, (int, float)) and value > 0:
             return str(int(value))
         if isinstance(value, str) and value.strip():
-            return ' '.join(value.split())
+            return ' '.join(clean(value).split())
     return ''
 
 
@@ -689,6 +691,15 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 raise PublicCatalogError('Prime Video returned more storefront data than expected.')
             data = raw.decode(response.headers.get_content_charset() or 'utf-8', errors='replace')
         stage = 'parse_response'
+        if page in ('movies','tv') and continuation is not None and urlsplit(final_url).path.startswith(('/genre/','/kids')):
+            from .genre_catalog import section_link
+            scoped=section_link(data,final_url,page)
+            if scoped and scoped!=final_url and _library_depth<3:
+                _emit(observer,{'event':'genre_section_followed','stage':'genre_scope','section':page,
+                    'address':route(scoped),'result':'success'})
+                return fetch_page(page,opener=opener,continuation=scoped,observer=observer,_library_depth=_library_depth+1)
+            _emit(observer,{'event':'genre_section_link_unavailable','stage':'genre_scope','section':page,
+                'fallback':'typed_prime_filtered_genre_page','result':'unavailable'})
         if page == 'watching':
             from .home_catalog import read_home
             try:

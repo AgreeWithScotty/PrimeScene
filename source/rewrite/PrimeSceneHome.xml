@@ -74,19 +74,209 @@
                 <textcolor>FFE6E8EB</textcolor>
                 <label>S M O O T H   P R I M E</label>
             </control>
-            <control type="image">
-                <left>362</left>
-                <top>-82</top>
-                <width>386</width>
-                <height>260</height>
-                <aspectratio>stretch</aspectratio>
-                <fadetime>0</fadetime>
-                <texture>nav-glow-in-progress.png</texture>
+            <control type="label">
+                <left>428</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
                 <visible>Control.HasFocus(309)</visible>
-                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
+            <control type="label">
+                <left>448</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>438</left>
+                <top>6</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>438</left>
+                <top>22</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>431</left>
+                <top>8</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>445</left>
+                <top>8</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>431</left>
+                <top>20</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>445</left>
+                <top>20</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>433</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>443</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>438</left>
+                <top>10</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>438</left>
+                <top>18</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>435</left>
+                <top>11</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>441</left>
+                <top>11</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>435</left>
+                <top>17</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>441</left>
+                <top>17</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
+            </control>
+            <control type="label">
+                <left>438</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>IN PROGRESS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(309)</visible>
             </control>
             <control type="button" id="309">
                 <left>470</left>
@@ -101,25 +291,213 @@
                 <textoffsetx>0</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>306</onleft>
                 <onright>301</onright>
                 <ondown>200</ondown>
             </control>
-            <control type="image">
-                <left>547</left>
-                <top>-82</top>
-                <width>346</width>
-                <height>260</height>
-                <aspectratio>stretch</aspectratio>
-                <fadetime>0</fadetime>
-                <texture>nav-glow-movies.png</texture>
+            <control type="label">
+                <left>613</left>
+                <top>14</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
                 <visible>Control.HasFocus(301)</visible>
-                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
+            <control type="label">
+                <left>633</left>
+                <top>14</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>623</left>
+                <top>6</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>623</left>
+                <top>22</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>616</left>
+                <top>8</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>630</left>
+                <top>8</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>616</left>
+                <top>20</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>630</left>
+                <top>20</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>618</left>
+                <top>14</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>628</left>
+                <top>14</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>623</left>
+                <top>10</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>623</left>
+                <top>18</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>620</left>
+                <top>11</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>626</left>
+                <top>11</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>620</left>
+                <top>17</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>626</left>
+                <top>17</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
+            </control>
+            <control type="label">
+                <left>623</left>
+                <top>14</top>
+                <width>194</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>MOVIES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(301)</visible>
             </control>
             <control type="button" id="301">
                 <left>655</left>
@@ -134,25 +512,213 @@
                 <textoffsetx>0</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>309</onleft>
                 <onright>302</onright>
-                <ondown>200</ondown>
+                <ondown>301</ondown>
             </control>
-            <control type="image">
-                <left>687</left>
-                <top>-82</top>
-                <width>286</width>
-                <height>260</height>
-                <aspectratio>stretch</aspectratio>
-                <fadetime>0</fadetime>
-                <texture>nav-glow-tv.png</texture>
+            <control type="label">
+                <left>753</left>
+                <top>14</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
                 <visible>Control.HasFocus(302)</visible>
-                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
+            <control type="label">
+                <left>773</left>
+                <top>14</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>763</left>
+                <top>6</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>763</left>
+                <top>22</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>756</left>
+                <top>8</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>770</left>
+                <top>8</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>756</left>
+                <top>20</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>770</left>
+                <top>20</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>758</left>
+                <top>14</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>768</left>
+                <top>14</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>763</left>
+                <top>10</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>763</left>
+                <top>18</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>760</left>
+                <top>11</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>766</left>
+                <top>11</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>760</left>
+                <top>17</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>766</left>
+                <top>17</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
+            </control>
+            <control type="label">
+                <left>763</left>
+                <top>14</top>
+                <width>134</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>TV</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(302)</visible>
             </control>
             <control type="button" id="302">
                 <left>795</left>
@@ -167,25 +733,213 @@
                 <textoffsetx>0</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>301</onleft>
                 <onright>303</onright>
-                <ondown>200</ondown>
+                <ondown>302</ondown>
             </control>
-            <control type="image">
-                <left>767</left>
-                <top>-82</top>
-                <width>336</width>
-                <height>260</height>
-                <aspectratio>stretch</aspectratio>
-                <fadetime>0</fadetime>
-                <texture>nav-glow-sports.png</texture>
+            <control type="label">
+                <left>833</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
                 <visible>Control.HasFocus(303)</visible>
-                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
+            <control type="label">
+                <left>853</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>843</left>
+                <top>6</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>843</left>
+                <top>22</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>836</left>
+                <top>8</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>850</left>
+                <top>8</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>836</left>
+                <top>20</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>850</left>
+                <top>20</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>838</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>848</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>843</left>
+                <top>10</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>843</left>
+                <top>18</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>840</left>
+                <top>11</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>846</left>
+                <top>11</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>840</left>
+                <top>17</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>846</left>
+                <top>17</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
+            </control>
+            <control type="label">
+                <left>843</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SPORTS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(303)</visible>
             </control>
             <control type="button" id="303">
                 <left>875</left>
@@ -200,25 +954,213 @@
                 <textoffsetx>0</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>302</onleft>
                 <onright>308</onright>
                 <ondown>200</ondown>
             </control>
-            <control type="image">
-                <left>897</left>
-                <top>-82</top>
-                <width>386</width>
-                <height>260</height>
-                <aspectratio>stretch</aspectratio>
-                <fadetime>0</fadetime>
-                <texture>nav-glow-purchases.png</texture>
+            <control type="label">
+                <left>963</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
                 <visible>Control.HasFocus(308)</visible>
-                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
+            <control type="label">
+                <left>983</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>973</left>
+                <top>6</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>973</left>
+                <top>22</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>966</left>
+                <top>8</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>980</left>
+                <top>8</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>966</left>
+                <top>20</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>980</left>
+                <top>20</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>968</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>978</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>973</left>
+                <top>10</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>973</left>
+                <top>18</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>970</left>
+                <top>11</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>976</left>
+                <top>11</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>970</left>
+                <top>17</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>976</left>
+                <top>17</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
+            </control>
+            <control type="label">
+                <left>973</left>
+                <top>14</top>
+                <width>234</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>PURCHASES</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(308)</visible>
             </control>
             <control type="button" id="308">
                 <left>1005</left>
@@ -233,25 +1175,213 @@
                 <textoffsetx>0</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>303</onleft>
                 <onright>304</onright>
                 <ondown>200</ondown>
             </control>
-            <control type="image">
-                <left>1077</left>
-                <top>-82</top>
-                <width>336</width>
-                <height>260</height>
-                <aspectratio>stretch</aspectratio>
-                <fadetime>0</fadetime>
-                <texture>nav-glow-search.png</texture>
+            <control type="label">
+                <left>1143</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
                 <visible>Control.HasFocus(304)</visible>
-                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
+            <control type="label">
+                <left>1163</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1153</left>
+                <top>6</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1153</left>
+                <top>22</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1146</left>
+                <top>8</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1160</left>
+                <top>8</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1146</left>
+                <top>20</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1160</left>
+                <top>20</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1148</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1158</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1153</left>
+                <top>10</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1153</left>
+                <top>18</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1150</left>
+                <top>11</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1156</left>
+                <top>11</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1150</left>
+                <top>17</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1156</left>
+                <top>17</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
+            </control>
+            <control type="label">
+                <left>1153</left>
+                <top>14</top>
+                <width>184</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SEARCH</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(304)</visible>
             </control>
             <control type="button" id="304">
                 <left>1185</left>
@@ -266,25 +1396,213 @@
                 <textoffsetx>0</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>308</onleft>
                 <onright>305</onright>
                 <ondown>200</ondown>
             </control>
-            <control type="image">
-                <left>1207</left>
-                <top>-82</top>
-                <width>356</width>
-                <height>260</height>
-                <aspectratio>stretch</aspectratio>
-                <fadetime>0</fadetime>
-                <texture>nav-glow-settings.png</texture>
+            <control type="label">
+                <left>1273</left>
+                <top>14</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
                 <visible>Control.HasFocus(305)</visible>
-                <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Visible</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Hidden</animation>
+            </control>
+            <control type="label">
+                <left>1293</left>
+                <top>14</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1283</left>
+                <top>6</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1283</left>
+                <top>22</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1276</left>
+                <top>8</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1290</left>
+                <top>8</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1276</left>
+                <top>20</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1290</left>
+                <top>20</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1278</left>
+                <top>14</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1288</left>
+                <top>14</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1283</left>
+                <top>10</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1283</left>
+                <top>18</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1280</left>
+                <top>11</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1286</left>
+                <top>11</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1280</left>
+                <top>17</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1286</left>
+                <top>17</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
+            </control>
+            <control type="label">
+                <left>1283</left>
+                <top>14</top>
+                <width>204</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>SETTINGS</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(305)</visible>
             </control>
             <control type="button" id="305">
                 <left>1315</left>
@@ -299,8 +1617,6 @@
                 <textoffsetx>0</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>304</onleft>
                 <onright>306</onright>
                 <ondown>200</ondown>
@@ -1834,6 +3150,210 @@
                     <label>$INFO[Window.Property(AccountLabel)]</label>
                 </control>
             </control>
+            <control type="label">
+                <left>1423</left>
+                <top>14</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1443</left>
+                <top>14</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1433</left>
+                <top>6</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1433</left>
+                <top>22</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1426</left>
+                <top>8</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1440</left>
+                <top>8</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1426</left>
+                <top>20</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1440</left>
+                <top>20</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>102F4FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1428</left>
+                <top>14</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1438</left>
+                <top>14</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1433</left>
+                <top>10</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1433</left>
+                <top>18</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1430</left>
+                <top>11</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1436</left>
+                <top>11</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1430</left>
+                <top>17</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1436</left>
+                <top>17</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>203F5FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
+            <control type="label">
+                <left>1433</left>
+                <top>14</top>
+                <width>449</width>
+                <height>68</height>
+                <font>Nav</font>
+                <label>$INFO[Window.Property(AccountLabel)]</label>
+                <align>center</align>
+                <aligny>center</aligny>
+                <textcolor>90516FFF</textcolor>
+                <visible>Control.HasFocus(306)</visible>
+            </control>
             <control type="button" id="306">
                 <left>1465</left>
                 <top>26</top>
@@ -1847,8 +3367,6 @@
                 <textoffsetx>18</textoffsetx>
                 <texturefocus>blank.png</texturefocus>
                 <texturenofocus>blank.png</texturenofocus>
-                <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
-                <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
                 <onleft>305</onleft>
                 <onright>309</onright>
                 <ondown>200</ondown>
@@ -2129,8 +3647,85 @@
                         <midtexture>white.png</midtexture>
                     </control>
                 </focusedlayout>
-                <onup condition="String.IsEqual(Window.Property(SeasonSwitchable),true)">307</onup>
-                <onup condition="!String.IsEqual(Window.Property(SeasonSwitchable),true)">301</onup>
+                <onup condition="String.IsEqual(Window.Property(Nav),home)">309</onup>
+                <onup condition="String.IsEqual(Window.Property(Nav),movies)">301</onup>
+                <onup condition="String.IsEqual(Window.Property(Nav),tv)">302</onup>
+                <onup condition="String.IsEqual(Window.Property(Nav),sports)">303</onup>
+                <onup condition="String.IsEqual(Window.Property(Nav),purchases)">308</onup>
+                <onup condition="String.IsEmpty(Window.Property(Nav))">304</onup>
+            </control>
+            <control type="group" id="409">
+                <visible>String.IsEqual(Window.Property(GenrePanel),1)</visible>
+                <control type="image">
+                    <left>620</left>
+                    <top>84</top>
+                    <width>440</width>
+                    <height>700</height>
+                    <texture>white.png</texture>
+                    <colordiffuse>FC101419</colordiffuse>
+                </control>
+                <control type="label">
+                    <left>646</left>
+                    <top>100</top>
+                    <width>388</width>
+                    <height>50</height>
+                    <font>font16</font>
+                    <label>$INFO[Window.Property(GenreHeading)]</label>
+                    <textcolor>FFFFFFFF</textcolor>
+                </control>
+                <control type="list" id="410">
+                    <left>636</left>
+                    <top>162</top>
+                    <width>408</width>
+                    <height>530</height>
+                    <orientation>vertical</orientation>
+                    <scrolltime>100</scrolltime>
+                    <onup>410</onup>
+                    <ondown>410</ondown>
+                    <onleft>410</onleft>
+                    <onright>410</onright>
+                    <itemlayout width="408" height="54">
+                        <control type="label">
+                            <left>16</left>
+                            <top>0</top>
+                            <width>376</width>
+                            <height>54</height>
+                            <font>font13</font>
+                            <aligny>center</aligny>
+                            <label>$INFO[ListItem.Label]</label>
+                            <textcolor>FFD5DAE0</textcolor>
+                        </control>
+                    </itemlayout>
+                    <focusedlayout width="408" height="54">
+                        <control type="image">
+                            <left>0</left>
+                            <top>0</top>
+                            <width>408</width>
+                            <height>54</height>
+                            <texture>white.png</texture>
+                            <colordiffuse>FF4F65FF</colordiffuse>
+                        </control>
+                        <control type="label">
+                            <left>16</left>
+                            <top>0</top>
+                            <width>376</width>
+                            <height>54</height>
+                            <font>font13</font>
+                            <aligny>center</aligny>
+                            <label>$INFO[ListItem.Label]</label>
+                            <textcolor>FFFFFFFF</textcolor>
+                        </control>
+                    </focusedlayout>
+                </control>
+                <control type="textbox">
+                    <left>646</left>
+                    <top>706</top>
+                    <width>388</width>
+                    <height>70</height>
+                    <font>font12</font>
+                    <label>$INFO[Window.Property(GenreMessage)]</label>
+                    <textcolor>FFD5DAE0</textcolor>
+                </control>
             </control>
         </control>
     </controls>
