@@ -15,6 +15,7 @@ ID, VERSION, BASE_VERSION = 'plugin.video.primeinterface', '0.2.22', '0.2.21'
 BASE_SHA256 = 'eaf808c32bfa4c8f52a58b0c67e764fd86d57ce150e1c8189943b593278a6d7f'
 NOTES = """0.2.22
 - Menu focus now glows around the text instead of a white oval.
+- Remove the line under the active tab; the glow shows which item is focused.
 """
 GLOW_TEXTURES = (
     'nav-glow-in-progress.png',
@@ -69,6 +70,7 @@ def main():
     assert not output.exists(), 'Published numbered releases are immutable'
     home_text = source_home.read_text(encoding='utf-8')
     assert 'focus-pill.png' not in home_text
+    assert 'Window.Property(Nav)' not in home_text
     assert 'nav-glow-movies.png' in home_text
     ET.fromstring(home_text)
     prefix = ID + '/'

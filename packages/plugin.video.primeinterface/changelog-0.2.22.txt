@@ -1,2 +1,3 @@
 0.2.22
 - Menu focus now glows around the text instead of a white oval.
+- Remove the line under the active tab; the glow shows which item is focused.

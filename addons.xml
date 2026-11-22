@@ -25,7 +25,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Native sign-in, account storage and authentication use independent Smooth Prime implementations. Remaining catalog/network/playback compatibility code is derived from Sandmann79/xbmc under GPL-3.0-or-later; see NOTICE.md. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.22[CR]- Menu focus now glows around the text instead of a white oval.</news>
+    <news>0.2.22[CR]- Menu focus now glows around the text instead of a white oval.[CR]- Remove the line under the active tab; the glow shows which item is focused.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
