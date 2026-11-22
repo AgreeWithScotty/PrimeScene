@@ -92,9 +92,8 @@ def store_account(profile, expected, account, addon, cookie_session=None, sessio
         config = Path(profile) / 'config'
         config.mkdir(parents=True, exist_ok=True)
         target = config / 'accounts.lst'
-        temporary = config / 'accounts.new'
-        temporary.write_text(json.dumps([account]), encoding='utf-8')
-        temporary.replace(target)
+        from .private_storage import write_secret
+        write_secret(target,json.dumps([account]).encode('utf-8'))
         if cookie_session is not None:
             from .session_store import COOKIE_FILE, copy_cookie_session
             from .prime_signin import save_cookies

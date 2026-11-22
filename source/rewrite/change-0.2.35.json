@@ -1,0 +1,180 @@
+{
+  "version": "0.2.35",
+  "sha256": "e8ab3f366a3dd332a6122a42c3fd3cefb49a39eb8d17ac02c7aa081acc8f2fb3",
+  "bytes": 3958217,
+  "files": 118,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/SECURITY.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/check_updates.py",
+    "plugin.video.primeinterface/resources/lib/account_state.py",
+    "plugin.video.primeinterface/resources/lib/accounts.py",
+    "plugin.video.primeinterface/resources/lib/http_transport.py",
+    "plugin.video.primeinterface/resources/lib/interface_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/media_proxy.py",
+    "plugin.video.primeinterface/resources/lib/prime_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/prime_signin.py",
+    "plugin.video.primeinterface/resources/lib/private_storage.py",
+    "plugin.video.primeinterface/resources/lib/profile_bootstrap.py",
+    "plugin.video.primeinterface/resources/lib/service_host.py",
+    "plugin.video.primeinterface/view_diagnostics.py"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "source_checks": {
+    "python_files_parsed": 54,
+    "xml_files_parsed": 4,
+    "relative_import_edges_resolved": 197,
+    "native_control_ids_unique": true,
+    "single_row_genre_grid_top_menu_unchanged": true,
+    "unchanged_asset_files": 45,
+    "unchanged_modules": [
+      "account_auth.py",
+      "account_region.py",
+      "account_runtime.py",
+      "actions.py",
+      "app_runtime.py",
+      "artwork_cache.py",
+      "aurora.py",
+      "auth_transport.py",
+      "browse_status.py",
+      "browse_tiles.py",
+      "card_presentation.py",
+      "catalog_access.py",
+      "catalog_gateway.py",
+      "collection_paging.py",
+      "description_cache.py",
+      "detail_catalog.py",
+      "display_text.py",
+      "font_coverage.py",
+      "genre_catalog.py",
+      "home_catalog.py",
+      "media_resources.py",
+      "navigation.py",
+      "playback_engine.py",
+      "playback_progress.py",
+      "prime_device.py",
+      "prime_login.py",
+      "progress_cache.py",
+      "provider_documents.py",
+      "public_catalog.py",
+      "purchases_catalog.py",
+      "service_catalog.py",
+      "session_store.py",
+      "title_art.py",
+      "title_glyphs.py",
+      "tv_catalog.py",
+      "watch_home.py",
+      "web_identity.py",
+      "__init__.py"
+    ],
+    "preserved_methods": [
+      "_refresh_progress_return",
+      "_select_progress_return",
+      "_focus_first_card",
+      "_genre_loop",
+      "_populate_genres",
+      "_prepare_catalog_preload",
+      "_catalog_preload_ready"
+    ],
+    "actual_saved_response_checks": [
+      {
+        "saved_response": "fantasy-movies.html",
+        "sha256": "0ccd1888abfe962d346050dd38e78200319e4a1abd17ea40bbd1dceb63d04b5a",
+        "initial_cards": 20,
+        "actual_page2_cards": 40,
+        "provider_declared_more": false,
+        "validated_continuation": false,
+        "protocol_events": 3
+      },
+      {
+        "saved_response": "fantasy-tv.html",
+        "sha256": "dfbaa13c14a8e039a897213969f77e2849e6d02ce8822c4db20f64e1d1531fce",
+        "initial_cards": 20,
+        "actual_page2_cards": 40,
+        "provider_declared_more": false,
+        "validated_continuation": false,
+        "protocol_events": 3
+      },
+      {
+        "saved_response": "public-tv-0.html",
+        "declared_seasons": 1,
+        "episode_rows": 6
+      },
+      {
+        "saved_response": "public-tv-1.html",
+        "declared_seasons": 5,
+        "episode_rows": 22
+      },
+      {
+        "saved_response": "public-tv-2.html",
+        "declared_seasons": 1,
+        "episode_rows": 8
+      },
+      {
+        "saved_response": "anonymous-prime.html",
+        "not_falsely_classified_as_empty_purchases": true,
+        "actual_signin_form": false
+      },
+      {
+        "saved_response": "fantasy.html",
+        "not_falsely_classified_as_empty_purchases": true,
+        "actual_signin_form": false
+      }
+    ],
+    "mocked_provider_or_kodi_tests": false,
+    "authenticated_account_or_playback_success_claimed": false,
+    "kodi_runtime_observed": false
+  },
+  "security_boundaries": {
+    "credential_storage": {
+      "real_dpapi_roundtrip_and_tamper_rejection": true,
+      "legacy_file_migration_verified": true,
+      "cookie_scope_flags_roundtrip": true,
+      "plaintext_temporary_files_created": false,
+      "posix_permissions_observed": false
+    },
+    "diagnostics": {
+      "unregistered_secret_canaries_removed": 8,
+      "status_and_request_correlation_preserved": true,
+      "actual_log_retention_bounded": true
+    },
+    "outbound_network": {
+      "unsafe_url_forms_rejected": 10,
+      "actual_local_dns_resolutions_rejected": 3,
+      "cross_origin_body_redirect_rejected": true,
+      "public_address_connection_pinning_present": true,
+      "amazon_request_performed": false
+    },
+    "local_http": {
+      "real_http_rejection_cases": 10,
+      "playback_key_absent_from_events": true,
+      "valid_native_request_shapes_accepted": 2,
+      "upstream_or_account_object_supplied": false,
+      "server_listen_address": "127.0.0.1"
+    },
+    "media_xml": {
+      "utf_encoded_dtd_entity_payloads_rejected": 3,
+      "excessive_depth_rejected": true,
+      "unsafe_manifest_scheme_cases_rejected": 2,
+      "basic_subtitle_conversion_preserved": true
+    },
+    "scope": {
+      "provider_login_or_playback_tested": false,
+      "kodi_ui_simulated": false,
+      "checks_establish": "local cryptography, actual filesystem/HTTP boundaries, input rejection and diagnostics only"
+    }
+  },
+  "actual_public_tls": {
+    "real_https_request_status": 200,
+    "bytes": 3936,
+    "sha256": "fd3e8731f64405154f8afa858cd617eeb25fb07e6b847b2502c6c7ab36339256",
+    "matches_known_public_index": true,
+    "transport": "production_public_dns_pinned_https",
+    "credentials_sent": false,
+    "provider_login_or_playback_claimed": false
+  }
+}

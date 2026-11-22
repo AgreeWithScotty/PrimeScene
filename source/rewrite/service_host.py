@@ -14,6 +14,8 @@ class AccountMonitor(xbmc.Monitor):
             refresh_service_session(self.g,self)
 
 def run():
+    from .profile_bootstrap import prepare_profile
+    prepare_profile()
     g=AppRuntime();monitor=AccountMonitor(g);registry=xbmcgui.Window(10000)
     token=token_hex(8);property_name='smoothprime.observer_service'
     if registry.getProperty(property_name):return

@@ -1,13 +1,17 @@
 """Bounded HTTPS transactions, domain-scoped cookies and redacted diagnostics."""
 from dataclasses import dataclass
+import ipaddress
+import re
 import gzip
 from io import BytesIO
+from http.client import HTTPSConnection
 import json
 from secrets import token_hex
 from time import monotonic
+import socket
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import HTTPRedirectHandler,HTTPCookieProcessor,Request,build_opener
+from urllib.request import HTTPRedirectHandler,HTTPCookieProcessor,HTTPSHandler,ProxyHandler,Request,build_opener
 from .account_state import current_account
 from .prime_diagnostics import exception_details,route
 
@@ -15,11 +19,57 @@ from .prime_diagnostics import exception_details,route
 class TransportFailure(RuntimeError):pass
 
 
+def public_addresses(host,port):
+    """Resolve once and pin the connection to a public address, preventing rebinding."""
+    addresses=socket.getaddrinfo(host,port,type=socket.SOCK_STREAM)
+    if not addresses:raise TransportFailure('The media host did not resolve')
+    for family,kind,protocol,_,target in addresses:
+        address=ipaddress.ip_address(target[0])
+        if not address.is_global or address.is_multicast:
+            raise TransportFailure('The media destination resolved to a non-public address')
+    return addresses
+
+
+def _public_connect(destination,timeout=socket._GLOBAL_DEFAULT_TIMEOUT,source_address=None):
+    addresses=public_addresses(*destination);last=None
+    for family,kind,protocol,_,target in addresses:
+        connection=socket.socket(family,kind,protocol)
+        try:
+            connection.settimeout(socket.getdefaulttimeout() if timeout is socket._GLOBAL_DEFAULT_TIMEOUT else timeout)
+            if source_address:connection.bind(source_address)
+            connection.connect(target);return connection
+        except OSError as error:last=error;connection.close()
+    raise last or TransportFailure('The media host could not be reached')
+
+
+class _PublicHTTPSConnection(HTTPSConnection):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self._create_connection=_public_connect
+
+
+class _PublicHTTPSHandler(HTTPSHandler):
+    def https_open(self,request):
+        options={'context':self._context}
+        if hasattr(self,'_check_hostname'):options['check_hostname']=self._check_hostname
+        return self.do_open(_PublicHTTPSConnection,request,**options)
+
+
 def https_address(value,hosts=None):
     try:
+        if not isinstance(value,str) or len(value)>65536 or '\\' in value or any(ord(c)<=32 or ord(c)==127 for c in value):return False
         parts=urlsplit(value)
-        return bool(parts.scheme=='https' and parts.hostname and not parts.username and
-            not parts.password and parts.port in (None,443) and (hosts is None or parts.hostname in hosts))
+        host=parts.hostname or ''
+        if hosts is None:
+            try:
+                address=ipaddress.ip_address(host)
+                public=address.is_global and not address.is_multicast
+            except ValueError:
+                public=bool(re.fullmatch(r'[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?',host) and '.' in host
+                    and not host.endswith(('.localhost','.local','.internal','.test','.invalid','.example')))
+            if not public:return False
+        return bool(parts.scheme=='https' and host and parts.username is None and
+            parts.password is None and parts.port in (None,443) and (hosts is None or host in hosts))
     except (TypeError,ValueError):return False
 
 
@@ -63,12 +113,16 @@ class Redirects(HTTPRedirectHandler):
     def redirect_request(self,request,fp,code,msg,headers,newurl):
         self.hops+=1
         allowed=https_address(newurl,self.hosts) and self.hops<=6
+        changed=urlsplit(request.full_url).hostname!=urlsplit(newurl).hostname
+        if changed and request.data is not None and code in (307,308):allowed=False
         self.report({'event':'http_redirect','request_id':self.request_id,'status':code,
             'from':route(request.full_url),'to':route(newurl),'hop':self.hops,'allowed':allowed})
         if not allowed:raise TransportFailure('The provider returned an untrusted redirect')
         result=super().redirect_request(request,fp,code,msg,headers,newurl)
-        if result and urlsplit(request.full_url).hostname!=urlsplit(newurl).hostname:
-            for name in ('Authorization','Cookie'):result.remove_header(name)
+        if result:
+            for name in ('Cookie','Host'):result.remove_header(name)
+            if changed:
+                for name in ('Authorization','Proxy-authorization','Origin','Referer'):result.remove_header(name)
         return result
 
 
@@ -99,6 +153,10 @@ class HttpTransport:
         self.report({'event':'http_started','request_id':identifier,'stage':stage,
             'method':request.get_method(),'address':route(address),'request_bytes':len(data or b'')})
         handlers=[Redirects(self.report,self.hosts,identifier)]
+        if self.hosts is None:
+            # Public media URLs are pinned directly; an environment proxy must
+            # not bypass local-address rejection. TLS still verifies the host.
+            handlers.extend((ProxyHandler({}),_PublicHTTPSHandler()))
         if self.jar is not None:handlers.append(HTTPCookieProcessor(self.jar))
         try:
             with build_opener(*handlers).open(request,timeout=20) as reply:

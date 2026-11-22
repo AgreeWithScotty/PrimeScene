@@ -101,6 +101,8 @@ class SignInRedirect(HTTPRedirectHandler):
         self.capture_authorization = capture_authorization
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
+        hops=getattr(req,'_smooth_redirect_hops',0)+1
+        if hops>8:raise SignInError('Amazon sign-in exceeded its redirect limit.')
         source = trusted_host(req.full_url)
         destination = trusted_host(newurl)
         method = req.get_method()
@@ -125,14 +127,17 @@ class SignInRedirect(HTTPRedirectHandler):
                                   f'(HTTP {code} from {source} to {destination}).')
             forwarded = {name: value for name, value in req.headers.items()
                          if name.lower() not in ('authorization', 'proxy-authorization', 'content-length', 'cookie', 'host')}
-            return Request(newurl, data=req.data, headers=forwarded, method=method,
-                           origin_req_host=req.origin_req_host, unverifiable=True)
+            redirected=Request(newurl,data=req.data,headers=forwarded,method=method,
+                origin_req_host=req.origin_req_host,unverifiable=True)
+            redirected._smooth_redirect_hops=hops
+            return redirected
         redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
         for name in ('Cookie', 'Host', 'Authorization', 'Proxy-authorization'):
             redirected.remove_header(name)
         if source != destination:
             redirected.remove_header('Origin')
             redirected.remove_header('Referer')
+        redirected._smooth_redirect_hops=hops
         return redirected
 
 
@@ -354,9 +359,11 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
         raise SignInError('Amazon returned an unexpected sign-in address.')
     headers = dict(HEADERS, **(headers or {}))
     if previous is not None:
+        if not trusted_host(previous):raise SignInError('Amazon returned an invalid previous sign-in address.')
         headers['Origin'] = 'https://' + urlsplit(previous).netloc
         headers['Referer'] = previous
     body = urlencode(fields).encode('ascii') if fields is not None else None
+    if body is not None and len(body)>1024*1024:raise SignInError('The sign-in submission exceeds its size limit.')
     started = monotonic()
     if observer:
         observer({'event': 'request_started', 'stage': stage, 'method': 'POST' if body is not None else 'GET',
@@ -549,22 +556,17 @@ def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, c
 def load_cookies(path):
     jar = LWPCookieJar(str(path))
     try:
-        jar.load(ignore_discard=True)
-    except (OSError, LoadError):
+        from .private_storage import load_cookie_text
+        load_cookie_text(jar,path)
+    except FileNotFoundError:
         jar.clear()
     return jar
 
 
 def save_cookies(jar, path):
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with NamedTemporaryFile(dir=path.parent, delete=False) as file:
-        temporary = Path(file.name)
-    try:
-        jar.save(str(temporary), ignore_discard=True)
-        temporary.replace(path)
-    finally:
-        temporary.unlink(missing_ok=True)
+    from .private_storage import write_secret
+    content='#LWP-Cookies-2.0\n'+jar.as_lwp_str(ignore_discard=True)
+    write_secret(path,content.encode('utf-8'))
 
 
 def catalog_opener(jar, *, observer=None, headers=None):

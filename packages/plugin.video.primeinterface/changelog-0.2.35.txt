@@ -1,0 +1,11 @@
+0.2.35
+- Encrypt Windows account tokens and cookie files with current-user DPAPI, with atomic legacy migration and no plaintext fallback.
+- Use owner-only private directories/files on POSIX and parse decrypted cookie data in memory.
+- Reject browser-origin, invalid-host, malformed-method/body and invalid-capability requests at the loopback playback boundary.
+- Bound local media connections, request bodies, timeouts and subtitle indices; never log the playback capability or CDM payload.
+- Pin relay downloads to public DNS addresses with normal TLS verification and prevent cross-origin submission/header forwarding.
+- Reject encoded XML DTD/entity payloads, excessive structure and unsafe manifest URL schemes.
+- Centrally redact credential fields, authorization text, email addresses and JWTs while retaining actionable diagnostic correlation.
+- Bound log retention and replay memory, mark history trimming and bound the diagnostic viewer.
+- Restrict update metadata to its configured HTTPS address and add sanitized update failure diagnostics.
+- Document platform storage limits, repository update trust and security reporting boundaries.

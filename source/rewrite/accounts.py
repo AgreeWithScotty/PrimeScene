@@ -10,6 +10,7 @@ from threading import local
 
 from .account_state import account_epoch, current_account, persist_if_current
 from .prime_diagnostics import DiagnosticLog, exception_details
+from .private_storage import read_secret,write_secret
 
 EMPTY = dict(name='', atvurl='', baseurl='', pv=False, mid='', cookie={}, token='',
              deviceid='', sidomain='', locale='', lang='')
@@ -43,7 +44,7 @@ def _read(path, epoch):
     try:
         if filename.stat().st_size > 512*1024:
             raise ValueError('Account metadata exceeds its size limit')
-        data = json.loads(filename.read_text(encoding='utf-8'))
+        data = json.loads(read_secret(filename,512*1024).decode('utf-8'))
     except FileNotFoundError:
         return []
     if not isinstance(data, list) or len(data) > 10:
@@ -93,9 +94,7 @@ def _write(record, g, epoch, report, operation):
     def commit():
         directory = Path(g.DATA_PATH)/'config'
         directory.mkdir(parents=True, exist_ok=True)
-        temporary = directory/'accounts.new'
-        temporary.write_text(json.dumps([clean], ensure_ascii=True), encoding='utf-8')
-        temporary.replace(directory/'accounts.lst')
+        write_secret(directory/'accounts.lst',json.dumps([clean],ensure_ascii=True).encode('utf-8'))
         g.addon.setSetting('login_acc', clean['name'])
     stored = persist_if_current(g.DATA_PATH, epoch, commit)
     report({'event': 'account_metadata_updated', 'stage': operation,
