@@ -1,0 +1,8 @@
+0.2.30
+- Restore background preloading of Movies and TV while the genre grid is visible.
+- Prepare the highlighted genre before selection and share its exact in-flight request.
+- Reserve foreground request workers; a clicked category bypasses queued background work.
+- Restore saved first-page genre caches with account-generation validation and full sign-out purge.
+- Bind prepared cards immediately and preload their artwork, listing descriptions and leading title plate.
+- Retain first-two-page loading, early lookahead, selected-card position and fresh In Progress.
+- Record queue delay, reader delay, request attempt links, cache source and time to first cards.

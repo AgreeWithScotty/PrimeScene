@@ -7,7 +7,7 @@ Scene PlayVideo URL. No separate Kodi skin is required.
 from json import dumps, load, loads
 from copy import deepcopy
 from pathlib import Path
-from queue import Empty, Queue
+from queue import Empty, Full, Queue
 from secrets import token_hex
 from re import IGNORECASE
 from re import compile as compile_re
@@ -578,6 +578,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.detail_worker = None
         self.genre_worker = None
         self.genre_jobs = Queue()
+        self.preloaded_catalogs = Queue(maxsize=4)
+        self._genre_focus = None
         self.genre_cache = {}
         self.genre_requested = set()
         self.genre_owner = None
@@ -784,6 +786,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
         self.genre_cache.clear();self.genre_requested.clear();self._genre_rows=[];self.genre_owner=None
         self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={}
+        self.preloaded_catalogs=Queue(maxsize=4);self._genre_focus=None
         self.setProperty('GenrePanel','')
         self._pending_progress_return = self._progress_return_request = None
         self._resume_selection = None
@@ -855,6 +858,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.detail_worker = None
         self.genre_worker = None
         self.genre_jobs = Queue()
+        self.preloaded_catalogs = Queue(maxsize=4)
+        self._genre_focus = None
         self.genre_cache.clear()
         self.genre_requested.clear()
         self.genre_owner = None
@@ -1114,6 +1119,13 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.jobs.get_nowait()
             except Empty:
                 break
+        if self.loader is not None and self.loader.handles(path):
+            prefetched=self.loader.peek(path)
+            if prefetched:
+                self._publish(token,prefetched)
+                self.performance({'event':'navigation_preload_bound','stage':'first_cards',
+                    'generation':token,'cards':len(self.rows),
+                    'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
         self.jobs.put((token, path, query, selection))
 
     def _selected_index(self):
@@ -1297,12 +1309,13 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _work(self):
         try:
-            # Only selected sections request catalog pages; navigation metadata is separate.
+            # Restore early main-catalog loading without opening every genre.
             bridge = CatalogGateway(self.g)
             self.bridge = bridge
-            self.loader = StorefrontLoader(self.g)
+            self.loader = StorefrontLoader(self.g,ready=self._catalog_preload_ready)
             self.image_cache = ImageCache(self.g, self.loader.epoch)
             self.description_cache = DescriptionCache(self.g, self.loader.epoch, self.performance)
+            self.loader.preload_startup()
             record(self.g, 'catalog_worker_ready')
             self._catalog_loop(bridge)
         except Exception as error:
@@ -1341,6 +1354,7 @@ class AuroraHome(xbmcgui.WindowXML):
             future = packet = None
             try:
                 record(self.g, 'catalog_request_started')
+                if path.startswith(('__genre__/','__service__/')):self.loader.register_genre(path)
                 if query is None and self.loader.handles(path):
                     cached = self.loader.peek(path)
                     if cached:
@@ -1618,8 +1632,13 @@ class AuroraHome(xbmcgui.WindowXML):
         """Keep expensive title drawing and image downloads away from input/binding."""
         while not self.stop.is_set():
             self._report_display_text()
+            try:self._prepare_catalog_preload()
+            except Exception as error:self.performance({'event':'catalog_visual_preload_failed','stage':'preload_artwork',
+                'exception':exception_details(error),'result':'failure'})
             if self.genre_owner is not None:
-                try:self._refresh_tile_art()
+                try:
+                    self._preload_grid_focus()
+                    self._refresh_tile_art()
                 except Exception as error:self.performance({'event':'browse_tile_art_failed','stage':'tile_artwork','exception':exception_details(error),'result':'failure'})
                 self.stop.wait(.1)
                 continue
@@ -1677,6 +1696,53 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.performance({'event': 'visual_work_failed', 'exception': exception_details(error), 'result': 'failure'})
                 self.stop.wait(0.5)
             self.stop.wait(0.1)
+
+    def _catalog_preload_ready(self,path,packet):
+        if self.stop.is_set() or path=='__watching__' or not packet.get('rows'):return
+        try:self.preloaded_catalogs.put_nowait((path,packet))
+        except Full:
+            self.performance({'event':'catalog_visual_preload_skipped','stage':'preload_artwork',
+                'reason':'bounded_queue','result':'cancelled'})
+
+    def _prepare_catalog_preload(self):
+        try:path,packet=self.preloaded_catalogs.get_nowait()
+        except Empty:return
+        if self.stop.is_set() or self.loader is None or not self.loader.current():return
+        started=monotonic();rows=(packet.get('rows') or [])[:10];urls=[];fresh=set()
+        for index,row in enumerate(rows):
+            info=row.get('info') or {};fresh.update(self._note_artwork(info))
+            urls.append(_fit_art(_rail_art(info),_CARD_ART))
+            if index<2:urls.append(_fit_art(info.get('fanart'),_HERO_ART))
+        if fresh:
+            from .account_state import persist_if_current
+            def track():
+                with (Path(self.g.DATA_PATH)/'account-artwork.jsonl').open('a',encoding='utf-8') as output:
+                    output.write(''.join(dumps(value)+'\n' for value in fresh))
+            persist_if_current(self.g.DATA_PATH,self.account_generation,track)
+        if self.image_cache is not None:self.image_cache.warm([url for url in urls if url])
+        # Listing descriptions are already in the exact cached packet. Prepare
+        # its leading title plate while the genre selector is still visible.
+        if rows and self.genre_owner is not None:
+            title=clean(rows[0].get('title') or '').upper()
+            if title and title not in self.title_cache:
+                from .account_state import persist_if_current
+                def draw():self.title_cache[title]=render_title(title,Path(self.g.DATA_PATH)/'title-art')
+                persist_if_current(self.g.DATA_PATH,self.account_generation,draw)
+        self.performance({'event':'catalog_visual_preload_ready','stage':'preload_artwork',
+            'section':StorefrontLoader.diagnostic_section(path),'cards':len(rows),
+            'descriptions_ready':sum(bool((row.get('info') or {}).get('plot')) for row in rows),
+            'image_requests_queued':sum(bool(url) for url in urls),
+            'prepare_elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
+
+    def _preload_grid_focus(self):
+        if self.loader is None or self.genre_owner not in (301,302):return
+        if self.getFocusId()!=410:return
+        index=self.getControl(410).getSelectedPosition()
+        if not 0<=index<len(self._genre_rows):return
+        path=self._genre_rows[index]['path'];now=monotonic()
+        if self._genre_focus is None or self._genre_focus[0]!=path:
+            self._genre_focus=(path,now);return
+        if now-self._genre_focus[1]>=.15:self.loader.preload_focus(path)
 
     def _detail_loop(self):
         while not self.stop.is_set():

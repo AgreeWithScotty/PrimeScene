@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.29" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.30" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.29[CR]- Give blank Movies, TV, individual genres, Sports, services, In Progress, Purchases, Search, seasons and episodes their own messages.[CR]- Recognize explicit successful native empty catalog structures rather than treating them as a failed request.[CR]- Keep unknown structures, sign-in problems and HTTP failures distinct from empty results, with category-specific temporary-unavailability text.[CR]- Retain populated cards and descriptions if a later page request fails; keep full failure details in diagnostics.[CR]- Preserve Movies startup, native artwork-only genres, services, TV navigation, paging, playback and account handling.</news>
+    <news>0.2.30[CR]- Restore background preloading of Movies and TV while the genre grid is visible.[CR]- Prepare the highlighted genre before selection and share its exact in-flight request.[CR]- Reserve foreground request workers; a clicked category bypasses queued background work.[CR]- Restore saved first-page genre caches with account-generation validation and full sign-out purge.[CR]- Bind prepared cards immediately and preload their artwork, listing descriptions and leading title plate.[CR]- Retain first-two-page loading, early lookahead, selected-card position and fresh In Progress.[CR]- Record queue delay, reader delay, request attempt links, cache source and time to first cards.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
