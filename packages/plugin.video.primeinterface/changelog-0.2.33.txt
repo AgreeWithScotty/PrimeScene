@@ -1,0 +1,9 @@
+0.2.33
+- Give In Progress, Purchases and Search immediate, independent headings and multi-line guidance.
+- Remove the heading-reset bug and previous-section card/frozen-art leakage during personal-tab transitions.
+- Dispatch fresh In Progress and Purchases requests directly on reserved workers, bypassing catalog wait queues.
+- Extract personal-page JSON without parsing unrelated storefront movie cards; record extraction and request timings.
+- Recognize explicit native purchase-library payloads, nested navigation links and empty-library states.
+- Display the requested no-purchased-media message only for a confirmed empty library, with separate retrieval-failure wording.
+- Show Search instructions and explain the full Prime Video catalog scope before opening the search keyboard.
+- Preserve fresh uncached In Progress, single-row browsing, genre artwork, early paging and playback return.

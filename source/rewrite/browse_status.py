@@ -1,6 +1,11 @@
 """Category-specific empty/temporarily unavailable display text."""
 from .display_text import clean
 
+def section_intro(section):
+    if section=='home':return {'title':'In Progress','message':'Your in-progress movies or TV shows will display here.'}
+    if section=='purchases':return {'title':'Purchases','message':'Your purchased movies and TV shows appear here. Visit Amazon to purchase media.'}
+    return {'title':'Search Prime Video','message':"Select Search and enter a movie or TV show title. Search Amazon's full Prime Video catalogue, including Prime titles, rentals, purchases and add-on subscriptions."}
+
 def category_status(section,path='',heading='',query=None,series=None,unavailable=False):
     heading=clean(heading or '');series=series or {}
     if series:
@@ -33,8 +38,8 @@ def category_status(section,path='',heading='',query=None,series=None,unavailabl
         retry='Your in-progress movies and TV shows are unavailable right now. Please try again.'
     elif section=='purchases':
         title='Purchases';kind='purchases'
-        empty='Your purchased and rented movies or TV shows will appear here.'
-        retry='Your purchases and rentals are unavailable right now. Please try again.'
+        empty='This account has no purchased media to display. Visit Amazon to purchase media.'
+        retry='Your Amazon purchase library could not be retrieved. Please try again.'
     elif section in ('movies','tv'):
         noun='movies' if section=='movies' else 'TV shows'
         genre=path.startswith('__genre__/')

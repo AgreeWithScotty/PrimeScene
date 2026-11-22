@@ -1,36 +1,33 @@
 """Read only explicitly labelled Amazon Continue Watching collections."""
-import json
 import re
-from .public_catalog import StorefrontParser, CatalogPage, PublicCatalogError, _json_content, _protocol_shape
+from time import monotonic
+from .public_catalog import CatalogPage, PublicCatalogError, _json_content, _protocol_shape
+from .provider_documents import read_documents
 
 
 def read_home(data, content_type, address, observer=None):
-    if content_type.endswith('json'):
-        documents=[json.loads(data)]
-    else:
-        parser=StorefrontParser(address);parser.feed(data);parser.close()
-        documents=[]
-        for script in parser.json_scripts:
-            try: documents.append(json.loads(script))
-            except ValueError: pass
+    documents,extraction,_=read_documents(data,content_type)
+    scan_started=monotonic()
     stack=list(documents); collections=[]; visited=0
     while stack:
         node=stack.pop();visited+=1
         if visited>100000: raise PublicCatalogError('Home structure exceeds its limit')
         if isinstance(node,dict):
             labels=[node.get(k) for k in ('collectionType','widgetType','type','id','title','heading','name')]
-            recognized=any(isinstance(label,str) and re.sub('[^a-z]','',label.lower()) in
+            recognized=node.get('isContinueWatching') is True or any(isinstance(label,str) and re.sub('[^a-z]','',label.lower()) in
                 ('continuewatching','watchnext','continuewatchingcarousel') for label in labels)
             if recognized:
                 collections.append(node)
             else:
                 stack.extend(v for v in node.values() if isinstance(v,(dict,list)))
         elif isinstance(node,list):stack.extend(node)
-    cards={}
+    scanned=monotonic();cards={}
     for collection in collections:
         found,_,_= _json_content(collection,address,page_continuation=False)
         cards.update(found)
     details={'format':'home','progress_collections':len(collections),'cards':len(cards),
+        **extraction,'progress_scope_nodes':visited,'progress_scope_ms':round((scanned-scan_started)*1000),
+        'progress_card_parse_ms':round((monotonic()-scanned)*1000),
         'json_documents':len(documents),'protocol_structure':[_protocol_shape(d) for d in documents[:3]],
         'history_confirmed':bool(collections),'result':'success' if collections else 'unrecognized'}
     if not collections:

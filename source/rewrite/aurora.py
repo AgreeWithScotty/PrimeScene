@@ -840,11 +840,14 @@ class AuroraHome(xbmcgui.WindowXML):
             self.setProperty('ShowSplash', '')
         self.setProperty('HeroKicker', '')
         self.setProperty('HeroTitle', title)
-        self.setProperty('HeroMeta', tag)
+        self.setProperty('HeroMeta', '')
         self.setProperty('HeroTag', tag)
-        self.setProperty('HeroSynopsis', '')
+        self.setProperty('HeroSynopsis', tag)
         self.setProperty('HeroFanart', '')
-        self.setProperty('HeroTitleArt', self.title_cache.get(title.upper(), ''))
+        baked={'IN PROGRESS':'status-progress.png','PURCHASES':'status-purchases.png',
+            'SEARCH':'status-search.png','SEARCH PRIME VIDEO':'status-search.png'}.get(title.upper())
+        plate=str(Path(self.g.PLUGIN_PATH)/'resources/skins/Default/media'/baked) if baked else self.title_cache.get(title.upper(),'')
+        self.setProperty('HeroTitleArt',plate)
 
     def pause_catalog(self, status='Signing out...'):
         from .display_text import reset_account_observations
@@ -1054,6 +1057,7 @@ class AuroraHome(xbmcgui.WindowXML):
                     self.views.pop(oldest)
 
     def navigate(self, path, remember=True, query=None, selection=0, heading=None, series=None, save_current=True):
+        if self.stop.is_set():return
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
             return
@@ -1066,6 +1070,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if save_current:
                 self._save_view()
             refreshing_progress=path=='__watching__' and self.path=='__watching__' and bool(self.rows)
+            isolated_section=path in ('__watching__','__prime_purchases__','search')
             visible_cards = len(self.rows)
             if remember and ((path, query) != (self.path, self.query) or series_changed):
                 previous_nav = _PRIMARY_SECTIONS.get(self.path, (self.nav, ''))[0]
@@ -1096,6 +1101,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
         self._section_label()
         self._season_properties()
+        if not refreshing_progress:
+            self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
         if path == '__watching__':
             for key in list(self.views):
                 if key[0] == '__watching__' or (self.views[key].get('series') or {}).get('watching_only'):
@@ -1115,6 +1122,16 @@ class AuroraHome(xbmcgui.WindowXML):
                 'cache_reuse':False,'result':'success'})
         else:
             self._pending_progress_return=None
+        if isolated_section and not refreshing_progress:
+            self.clearList()
+            self._replace_rail=False
+            from .browse_status import section_intro
+            intro=section_intro('search' if path=='search' else self.nav)
+            self._set_hero_status(intro['title'],intro['message'])
+            self.performance({'event':'section_intro_shown','stage':'section_transition',
+                'section':'search' if path=='search' else self.nav,'generation':token,
+                'previous_section_cards_removed':True,'native_cards':self.getListSize(),
+                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
         if cached:
             self.clearList()
             self._replace_rail = False
@@ -1132,9 +1149,9 @@ class AuroraHome(xbmcgui.WindowXML):
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
             return
         # Leave the visible cards/hero intact until the replacement is ready.
-        self._replace_rail = not refreshing_progress
+        self._replace_rail = not refreshing_progress and not isolated_section
         if not refreshing_progress:self.setProperty('ProgressRefreshing','')
-        if not refreshing_progress:self._set_hero_status('', '')
+        if not refreshing_progress and not isolated_section:self._set_hero_status('', '')
         # Drop queued obsolete work. In-flight public requests continue only to
         # warm their cache; the worker stops waiting when generation changes.
         while True:
@@ -1149,7 +1166,46 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.performance({'event':'navigation_preload_bound','stage':'first_cards',
                     'generation':token,'cards':len(self.rows),
                     'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
+            if path in ('__watching__','__prime_purchases__'):
+                loader=self.loader
+                future=loader.request(path)
+                self.performance({'event':'personal_request_dispatched','stage':'direct_personal_request',
+                    'section':self.nav,'generation':token,'request_running':future.running(),
+                    'catalog_worker_bypassed':True,'fresh_required':path=='__watching__','result':'started'})
+                future.add_done_callback(lambda result:self._personal_ready(token,path,loader,result))
+                return
         self.jobs.put((token, path, query, selection))
+
+    def _personal_ready(self,token,path,loader,future):
+        try:
+            if self.stop.is_set() or token!=self.generation:
+                self.performance({'event':'personal_result_discarded','stage':'direct_personal_request',
+                    'generation':token,'reason':'section_changed','result':'cancelled'});return
+            packet=future.result()
+            if packet is None:raise RuntimeError('The personal list ended without a provider result')
+            self._publish(token,packet)
+            with self.lock:
+                if token!=self.generation or self.stop.is_set():return
+                if not self.rows and not self.next_path:self._display_category_state()
+            self.performance({'event':'personal_screen_ready','stage':'direct_personal_request',
+                'section':self.nav,'generation':token,'cards':len(self.rows),
+                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
+        except Exception as error:
+            self.performance({'event':'personal_request_failed','stage':'direct_personal_request',
+                'generation':token,'exception':exception_details(error),'result':'failure'})
+            with self.lock:
+                if token==self.generation and not self.stop.is_set():
+                    if not self.rows:
+                        if isinstance(error,CatalogSigninRequired):self._set_hero_status('Sign in','Sign in again to view your Amazon account.')
+                        else:self._display_category_state(unavailable=True)
+                    self._progress_refresh_generation=None
+                    if path=='__watching__':self._pending_progress_return=None
+                    self.setProperty('ProgressRefreshing','')
+        finally:
+            if path=='__watching__':loader.release(path,future)
+            with self.lock:
+                if token==self.generation:
+                    self.busy=False;self.pending_path=None
 
     def _selected_index(self):
         position = self.getCurrentListPosition()
@@ -1158,6 +1214,7 @@ class AuroraHome(xbmcgui.WindowXML):
         return position
 
     def _menu_control(self):
+        if self.path=='search':return 304
         return {'movies':301,'tv':302,'home':309,'extras':303,'purchases':308}.get(self.nav,301)
 
     def _focus_first_card(self):
@@ -1172,6 +1229,7 @@ class AuroraHome(xbmcgui.WindowXML):
                           'cards': len(self.rows), 'expected_index': 0, 'target_control': 200})
 
     def onFocus(self, control_id):
+        if control_id==304 and self.worker is not None and self.worker.is_alive():self._show_search()
         if control_id in (309,301,302,303,308) and self.worker is not None and self.worker.is_alive():
             self._focus_first_generation=None
             self._activate_section(control_id)
@@ -2062,12 +2120,34 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.setProperty('Busy', '')
 
     def _search(self):
+        self._show_search()
         phrase = self.g.dialog.input('Search Prime Video')
         if not isinstance(phrase, str) or not phrase.strip():
             return
         self._hide_genres(restore=False)
         self.nav = ''
-        self.navigate('search', query=phrase.strip(), heading='Search')
+        self.navigate('search', remember=False,query=phrase.strip(), heading='Search')
+        self._focus_first_card()
+
+    def _show_search(self):
+        if self.path=='search' and self.genre_owner is None:return
+        if self.account_name is not None and not self.account_name():return
+        self._save_view();self._hide_genres(restore=False)
+        with self.lock:
+            self.generation+=1;self.rows=[];self.items=[];self.row_keys=set()
+            self.path='search';self.query=None;self.nav='';self.heading='Search'
+            self.history.clear();self.series_context=None
+            self.next_path=self.pending_path=None;self.busy=False
+            self._progress_refresh_generation=None;self._pending_progress_return=None
+            self._focus_first_generation=None
+        self.clearList();self._replace_rail=False
+        self.setProperty('Nav','');self.setProperty('Section','')
+        self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
+        self._season_properties()
+        from .browse_status import section_intro
+        intro=section_intro('search');self._set_hero_status(intro['title'],intro['message'])
+        self.performance({'event':'search_landing_shown','stage':'section_transition',
+            'generation':self.generation,'old_section_cards_retained':False,'result':'success'})
 
     def _activate_section(self,control_id,focus_cards=False):
         if control_id in (301,302,303):
@@ -2076,10 +2156,11 @@ class AuroraHome(xbmcgui.WindowXML):
         primary={309:'__watching__',308:'__prime_purchases__'}
         path=primary[control_id]
         self._hide_genres(restore=False)
-        self.nav,heading=_PRIMARY_SECTIONS[path]
-        if self.path!=path or self.query is not None or focus_cards and path=='__watching__' and not self.busy:
-            self.history.clear();self.navigate(path,remember=False,heading=heading)
-            self.performance({'event':'menu_focus_section_activated','control_id':control_id,'section':self.nav,'result':'success'})
+        with self.lock:
+            self.nav,heading=_PRIMARY_SECTIONS[path]
+            if self.path!=path or self.query is not None or focus_cards and not self.busy and (path=='__watching__' or not self.rows):
+                self.history.clear();self.navigate(path,remember=False,heading=heading)
+                self.performance({'event':'menu_focus_section_activated','control_id':control_id,'section':self.nav,'result':'success'})
         if focus_cards:self._focus_first_card()
 
     def _show_genres(self,owner,focus_grid=True):
@@ -2347,6 +2428,8 @@ class AuroraHome(xbmcgui.WindowXML):
         elif self.genre_owner is None and (self.path in ('__prime_movies__','__prime_tv__') or self.path.startswith('__genre__/')):
             self._show_genres(301 if self.nav=='movies' else 302,focus_grid=True)
             self.performance({'event':'back_to_genre_grid','stage':'back_navigation','section':self.nav,'result':'success'})
+        elif self.path=='search' and self.query is not None:
+            self.path='search_results';self._show_search();self.setFocusId(304)
         else:
             self.stop.set()
             self._unregister_return()

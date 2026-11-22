@@ -1938,6 +1938,17 @@
                 <label>$INFO[Container(200).ListItem.Property(Plot)]</label>
                 <visible>[Integer.IsGreater(Container(200).NumItems,0)] + String.IsEmpty(Window.Property(GenrePanel))</visible>
             </control>
+            <control type="textbox" id="333">
+                <left>76</left>
+                <top>468</top>
+                <width>1080</width>
+                <height>156</height>
+                <font>Body</font>
+                <textcolor>FFD5DAE0</textcolor>
+                <align>left</align>
+                <label>$INFO[Window.Property(HeroSynopsis)]</label>
+                <visible>[Integer.IsEqual(Container(200).NumItems,0)] + String.IsEmpty(Window.Property(GenrePanel))</visible>
+            </control>
             <control type="label">
                 <left>76</left>
                 <top>648</top>

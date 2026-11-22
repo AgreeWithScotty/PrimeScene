@@ -27,6 +27,7 @@ class StorefrontLoader:
         self.lock = RLock()
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimePages')
         self.background = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimePreload')
+        self.personal = ThreadPoolExecutor(max_workers=2,thread_name_prefix='PrimePersonal')
         self.ready = ready
         self.readers = {root: (CatalogGateway(g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
@@ -116,7 +117,8 @@ class StorefrontLoader:
                 raise RuntimeError('The catalog session has ended')
             if background:self.background_paths.add(path)
             else:self.background_paths.discard(path)
-            self.futures[path] = (self.background if background else self.pool).submit(
+            executor=self.personal if path in ('__watching__','__prime_purchases__') else self.background if background else self.pool
+            self.futures[path] = executor.submit(
                 self._load,path,monotonic(),token_hex(8),background)
             return self.futures[path]
 
@@ -205,6 +207,7 @@ class StorefrontLoader:
         started = monotonic()
         self.report({'event':'catalog_load_started','stage':'preload' if background else 'navigation',
             'attempt_id':attempt,'section':self.diagnostic_section(path),
+            'request_lane':'personal' if path in ('__watching__','__prime_purchases__') else 'background' if background else 'catalog',
             'queue_wait_ms':round((started-queued)*1000),'background':background,'result':'started'})
         if path.startswith('__genre__/') and path not in self.saved_checked:
             self._load_saved(path)
@@ -283,6 +286,7 @@ class StorefrontLoader:
                 future.cancel()
         self.pool.shutdown(wait=True)
         self.background.shutdown(wait=True)
+        self.personal.shutdown(wait=True)
         with self.lock:
             self.cache.clear()
             self.futures.clear()
