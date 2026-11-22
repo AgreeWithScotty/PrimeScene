@@ -98,7 +98,7 @@ def refresh_profile_authorization(account, actor_id=None):
 def credentials(prefer_token=False):
     """Read current credentials only; background traffic never launches sign-in."""
     from .accounts import _context, loadUser
-    from .session_store import requests_session_cookies
+    from .session_store import credential_cookies
     from .prime_diagnostics import exception_details
     g, epoch, report = _context()
     if not current_account(g.DATA_PATH, epoch):
@@ -119,7 +119,7 @@ def credentials(prefer_token=False):
         if g.data_source == 1:
             report({'event': 'account_device_authorization_required', 'stage': 'credentials', 'result': 'failure'})
             return False
-    jar = requests_session_cookies(g.DATA_PATH)
+    jar = credential_cookies(g.DATA_PATH)
     if jar is not None and current_account(g.DATA_PATH, epoch):
         return jar
     if jar is not None:

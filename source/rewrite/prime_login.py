@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import requests
+from http.cookiejar import CookieJar
 import xbmc
 import xbmcgui
 
@@ -180,7 +180,7 @@ def LogIn(retToken=False):
                 return False
             observe.secret(name)
             account['name'] = name
-        result = requests.cookies.RequestsCookieJar()
+        result = CookieJar()
         for cookie in cookies:
             if not cookie.is_expired():
                 result.set_cookie(deepcopy(cookie))
@@ -190,7 +190,7 @@ def LogIn(retToken=False):
         if not saved_generation:
             result.clear()
             raise SignInError('This sign-in was canceled by signing out. Start a new sign-in.')
-        # Runtime cleanup erases pending challenge references. The Requests jar
+        # Runtime cleanup erases pending challenge references. The native jar
         # is already independent, so it survives cleanup with its exact scope.
         discard_pending(profile, clear=False)
         clear_runtime(g)

@@ -1,13 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.22" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.23" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
-    <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
-    <import addon="script.module.pyxbmct" version="1.3.1+matrix.1" />
-    <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1" />
-    <import addon="script.module.requests" version="2.22.0+matrix.1" />
-    <import addon="script.module.pyautogui" version="0.9.49+matrix.1" />
+    <import addon="script.module.inputstreamhelper" version="0.8.6" />
   </requires>
   <extension point="xbmc.python.script" library="default.py">
     <provides>video</provides>
@@ -16,16 +12,16 @@
   <extension point="xbmc.addon.metadata">
     <platform>all</platform>
     <reuselanguageinvoker>false</reuselanguageinvoker>
-    <license>GPL-3.0-or-later</license>
+    <license>GPL-3.0-only</license>
     <source>https://github.com/AgreeWithScotty/PrimeScene</source>
     <assets>
       <icon>icon.png</icon>
       <fanart>resources/skins/Default/media/splash.png</fanart>
     </assets>
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
-    <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Native sign-in, account storage and authentication use independent Smooth Prime implementations. Remaining catalog/network/playback compatibility code is derived from Sandmann79/xbmc under GPL-3.0-or-later; see NOTICE.md. Not affiliated with Amazon.</description>
-    <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.22[CR]- Menu focus now glows around the text instead of a white oval.[CR]- Remove the line under the active tab; the glow shows which item is focused.</news>
+    <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
+    <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
+    <news>0.2.23[CR]- Replace remaining catalog, network and playback compatibility implementations with native modules.[CR]- Read title, season, episode and search state directly; no old provider fallback or renderer interception.[CR]- Add independent HTTPS media resources, Widevine CDM license relay, DASH handling and TTML subtitles.[CR]- Add account-generation-scoped SQLite resume points and Amazon playback progress reporting.[CR]- Use direct script playback actions, native Kodi controls, and the existing originating-card return observer.[CR]- Remove 21 retired modules, obsolete settings/localization/artwork and unneeded Python dependencies.[CR]- Preserve 0.2.22 menu glow, every skin asset, fresh In Progress, title descriptions and page preloading.[CR]- Add complete real-run HTTP/protocol/CDM-request/player/cleanup diagnostics without authentication secrets.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

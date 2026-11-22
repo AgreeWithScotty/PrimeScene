@@ -57,20 +57,11 @@ def load_session(profile):
     return jars[0] if jars else LWPCookieJar(str(path))
 
 
-def requests_session_cookies(profile):
-    """Return an independent Requests jar, or None without a full web session."""
-    from requests.cookies import RequestsCookieJar
-    jar = load_session(profile)
-    try:
-        if not prime_signin.has_authentication_cookie(jar):
-            return None
-        result = RequestsCookieJar()
-        for cookie in jar:
-            if not cookie.is_expired():
-                result.set_cookie(deepcopy(cookie))
-        return result
-    finally:
-        jar.clear()
+def credential_cookies(profile):
+    jar=load_session(profile)
+    if prime_signin.has_authentication_cookie(jar):return jar
+    jar.clear()
+    return None
 
 
 def session_headers(profile):

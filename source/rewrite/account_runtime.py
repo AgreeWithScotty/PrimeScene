@@ -48,7 +48,8 @@ class AccountRuntime:
                 raise ValueError('The saved browser identity exceeds its size limit')
             value = filename.read_text(encoding='utf-8')
         except FileNotFoundError:
-            return ''
+            from .web_identity import USER_AGENT
+            return USER_AGENT
         if any(ord(character) < 32 or ord(character) == 127 for character in value):
             raise ValueError('The saved browser identity contains invalid characters')
         return value

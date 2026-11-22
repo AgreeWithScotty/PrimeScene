@@ -89,7 +89,8 @@ class DiagnosticLog:
     def secret(self, value):
         if value:
             value = str(value)
-            self.values.update((value, quote(value, safe=''), quote_plus(value), json.dumps(value)[1:-1]))
+            with self.lock:
+                self.values.update((value, quote(value, safe=''), quote_plus(value), json.dumps(value)[1:-1]))
 
     def redact(self, value):
         if isinstance(value, dict):

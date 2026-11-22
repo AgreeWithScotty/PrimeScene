@@ -1,0 +1,92 @@
+msgid ""
+msgstr ""
+"Language: en_GB\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgctxt "#32100"
+msgid "Account"
+msgstr ""
+
+msgctxt "#32101"
+msgid "Sign in or verify Amazon account"
+msgstr ""
+
+msgctxt "#32102"
+msgid "Sign out and remove all account data"
+msgstr ""
+
+msgctxt "#32103"
+msgid "Change the account display name"
+msgstr ""
+
+msgctxt "#32104"
+msgid "Playback"
+msgstr ""
+
+msgctxt "#32105"
+msgid "Allow HEVC on supported hardware"
+msgstr ""
+
+msgctxt "#32106"
+msgid "Request UHD on Widevine L1 hardware"
+msgstr ""
+
+msgctxt "#32107"
+msgid "Allow HDR10 on supported hardware"
+msgstr ""
+
+msgctxt "#32108"
+msgid "Allow Dolby Vision on supported hardware"
+msgstr ""
+
+msgctxt "#32109"
+msgid "Request HD on software Widevine (Amazon may refuse)"
+msgstr ""
+
+msgctxt "#32110"
+msgid "Report progress to Amazon after this percent (0 disables)"
+msgstr ""
+
+msgctxt "#32111"
+msgid "Skip intros and recaps"
+msgstr ""
+
+msgctxt "#32112"
+msgid "Off"
+msgstr ""
+
+msgctxt "#32113"
+msgid "Show skip button"
+msgstr ""
+
+msgctxt "#32114"
+msgid "Skip automatically"
+msgstr ""
+
+msgctxt "#32115"
+msgid "Stream quality selection"
+msgstr ""
+
+msgctxt "#32116"
+msgid "Best available resolution"
+msgstr ""
+
+msgctxt "#32117"
+msgid "Adaptive bandwidth"
+msgstr ""
+
+msgctxt "#32118"
+msgid "Updates"
+msgstr ""
+
+msgctxt "#32119"
+msgid "Check for updates"
+msgstr ""
+
+msgctxt "#32120"
+msgid "Diagnostics"
+msgstr ""
+
+msgctxt "#32121"
+msgid "Open complete diagnostic report"
+msgstr ""

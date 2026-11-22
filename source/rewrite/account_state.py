@@ -106,10 +106,6 @@ def store_account(profile, expected, account, addon, cookie_session=None, sessio
                 (config / 'UserAgent').write_text(agent, encoding='utf-8')
         addon.setSetting('login_acc', account['name'])
         db.execute('UPDATE session SET epoch=?, signed_out=0 WHERE id=1', (next_epoch,))
-    # Let this invocation's config helpers write in the newly authorized session.
-    module = sys.modules.get(__package__ + '.configs')
-    if module is not None:
-        module._prime_scene_epoch = next_epoch
     return next_epoch
 
 
@@ -136,11 +132,6 @@ def clear_profile(profile, observer=None):
     root = Path(profile).resolve()
     if root.name != ADDON_ID or root == root.parent:
         raise ValueError('The Smooth Prime profile path is invalid')
-    # This loopback address belongs to the running playback service, not to an
-    # Amazon account. Keep it usable after signing into a different account.
-    proxy_path = root / 'config/proxyaddress'
-    proxy = proxy_path.read_text(encoding='utf-8') if proxy_path.is_file() else ''
-    proxy = proxy if re.fullmatch(r'127\.0\.0\.1:[0-9]{1,5}', proxy) else ''
     failures = []
     for child in list(root.iterdir()):
         if child.name not in NEUTRAL_FILES:
@@ -155,9 +146,6 @@ def clear_profile(profile, observer=None):
                         'prime-video-session.cookies': 'website_cookies', 'settings.xml': 'account_settings'}.get(child.name, 'account_file')
                     observer({'event': 'profile_entry_purge_failed', 'stage': 'purge_account_profile',
                               'category': category, 'exception': exception_details(error), 'result': 'failure'})
-    if proxy:
-        proxy_path.parent.mkdir(parents=True, exist_ok=True)
-        proxy_path.write_text(proxy, encoding='utf-8')
     (root / 'log').mkdir(exist_ok=True)
     if failures:
         raise RuntimeError('Signed out, but some local account files are still in use. Close Smooth Prime and retry cleanup.')
@@ -175,44 +163,12 @@ def _artwork_urls(value):
 
 
 def clear_runtime(g):
-    repository = sys.modules.get(__package__ + '.accounts')
-    if repository is not None:
-        repository.reset_runtime(g.DATA_PATH)
-    sessions = sys.modules.get(__package__ + '.session_store')
-    if sessions is not None:
-        sessions.clear_all_pending()
-    network = sys.modules.get(__package__ + '.network')
-    if network is not None:
-        session = getattr(network, '_session', None)
-        if session is not None:
-            session.cookies.clear()
-            session.close()
-        network._session = None
-        network._prime_scene_epoch = None
-    proxy = sys.modules.get(__package__ + '.proxy')
-    if proxy is not None:
-        handler = proxy.ProxyHTTPD
-        for session in list(handler.sessions.values()):
-            session.cookies.clear()
-            session.close()
-        handler.sessions.clear()
-        handler._refused_licenses.clear()
-    configs = sys.modules.get(__package__ + '.configs')
-    if configs is not None:
-        configs._prime_scene_epoch = None
-    values = getattr(g, '_globals', None)
-    if values is None:
-        backend = sys.modules.get(__package__ + '.common')
-        values = getattr(getattr(backend, 'Globals', None), '_globals', {})
-    provider = values.get('pv')
-    if provider is not None:
-        for key, empty in (('_catalog', {}), ('_videodata', {'urn2gti': {}}), ('_prime_scene_details', {})):
-            setattr(provider, key, empty)
-            setattr(type(provider), key, empty.copy())
-        instances = getattr(type(provider), '_instances', {})
-        instances.pop(type(provider), None)
-    for key in ('pv', 'MarketID', 'BaseUrl', 'ATVUrl', 'UsePrimeVideo', 'deviceID'):
-        values.pop(key, None)
+    repository=sys.modules.get(__package__+'.accounts')
+    if repository is not None:repository.reset_runtime(g.DATA_PATH)
+    sessions=sys.modules.get(__package__+'.session_store')
+    if sessions is not None:sessions.clear_all_pending()
+    # In-flight native network/media requests retain their captured epoch.
+    # They cannot adopt the next account; each request and player tick checks it.
 
 
 def refresh_service_session(g, service):
@@ -255,12 +211,6 @@ def _sign_out(g, artwork=(), report=None, before_cleanup=None):
 
     # Capture texture references before notification clears other live copies.
     urls = set(artwork)
-    def runtime_artwork():
-        provider = getattr(g, '_globals', {}).get('pv')
-        if provider is not None:
-            urls.update(_artwork_urls(getattr(provider, '_catalog', {})))
-            urls.update(_artwork_urls(getattr(provider, '_videodata', {})))
-    stage('read_runtime_artwork_inventory', runtime_artwork)
 
     def notify():
         reply = json.loads(xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1,
@@ -328,8 +278,6 @@ def _sign_out(g, artwork=(), report=None, before_cleanup=None):
     for path in profile.iterdir():
         if path.name in allowed:
             continue
-        if path.name == 'config' and path.is_dir() and all(child.name == 'proxyaddress' for child in path.iterdir()):
-            continue
         if path.name == 'log' and path.is_dir() and not any(path.iterdir()):
             continue
         if path.name == 'prime-scene-diagnostics.jsonl' and path.is_file():
@@ -349,7 +297,7 @@ def _sign_out(g, artwork=(), report=None, before_cleanup=None):
     import xbmcgui
     report({'event': 'signout_service_state', 'stage': 'verify_runtime_invalidation',
         'service_epoch_matches': xbmcgui.Window(10000).getProperty('smoothprime.service_account_epoch') == account_epoch(profile),
-        'local_provider_present': bool(getattr(g, '_globals', {}).get('pv'))})
+        'native_request_generation_invalidated': True})
     if leftovers or g.addon.getSetting('login_acc'):
         failures.append('verify_local_state')
     if failures:

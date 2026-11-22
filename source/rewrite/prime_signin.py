@@ -11,6 +11,7 @@ from time import monotonic
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request, build_opener
+from .web_identity import USER_AGENT
 
 try:
     from .public_catalog import ORIGIN, StorefrontRedirect
@@ -27,7 +28,7 @@ PRIME_HOSTS = {PRIME_HOST, 'primevideo.com', 'na.primevideo.com'}
 AMAZON_HOSTS = {prefix + domain for domain in ('amazon.com', 'amazon.de', 'amazon.co.uk', 'amazon.co.jp')
                 for prefix in ('', 'www.')}
 HEADERS = {'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9',
-           'User-Agent': 'PrimeScene'}
+           'User-Agent': USER_AGENT}
 MAX_DOCUMENT_BYTES = 8 * 1024 * 1024
 CODE_FIELDS = {'otpcode', 'otppin', 'verificationcode', 'cvf_otp_input', 'mfa_otp_code'}
 CODE_FORM_IDS = {'fwcim-form', 'verification-code-form', 'auth-mfa-form'}

@@ -1,32 +1,18 @@
-# Smooth Prime for Amazon Prime Video
+# Smooth Prime for Kodi
 
-Standalone Kodi video add-on with progressive browsing and its own account,
-catalog, playback and proxy code. Not affiliated with Amazon.
+Independent native Prime Video catalog, account and playback backend, maintained
+by AgreeWithScotty. The dedicated Aurora Cinema interface is adapted from Scott's
+SmoothFlix. Native account verification, fresh In Progress, Prime-included Movies
+and TV, Sports, Purchases, description/artwork preloading and originating-card
+playback return use one permanent add-on: plugin.video.primeinterface.
 
-## Install and update
+Install/update through Prime Scene Repository or ScottyWins. Repository file-manager
+address: https://agreewithscotty.github.io/ScottyWins/
+Source and installable releases: packages/plugin.video.primeinterface/
+Current readable backend source: source/rewrite/. Complete source is inside each ZIP.
 
-Install the Prime Scene Repository ZIP from `packages/repository.primescene/`
-once through Kodi's **Add-ons -> Install from ZIP file**. Open **Install from
-repository -> Prime Scene Repository -> Video add-ons -> Smooth Prime**.
-Existing installs can update without uninstalling or clearing data.
-
-If the add-on information screen says **Origin: Manual**, use its bottom
-**Versions** button and select the version from **Prime Scene Repository** once.
-The normal bottom **Update** button appears when Kodi detects an eligible newer
-repository release. A ZIP installation alone does not establish repository origin.
-
-Later releases appear in Kodi's update manager. In Smooth Prime use **Settings ->
-Updates -> Check for updates** to check the repository and show the result in
-place. Kodi installs the update when automatic updates are enabled. If updates
-are manual, use Kodi's **Available updates** when an update is ready.
-
-## Identity and source
-
-Add-on ID: `plugin.video.primeinterface` (kept unchanged across versions).
-Repository ID: `repository.primescene`.
-
-Full Python/XML source and the GPL license are included in each release ZIP.
-The backend is derived from Sandmann79/xbmc, credited in the included NOTICE.md.
-No installed Amazon VOD add-on is required or queried. No account data is bundled.
-
-Repository index and package files are kept in the same Git commit.
+Playback uses Kodi InputStream Adaptive and Widevine with your Amazon account.
+InputStream Helper handles Kodi's supported CDM setup. Settings includes account,
+playback, updates and complete diagnostics. No external browser playback or original
+Amazon add-on installation is required. See the package NOTICE.md and LICENSE.
+Historical releases retain their original source/license notices.

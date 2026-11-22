@@ -1,29 +1,31 @@
-# Smooth Prime 0.2.21
+# Smooth Prime native backend: 0.2.23
 
-In Progress requests a new Amazon snapshot on every visit, including return
-from playback. Memory/disk/bridge caches are bypassed; the obsolete local
-watch-progress store and saved Home page are deleted under the account epoch
-guard. No saved playback-card ledger is merged. Repeated actual product IDs
-are collapsed without guessing that unrelated same-title editions are equal.
-Provider completion fields are read fresh for In Progress series/season views.
-Normal Movies/TV/Sports/Purchases caching and preloading remain.
+CatalogGateway directly reads the native public_catalog/detail_catalog/tv_catalog
+page state. No compatibility provider, renderer interception, shared provider
+singleton, browser playback, external-app player or old backend import remains.
+media_resources owns the actual selected-title Amazon resource/progress protocol;
+http_transport owns bounded HTTPS/redirect/error handling; media_proxy owns a
+playback-scoped loopback CDM license relay and native DASH/TTML handling;
+playback_engine owns native Kodi/InputStream Adaptive lifecycle and skip UI;
+playback_progress owns epoch-scoped SQLite resume. Authentication remains native.
+No license decryption, key extraction or alternate content-source substitution.
 
-Initial focus is the In Progress top tab; clicking a category still moves to
-its first card. Native playback return waits for Kodi's natural restoration
-and activates the catalog only if it is still inactive. No catalog window
-fade animations remain. Every app control is in a group hidden during native
-fullscreen video. The optional skip dialog closes once, only if shown.
-Normal section return preserves the existing originating card/view/history;
-In Progress return selects the matching card from the new provider snapshot.
+All retired implementation modules and obsolete settings/assets are absent from
+the current app/ZIP. Their canonical source mirror and obsolete preview/mock
+scripts are removed. Historical release ZIPs and their original license notices
+remain immutable. Current backend code is independently written; see NOTICE.md
+for the Scott-owned Aurora interface and retained external font/dependency licenses.
 
-Diagnostics cover cleanup, cache bypass, request/attempt IDs, real HTTP status
-and redacted redirects/structure, window/view/card counts, focus/selection,
-active dialog and elapsed times. Failures retain exception locations without
-private account identifiers, passwords, codes, tokens or cookie values.
+Concrete evidence: Python/XML syntax and relative import/export closure; no old
+backend import path or substantial exact function retained from retired derived
+modules; all 0.2.22 skin/menu-glow bytes preserved; three saved real Amazon TV
+responses parsed into 36 episodes; one fresh anonymous movie detail HTTP 200
+parsed into a playable action; actual SQLite resume/completion/epoch guard checks;
+ZIP content/CRC/hash and publication-download verification. Anonymous search
+returned HTTP 503; signed-in catalog, CDM license and playback are unconfirmed.
+No mocked provider/Kodi tests. Runtime diagnostics capture real failures completely
+without passwords, codes, tokens, cookie values or private account identifiers.
 
-Concrete checks cover syntax, relative imports/exports, exact baseline byte
-preservation, unchanged authentication and unchanged player code except the
-skip-dialog lifecycle, archive CRC/hash and actual publication downloads.
-The supplied pre-change recording and Kodi window-manager source informed the
-repair. No simulated provider/Kodi tests or post-change device-success claims.
-Full backend original-code replacement remains unfinished; keep NOTICE.md.
+The full installable ZIP is the authoritative complete source. Files in this flat
+mirror map to resources/lib; default.py/gui.py/service.py/view_diagnostics.py are
+app-root entries, and settings.xml/strings.po are application resource files.

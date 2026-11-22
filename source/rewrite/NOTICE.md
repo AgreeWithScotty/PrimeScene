@@ -1,31 +1,23 @@
-# Attribution and source
+# Source and asset notices
 
-Smooth Prime is maintained by AgreeWithScotty. It is an independent fork and
-is not an Amazon product. Smooth Prime modifications were made in November 2026.
-Remaining catalog compatibility, network and playback code is derived from Sandmann79/xbmc,
-Amazon VOD1.2.4+matrix.1, by Sandmann79, Varstahl and its other contributors:
-https://github.com/Sandmann79/xbmc
+Smooth Prime is maintained by AgreeWithScotty. Its catalog, account/authentication,
+HTTPS transport, media-resource and license relay, subtitle handling, resume,
+progress and playback lifecycle implementations are independently written for
+this application. No former compatibility-provider implementation is included
+or imported. Provider protocol identifiers, request fields and Kodi integration
+properties describe interoperable wire/API contracts; they are not software
+dependencies or claims of affiliation with Amazon.
 
-Their GPL-3.0-or-later license and existing notices are retained. The complete
-Python source and XML interface are included in this installable ZIP. Local
-changes add a dedicated progressive interface, bounded category enrichment,
-request/registration repairs, an isolated identity/profile/service namespace,
-and its own first-launch sign-in flow. The original installed add-on's code is
-never imported. Existing external Kodi Python modules remain dependencies.
-
-In version 0.2.20 the retained login.py and users.py implementations were
-removed. Native authentication, account storage, region discovery, credential
-selection, token renewal and security-challenge handling now use independently
-written Smooth Prime modules. These no longer import the former login module
-or its MFA/CAPTCHA UI. The remaining backend components above have not yet all
-been replaced; this release is not represented as a fully original backend.
-
-Upstream dependency version attributes are compatibility minimums, not pins to
-old dependency releases. Kodi resolves installed/current repository dependencies.
-No old dependency package or Widevine binary is bundled.
-
-Aurora Cinema, the self-contained WindowXML layout used for the home, title
-and player screens, is adapted from SmoothFlix 0.3.0 by Scott:
+The Aurora Cinema interface is adapted from Scott's SmoothFlix:
 https://github.com/AgreeWithScotty/SmoothFlix
-Its interface code is GPL-3.0-only. Inter and Bebas Neue are included under
-the SIL Open Font License; see resources/skins/Default/fonts/.
+The distributed application source is GPL-3.0-only; see LICENSE. The complete
+Python/XML source is included in the installable ZIP.
+
+Inter and Bebas Neue fonts retain their SIL Open Font License notices under
+resources/skins/Default/fonts. InputStream Helper and Kodi InputStream Adaptive
+are separate external dependencies maintained and licensed by their respective
+projects. Widevine is provided through Kodi's supported platform/CDM mechanism;
+no Widevine binary or external Python dependency implementation is bundled.
+
+This source notice applies to the current package. Historical published releases
+retain their original source, license and notices and are not rewritten.

@@ -1,0 +1,9 @@
+0.2.23
+- Replace remaining catalog, network and playback compatibility implementations with native modules.
+- Read title, season, episode and search state directly; no old provider fallback or renderer interception.
+- Add independent HTTPS media resources, Widevine CDM license relay, DASH handling and TTML subtitles.
+- Add account-generation-scoped SQLite resume points and Amazon playback progress reporting.
+- Use direct script playback actions, native Kodi controls, and the existing originating-card return observer.
+- Remove 21 retired modules, obsolete settings/localization/artwork and unneeded Python dependencies.
+- Preserve 0.2.22 menu glow, every skin asset, fresh In Progress, title descriptions and page preloading.
+- Add complete real-run HTTP/protocol/CDM-request/player/cleanup diagnostics without authentication secrets.

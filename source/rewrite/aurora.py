@@ -20,7 +20,7 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 
-from .dedicated_bridge import CatalogSigninRequired, ProviderBridge
+from .catalog_gateway import CatalogSigninRequired, CatalogGateway
 from .interface_diagnostics import record
 from .title_art import render_title
 from .navigation import StorefrontLoader
@@ -467,7 +467,10 @@ def _clear_note(profile, request_id=None):
 def play_row(row, profile):
     _clear_note(profile)
     note_playback(profile, row.get('title') or 'Smooth Prime', _detail_meta(row))
-    xbmc.Player().play(row.get('url') or '')
+    address=row.get('url') or ''
+    if not address.startswith('plugin://'+ADDON_ID+'/'):
+        raise ValueError('Playback must use this add-on selected-title action')
+    xbmc.executebuiltin('RunScript(%s,%s)'%(ADDON_ID,dumps(address)))
 
 
 def _request_playback_return(note, reason, report):
@@ -540,7 +543,6 @@ class _AccountMonitor(xbmc.Monitor):
 class AuroraHome(xbmcgui.WindowXML):
     def __init__(self, *args, **kwargs):
         self.g = kwargs.pop('globals_instance')
-        self.initialize_provider = kwargs.pop('initialize_provider', None)
         self.account_name = kwargs.pop('account_name', None)
         self.account_action = kwargs.pop('account_action', None)
         self.offer_signin = kwargs.pop('offer_signin', False)
@@ -1162,7 +1164,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _work(self):
         try:
             # All four primary sections use independent account-scoped readers.
-            bridge = ProviderBridge(None, self.g, initialize_provider=self.initialize_provider)
+            bridge = CatalogGateway(self.g)
             self.bridge = bridge
             self.loader = StorefrontLoader(self.g)
             self.image_cache = ImageCache(self.g, self.loader.epoch)
@@ -1423,6 +1425,9 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.bridge is None or self.stop.is_set() or token != self.generation:
             return None
         with self.bridge_lock:
+            with self.lock:
+                for key,value in self.known_details.items():
+                    self.bridge.details.setdefault(key,value)
             packet = self.bridge.read_tv(path, lambda: not self.stop.is_set() and token == self.generation)
         if packet is not None:
             self._remember(path, None, 'browse', packet)
@@ -1652,7 +1657,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         bridge.details.setdefault(key, value)
                 bridge.browse_progressive(path, publish, lambda: not self.stop.is_set())
         except Exception as error:
-            xbmc.log('[Prime Scene] Detail lookup failed: ' + type(error).__name__, xbmc.LOGERROR)
+            self.performance({'event':'title_lookup_failed','stage':'native_title_read','exception':exception_details(error),'result':'failure'})
             return None
         if self.account_generation is not None:
             from .account_state import current_account
@@ -1969,14 +1974,11 @@ def watch_playback(profile):
             break
 
 
-def open_interface(globals_instance, settings_instance, initialize_provider=None, account_name=None,
+def open_interface(globals_instance, settings_instance, account_name=None,
                    account_action=None, offer_signin=False, launch_diagnostics=None):
-    if settings_instance.data_source != 0:
-        globals_instance.dialog.ok('Smooth Prime', 'Choose Website under Settings > Data Source to browse Smooth Prime.')
-        return False
     record(globals_instance, 'window_creating')
     window = AuroraHome(_HOME_XML, globals_instance.PLUGIN_PATH, 'Default', '1080i',
-                        globals_instance=globals_instance, initialize_provider=initialize_provider,
+                        globals_instance=globals_instance,
                         account_name=account_name, account_action=account_action,
                         offer_signin=offer_signin, launch_diagnostics=launch_diagnostics)
     try:

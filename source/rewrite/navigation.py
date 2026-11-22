@@ -8,7 +8,7 @@ from threading import Event, Lock, RLock
 from time import monotonic, time
 
 from .account_state import account_epoch, current_account, persist_if_current
-from .dedicated_bridge import ProviderBridge
+from .catalog_gateway import CatalogGateway
 from .prime_diagnostics import DiagnosticLog, exception_details
 from .public_catalog import STOREFRONT_HOSTS, safe_url
 
@@ -18,14 +18,14 @@ MAX_AGE = 24 * 60 * 60
 
 
 class StorefrontLoader:
-    """Public readers never hold the legacy detail/playback provider lock."""
+    """Independent readers do not serialize unrelated catalog sections."""
     def __init__(self, g):
         self.g = g
         self.epoch = account_epoch(g.DATA_PATH)
         self.stop = Event()
         self.lock = RLock()
         self.pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix='PrimePages')
-        self.readers = {root: (ProviderBridge(None, g), Lock()) for root in ROOTS}
+        self.readers = {root: (CatalogGateway(g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
         self.cache, self.futures = {}, {}
         self._warm_started = False
@@ -96,7 +96,7 @@ class StorefrontLoader:
             if path.stat().st_size > 8 * 1024 * 1024:
                 raise ValueError('Catalog cache exceeds its size limit')
             saved = json.loads(path.read_text(encoding='utf-8'))
-            if (saved.get('schema') != 3 or saved.get('epoch') != self.epoch
+            if (saved.get('schema') != 4 or saved.get('epoch') != self.epoch
                     or saved.get('root') != root or not 0 <= time() - saved['saved'] < MAX_AGE):
                 return
             packet = saved['packet']
@@ -134,7 +134,7 @@ class StorefrontLoader:
         if root == '__watching__': return
         # Only first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
-        content = json.dumps({'schema': 3, 'epoch': self.epoch, 'root': root,
+        content = json.dumps({'schema': 4, 'epoch': self.epoch, 'root': root,
                               'saved': saved, 'packet': packet,
                               'continuations': bridge.continuations}, ensure_ascii=True)
         target = self._filename(root)
@@ -158,7 +158,7 @@ class StorefrontLoader:
             if fresh:
                 from .progress_cache import discard_stored
                 discard_stored(self.g.DATA_PATH,self.epoch,self.report)
-                bridge,reader_lock=ProviderBridge(None,self.g),Lock()
+                bridge,reader_lock=CatalogGateway(self.g),Lock()
                 bridge.operation_observer=DiagnosticLog(self.g.DATA_PATH,self.g.addon.getAddonInfo('version'),
                     active=self.current,operation='in_progress')
                 entry=None

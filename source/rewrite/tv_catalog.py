@@ -26,44 +26,7 @@ def _episode(identifier, title, info, pluginid):
             'url': pluginid+'?'+urlencode(params)}
 
 
-def provider_episode_groups(videodata, selected_id, season_ids, pluginid):
-    """Use actual children even when a cached folder renderer returns no rows."""
-    selected = videodata.get(selected_id) or {}
-    selected_info = (selected.get('metadata') or {}).get('videometa') or {}
-    identifiers = list(season_ids)
-    if _kind(selected_info) == 'season' or any(_kind((videodata.get(key, {}).get('metadata') or {}).get('videometa')) == 'episode'
-                                              for key in selected.get('children') or []):
-        identifiers.insert(0, selected_id)
-    elif _kind(selected_info) == 'tvshow':
-        identifiers.extend(selected.get('children') or [])
-    groups, seen = [], set()
-    for season_id in identifiers:
-        if not season_id or season_id in seen:
-            continue
-        seen.add(season_id)
-        season = videodata.get(season_id) or {}
-        parent_meta = season.get('metadata') or {}
-        parent_info = parent_meta.get('videometa') or {}
-        rows, missing = [], 0
-        for identifier in season.get('children') or []:
-            child = videodata.get(identifier) or {}
-            meta = child.get('metadata') or {}
-            video = meta.get('videometa') or {}
-            if _kind(video) != 'episode' or not child.get('title'):
-                missing += 1
-                continue
-            info = dict(parent_meta.get('artmeta') or {})
-            info.update(meta.get('artmeta') or {})
-            info.update(video)
-            if not info.get('season') and parent_info.get('season') is not None:
-                info['season'] = parent_info['season']
-            if meta.get('runtime'):
-                info['duration'] = meta['runtime']
-            rows.append(_episode(identifier, child['title'], info, pluginid))
-        if rows or season.get('children'):
-            groups.append({'identity': season_id, 'season': parent_info.get('season'),
-                           'rows': rows, 'unresolved_children': missing})
-    return groups
+
 
 
 def _info(node):
