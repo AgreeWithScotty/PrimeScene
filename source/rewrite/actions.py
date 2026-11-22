@@ -13,6 +13,11 @@ def dispatch(argv):
     report({'event':'action_started','stage':'dispatch','action':mode,'result':'started'})
     try:
         if mode=='PlayVideo':
+            from .account_state import current_account
+            if value('account_epoch') and not current_account(g.DATA_PATH,value('account_epoch')):
+                report({'event':'action_finished','stage':'account_guard','action':mode,
+                    'reason':'originating_account_signed_out','result':'cancelled'})
+                return False
             from .playback_engine import play
             material={'0':'Feature','1':'Trailer','2':'LiveStreaming','3':'LiveStreaming'}.get(value('trailer','0'))
             if material is None:raise ValueError('Unsupported playback material')

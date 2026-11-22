@@ -1,0 +1,129 @@
+{
+  "version": "0.2.34",
+  "sha256": "0d4559ba163215066859f4000543ba6329a978b2f11209338654af2f763017ff",
+  "bytes": 3949525,
+  "files": 116,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/actions.py",
+    "plugin.video.primeinterface/resources/lib/artwork_cache.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_status.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/home_catalog.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "source_checks": {
+    "python_files_parsed": 53,
+    "xml_files_parsed": 4,
+    "relative_import_edges_resolved": 189,
+    "native_control_ids_unique": true,
+    "single_row_genre_grid_top_menu_unchanged": true,
+    "unchanged_asset_files": 45,
+    "unchanged_modules": [
+      "accounts.py",
+      "account_auth.py",
+      "account_region.py",
+      "account_runtime.py",
+      "account_state.py",
+      "app_runtime.py",
+      "auth_transport.py",
+      "browse_tiles.py",
+      "card_presentation.py",
+      "catalog_access.py",
+      "collection_paging.py",
+      "description_cache.py",
+      "detail_catalog.py",
+      "display_text.py",
+      "font_coverage.py",
+      "genre_catalog.py",
+      "http_transport.py",
+      "interface_diagnostics.py",
+      "media_proxy.py",
+      "media_resources.py",
+      "playback_engine.py",
+      "playback_progress.py",
+      "prime_device.py",
+      "prime_diagnostics.py",
+      "prime_login.py",
+      "prime_signin.py",
+      "profile_bootstrap.py",
+      "progress_cache.py",
+      "provider_documents.py",
+      "purchases_catalog.py",
+      "service_catalog.py",
+      "service_host.py",
+      "session_store.py",
+      "title_art.py",
+      "title_glyphs.py",
+      "tv_catalog.py",
+      "watch_home.py",
+      "web_identity.py",
+      "__init__.py"
+    ],
+    "preserved_methods": [
+      "_refresh_progress_return",
+      "_select_progress_return",
+      "_focus_first_card",
+      "_genre_loop",
+      "_populate_genres",
+      "_prepare_catalog_preload",
+      "_catalog_preload_ready"
+    ],
+    "actual_saved_response_checks": [
+      {
+        "saved_response": "fantasy-movies.html",
+        "sha256": "0ccd1888abfe962d346050dd38e78200319e4a1abd17ea40bbd1dceb63d04b5a",
+        "initial_cards": 20,
+        "actual_page2_cards": 40,
+        "provider_declared_more": false,
+        "validated_continuation": false,
+        "protocol_events": 3
+      },
+      {
+        "saved_response": "fantasy-tv.html",
+        "sha256": "dfbaa13c14a8e039a897213969f77e2849e6d02ce8822c4db20f64e1d1531fce",
+        "initial_cards": 20,
+        "actual_page2_cards": 40,
+        "provider_declared_more": false,
+        "validated_continuation": false,
+        "protocol_events": 3
+      },
+      {
+        "saved_response": "public-tv-0.html",
+        "declared_seasons": 1,
+        "episode_rows": 6
+      },
+      {
+        "saved_response": "public-tv-1.html",
+        "declared_seasons": 5,
+        "episode_rows": 22
+      },
+      {
+        "saved_response": "public-tv-2.html",
+        "declared_seasons": 1,
+        "episode_rows": 8
+      },
+      {
+        "saved_response": "anonymous-prime.html",
+        "not_falsely_classified_as_empty_purchases": true,
+        "actual_signin_form": false
+      },
+      {
+        "saved_response": "fantasy.html",
+        "not_falsely_classified_as_empty_purchases": true,
+        "actual_signin_form": false
+      }
+    ],
+    "mocked_provider_or_kodi_tests": false,
+    "authenticated_account_or_playback_success_claimed": false,
+    "kodi_runtime_observed": false
+  }
+}

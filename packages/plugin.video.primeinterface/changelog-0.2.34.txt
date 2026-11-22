@@ -1,0 +1,11 @@
+0.2.34
+- Clear unrelated native cards on every uncached screen transition and show the destination's own context immediately.
+- Restore explicit first-card selection correctly, retain the selected row through context actions, and ignore obsolete playback origins.
+- Return from service and sports pages to Extras; allow retrying a failed service directory without changing tabs.
+- Retain exact failed next-page continuations and retry with bounded backoff while keeping current content visible.
+- Give explicit title actions a separate worker and reader from background descriptions; discard obsolete actions before resolution.
+- Keep metadata workers alive after errors and allow temporary metadata/artwork failures to retry.
+- Preserve show context when choosing a season, guard stale season results, and hide the season switcher until an episode view has a label.
+- Prevent queued playback from crossing an account sign-out and validate all saved continuation routes before importing them.
+- Follow provider-declared Search Grid continuations and distinguish actual Amazon sign-in forms from empty categories.
+- Record real metadata binding failures and suspend speculative visual/description work during fullscreen playback.
