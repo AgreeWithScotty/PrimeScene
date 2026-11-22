@@ -1,0 +1,9 @@
+0.2.20
+- Remove the retained login.py and users.py implementations and all their imports/call sites.
+- Use independent native account runtime, repository, region discovery, credential selection and token renewal.
+- Handle existing-session verification with the native sign-in engine; remove MechanicalSoup/MFA/CAPTCHA fallback UI.
+- Read website credentials only from the scoped canonical session; background traffic never starts a password login.
+- Guard account/token writes against sign-out, serialize authorization, and record structured real-request diagnostics.
+- Remove raw authentication-page HTTP dumps and obsolete packaged validation reports.
+- Preserve In Progress, Prime sections, title/episode navigation, stock Kodi playback controls and card return.
+- Other catalog/network/playback compatibility code still awaits independent replacement.

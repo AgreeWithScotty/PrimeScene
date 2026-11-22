@@ -1,15 +1,13 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.19" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.20" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.beautifulsoup4" version="4.6.3+matrix.1" />
-    <import addon="script.module.mechanicalsoup" version="0.12.0+matrix.1" />
     <import addon="script.module.pyxbmct" version="1.3.1+matrix.1" />
     <import addon="script.module.inputstreamhelper" version="0.4.4+matrix.1" />
     <import addon="script.module.requests" version="2.22.0+matrix.1" />
     <import addon="script.module.pyautogui" version="0.9.49+matrix.1" />
-    <import addon="script.module.amazoncaptcha" version="0.5.11+matrix.1" />
   </requires>
   <extension point="xbmc.python.script" library="default.py">
     <provides>video</provides>
@@ -25,9 +23,9 @@
       <fanart>resources/skins/Default/media/splash.png</fanart>
     </assets>
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
-    <description lang="en_GB">Smooth Prime is a Prime Video add-on maintained by AgreeWithScotty. Aurora Cinema is the home screen. Website sign-in and the storefront reader use your own account. Includes GPL-3.0-or-later backend code derived from Sandmann79/xbmc. See NOTICE.md for upstream credits. Not affiliated with Amazon.</description>
+    <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Native sign-in, account storage and authentication use independent Smooth Prime implementations. Remaining catalog/network/playback compatibility code is derived from Sandmann79/xbmc under GPL-3.0-or-later; see NOTICE.md. Not affiliated with Amazon.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account. Playback uses this add-on's existing player path and Kodi inputstream. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.19[CR]- Rename Home to In Progress.[CR]- Show: Your in-progress movies or TV shows will display here.[CR]- Fit the longer selector label without overlapping Movies.</news>
+    <news>0.2.20[CR]- Remove the retained login.py and users.py implementations and all their imports/call sites.[CR]- Use independent native account runtime, repository, region discovery, credential selection and token renewal.[CR]- Handle existing-session verification with the native sign-in engine; remove MechanicalSoup/MFA/CAPTCHA fallback UI.[CR]- Read website credentials only from the scoped canonical session; background traffic never starts a password login.[CR]- Guard account/token writes against sign-out, serialize authorization, and record structured real-request diagnostics.[CR]- Remove raw authentication-page HTTP dumps and obsolete packaged validation reports.[CR]- Preserve In Progress, Prime sections, title/episode navigation, stock Kodi playback controls and card return.[CR]- Other catalog/network/playback compatibility code still awaits independent replacement.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

@@ -175,6 +175,9 @@ def _artwork_urls(value):
 
 
 def clear_runtime(g):
+    repository = sys.modules.get(__package__ + '.accounts')
+    if repository is not None:
+        repository.reset_runtime(g.DATA_PATH)
     sessions = sys.modules.get(__package__ + '.session_store')
     if sessions is not None:
         sessions.clear_all_pending()
@@ -197,7 +200,10 @@ def clear_runtime(g):
     configs = sys.modules.get(__package__ + '.configs')
     if configs is not None:
         configs._prime_scene_epoch = None
-    values = getattr(g, '_globals', {})
+    values = getattr(g, '_globals', None)
+    if values is None:
+        backend = sys.modules.get(__package__ + '.common')
+        values = getattr(getattr(backend, 'Globals', None), '_globals', {})
     provider = values.get('pv')
     if provider is not None:
         for key, empty in (('_catalog', {}), ('_videodata', {'urn2gti': {}}), ('_prime_scene_details', {})):
@@ -369,5 +375,5 @@ def sign_out(g, artwork=(), before_cleanup=None):
 
 
 def remLoginData(info=True):
-    from .common import Globals
-    sign_out(Globals())
+    from .account_runtime import AccountRuntime
+    sign_out(AccountRuntime())

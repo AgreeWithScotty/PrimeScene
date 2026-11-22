@@ -11,7 +11,7 @@ def main(launch_diagnostics=None):
     # Provide the original backend with our native plugin URI for playback links.
     sys.argv[:] = ['plugin://' + ID + '/', '-1', '']
     from resources.lib.common import Globals, Settings
-    from resources.lib.users import loadUser, loadUsers
+    from resources.lib.accounts import loadUser, loadUsers
     from resources.lib.aurora import failure_detail, open_interface
     from resources.lib.interface_diagnostics import record
     g, settings = Globals(), Settings()

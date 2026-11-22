@@ -8,7 +8,7 @@ import requests
 import xbmc
 import xbmcgui
 
-from .common import Globals, Settings
+from .account_runtime import AccountRuntime
 from .prime_device import DeviceAuthorization
 from .prime_signin import HEADERS, SignInError, authenticate
 from .prime_diagnostics import DiagnosticLog, exception_details
@@ -41,16 +41,23 @@ def show_security_image(content, extension, profile):
 
 
 def LogIn(retToken=False):
-    from .configs import getConfig
-    from .login import getTerritory
-    from .users import loadUser
+    from .account_region import discover_account
 
-    g, settings = Globals(), Settings()
+    g = settings = AccountRuntime()
     profile = Path(g.DATA_PATH)
     profile.mkdir(parents=True, exist_ok=True)
     if needs_cleanup(profile):
         g.dialog.ok(TITLE, 'Finish signing out before starting another sign-in. Use the account button to retry cleanup.')
         return False
+    if not is_signed_out(profile) and (profile/'config/accounts.lst').exists():
+        # Direct settings/plugin sign-in commands must obey the same account
+        # boundary as the sidebar, before accepting any other credentials.
+        from .account_state import sign_out
+        try:
+            sign_out(g)
+        except Exception:
+            g.dialog.ok(TITLE, 'The previous account could not be completely cleared. Use Finish sign out before signing in.')
+            return False
     signed_out_at_start = is_signed_out(profile)
     generation = account_epoch(profile)
     observe = DiagnosticLog(profile, g.addon.getAddonInfo('version'),
@@ -87,20 +94,19 @@ def LogIn(retToken=False):
             headers = dict(g.headers_android)
         else:
             headers = dict(HEADERS)
-            headers['User-Agent'] = getConfig('UserAgent') or HEADERS['User-Agent']
+            headers['User-Agent'] = g.configured_user_agent() or HEADERS['User-Agent']
         signin_state['_prime_scene_headers'] = headers
         for cookie in cookies:
             observe.secret(cookie.value)
         observe({'event': 'signin_started', 'python': sys.version.split()[0], 'platform': sys.platform,
+                 'authentication_engine': 'prime_signin', 'legacy_fallback_enabled': False,
+                 'credential_storage': 'canonical_scoped_cookiejar',
                  'kodi': xbmc.getInfoLabel('System.BuildVersion'), 'token_requested': bool(retToken),
                  'authorization_mode': mode, 'challenge_resumed': resumed,
                  'signed_out_at_start': signed_out_at_start, 'fresh_cookie_jar': not bool(len(cookies)),
                  'user_agent': headers.get('User-Agent'), 'initial_cookie_count': len(cookies)})
         observe({'event': 'territory_lookup_started'})
-        account, valid = getTerritory(dict(loadUser(empty=True)))
-        if not valid:
-            observe({'event': 'territory_lookup_failed'})
-            raise SignInError('Amazon could not determine the account region. Please retry.')
+        account = discover_account(settings.region, observer=observe, user_agent=headers.get('User-Agent'))
         observe({'event': 'territory_lookup_complete', 'domain': account.get('sidomain'),
                  'language': account.get('lang'), 'locale': account.get('locale'), 'primevideo_site': account.get('pv')})
         authorization = None
@@ -165,6 +171,7 @@ def LogIn(retToken=False):
             # website credentials are stored only in the full canonical jar.
             account.update(name=identity.get('name') or 'Prime Video', cookie={}, token='',
                            baseurl=ORIGIN, pv=True)
+        account['cookie'] = {}
         if settings.multiuser:
             name = g.dialog.input('Name this Smooth Prime account', account['name'])
             if not name:
@@ -221,5 +228,78 @@ def LogIn(retToken=False):
             if cookies is not None:
                 cookies.clear()
             signin_state.clear()
+        if lock is not None:
+            lock.close()
+
+
+def finish_security_challenge(address, html, request_epoch):
+    """Continue a real existing-session challenge using the native form engine.
+
+    This cannot silently sign another user into the current account: a request
+    for email/password requires the explicit Sign in again action and purge.
+    """
+    import sqlite3
+    from .prime_signin import SignInDocument
+    from .session_store import load_session, persist_session, session_headers
+    g = AccountRuntime()
+    observe = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'), operation='signin',
+        active=lambda: current_account(g.DATA_PATH, request_epoch))
+    if not current_account(g.DATA_PATH, request_epoch):
+        return False
+    jar = None
+    lock = None
+    try:
+        lock = sqlite3.connect(str(Path(g.DATA_PATH)/'signin-lock.db'), timeout=0)
+        try:
+            lock.execute('BEGIN EXCLUSIVE')
+        except sqlite3.OperationalError:
+            observe({'event': 'session_challenge_blocked', 'stage': 'challenge_lock', 'result': 'cancelled'})
+            return False
+        jar = load_session(g.DATA_PATH)
+        for cookie in jar:
+            observe.secret(cookie.value)
+        document = SignInDocument(html)
+        observe({'event': 'session_challenge_started', 'stage': 'challenge_parse',
+            'markers': sorted(document.markers), 'forms': len(document.forms),
+            'code_fields': sum(label == 'Amazon verification code' for form in document.forms for _,label,_ in form.prompts),
+            'security_image_required': document.captcha_required})
+        def prompt(label, masked):
+            if not current_account(g.DATA_PATH, request_epoch):
+                return None
+            if label != 'Amazon verification code':
+                raise SignInError('The website session expired. Choose Sign in again using the account button.')
+            return ask(label, masked)
+        def choose(message, choices):
+            return g.dialog.select(message, choices) if current_account(g.DATA_PATH, request_epoch) else -1
+        def approve(message):
+            return current_account(g.DATA_PATH, request_epoch) and g.dialog.yesno(TITLE, message)
+        def captcha(content, extension):
+            return show_security_image(content, extension, g.DATA_PATH) if current_account(g.DATA_PATH, request_epoch) else None
+        verified = []
+        def success(url, page, cookies):
+            verified.append(True)
+            if page.profile_name:
+                observe.secret(page.profile_name)
+        ok = authenticate(jar, prompt, observer=observe, approve=approve, choose=choose, captcha=captcha,
+            headers=session_headers(g.DATA_PATH), state={'response': (address, document)}, success=success)
+        if not ok:
+            observe({'event': 'session_challenge_cancelled', 'stage': 'native_challenge', 'result': 'cancelled'})
+            return False
+        if not verified:
+            raise SignInError('Amazon did not verify the existing website session.')
+        stored = persist_session(g.DATA_PATH, request_epoch, jar)
+        observe({'event': 'session_challenge_complete', 'stage': 'session_persist',
+            'server_verification_confirmed': True, 'result': 'success' if stored else 'cancelled'})
+        return stored
+    except Exception as error:
+        observe({'event': 'session_challenge_failed', 'stage': 'native_challenge',
+            'exception': exception_details(error), 'result': 'failure'})
+        if current_account(g.DATA_PATH, request_epoch):
+            g.dialog.ok(TITLE, str(error) if isinstance(error, SignInError)
+                        else 'Amazon verification could not finish. Use Sign in again; Diagnostics contains the failure.')
+        return False
+    finally:
+        if jar is not None:
+            jar.clear()
         if lock is not None:
             lock.close()
