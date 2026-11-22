@@ -25,6 +25,7 @@ class ImageCache:
         self.folder = Path(g.DATA_PATH) / 'artwork-ahead'
         self.stop, self.lock = Event(), Lock()
         self.pending, self.failed = set(), set()
+        self.futures={};self.priority_signature=None
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimeArtwork')
         self.report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'),
                                     active=lambda: not self.stop.is_set() and current_account(g.DATA_PATH, epoch),
@@ -42,7 +43,18 @@ class ImageCache:
         path = self.path(url)
         return str(path) if path is not None and path.is_file() else url
 
-    def warm(self, urls):
+    def warm(self, urls,priority=False):
+        urls=list(dict.fromkeys(urls))
+        signature=tuple(urls)
+        if priority and signature!=self.priority_signature:
+            cancelled=0
+            with self.lock:
+                self.priority_signature=signature
+                for address,future in list(self.futures.items()):
+                    if future.cancel():
+                        self.pending.discard(address);self.futures.pop(address,None);cancelled+=1
+            self.report({'event':'visible_artwork_prioritized','stage':'artwork_queue',
+                'visible_requests':len(urls),'obsolete_queued_requests_cancelled':cancelled,'result':'success'})
         for url in urls:
             path = self.path(url)
             if path is None or path.exists():
@@ -52,7 +64,7 @@ class ImageCache:
                         or len(self.pending) >= 18):
                     continue
                 self.pending.add(url)
-                self.pool.submit(self._download, url, path)
+                self.futures[url]=self.pool.submit(self._download, url, path)
 
     def _download(self, url, path):
         started, status = monotonic(), None
@@ -92,10 +104,14 @@ class ImageCache:
         finally:
             with self.lock:
                 self.pending.discard(url)
+                self.futures.pop(url,None)
 
     def close(self):
         self.stop.set()
+        with self.lock:
+            for future in self.futures.values():future.cancel()
         self.pool.shutdown(wait=True)
         with self.lock:
             self.pending.clear()
             self.failed.clear()
+            self.futures.clear();self.priority_signature=None

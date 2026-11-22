@@ -103,13 +103,14 @@ def list_item(name,proxy,report,resume,preferences):
     return item
 
 
-def play(identifier,name,material='Feature',handle=-1):
+def play(identifier,name,material='Feature',handle=-1,resume_mode='ask'):
     g=AppRuntime();preferences=Preferences(g.addon)
     from .aurora import _read_note,_request_playback_return
     note=_read_note(g.DATA_PATH) or {};report=PlaybackLog(g,note.get('request_id'))
     report.secret(identifier);report.secret(name)
     started=monotonic();api=proxy=prompt=None;terminal='error';position=duration=0;player=None
     report({'event':'playback_started','stage':'prepare','material':material,'resolver_handle':handle,
+        'resume_mode':resume_mode,
         'kodi':xbmc.getInfoLabel('System.BuildVersion'),'result':'started'})
     try:
         from inputstreamhelper import Helper
@@ -121,7 +122,8 @@ def play(identifier,name,material='Feature',handle=-1):
         points=ResumePoints(g.DATA_PATH,api.epoch,report)
         previous=points.read(identifier) if material=='Feature' else None
         resume=0
-        if previous and previous['position']>30:
+        if resume_mode not in ('ask','start'):raise ValueError('Unsupported resume mode')
+        if resume_mode=='ask' and previous and previous['position']>30:
             selected=g.dialog.contextmenu(['Resume from %d:%02d'%(previous['position']//60,previous['position']%60),'Play from beginning'])
             if selected<0:terminal='cancelled';return False
             if selected==0:resume=previous['position']

@@ -16,7 +16,9 @@ def dispatch(argv):
             from .playback_engine import play
             material={'0':'Feature','1':'Trailer','2':'LiveStreaming','3':'LiveStreaming'}.get(value('trailer','0'))
             if material is None:raise ValueError('Unsupported playback material')
-            result=play(value('asin'),value('name','Smooth Prime'),material,int(argv[1]))
+            resume=value('resume','ask')
+            if resume not in ('ask','start'):raise ValueError('Unsupported resume mode')
+            result=play(value('asin'),value('name','Smooth Prime'),material,int(argv[1]),resume_mode=resume)
         elif mode=='LogIn':
             from .prime_login import LogIn
             result=LogIn() is not False

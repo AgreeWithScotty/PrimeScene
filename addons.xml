@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.30" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.31" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.30[CR]- Restore background preloading of Movies and TV while the genre grid is visible.[CR]- Prepare the highlighted genre before selection and share its exact in-flight request.[CR]- Reserve foreground request workers; a clicked category bypasses queued background work.[CR]- Restore saved first-page genre caches with account-generation validation and full sign-out purge.[CR]- Bind prepared cards immediately and preload their artwork, listing descriptions and leading title plate.[CR]- Retain first-two-page loading, early lookahead, selected-card position and fresh In Progress.[CR]- Record queue delay, reader delay, request attempt links, cache source and time to first cards.</news>
+    <news>0.2.31[CR]- Use a compact cinematic preview and a five-column, two-row content grid with matching black backgrounds.[CR]- Bundle 26 Movies/TV genre choices using real public title-art pairs; no runtime requests for genre artwork.[CR]- Prioritize visible artwork over queued speculative image downloads.[CR]- Preload missing leading descriptions while choosing a genre and merge prepared metadata before binding cards.[CR]- Display remaining time and episode identifiers; update native progress indicators during fresh In Progress reconciliation.[CR]- Keep the confirmed native list binding after playback; place frozen refresh artwork above the opaque background.[CR]- Add native title context actions and full descriptions, with an explicit Play from beginning option.[CR]- Back from a genre catalog returns to its genre picker; TV season/episode hierarchy and early paging remain.[CR]- Use strong white focus outlines and a contrasting focused season selector while preserving top-menu glow artwork.[CR]- Record presentation configuration, image-priority cancellations, native binding retention and title actions in diagnostics.[CR]- Remove 20 unreferenced legacy category illustrations from the install package.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

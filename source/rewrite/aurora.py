@@ -27,12 +27,13 @@ from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
 from .description_cache import DescriptionCache
+from .card_presentation import viewing_label, duration_seconds
 from .prime_diagnostics import DiagnosticLog, exception_details, route
 
 _BACK = (9, 10, 92)
 # The visible scrim stays on one matte tone. It does not cycle, and it never
 # stands in for missing artwork. PrimeSceneHome.xml paints this on control 101.
-_SCRIM = '99141A20'
+_SCRIM = '99000000'
 _NOTE = 'aurora-playback.json'
 _NOTE_WINDOW = 120
 _HOME_REGISTRY = 'smoothprime.interface'
@@ -393,6 +394,14 @@ def _item(row, title_art='', image_cache=None):
     plot = _plain(info.get('plot') or '')
     item.setProperty('Meta', meta)
     item.setProperty('Watched', '%s%% WATCHED' % _progress(info) if _progress(info) else meta)
+    item.setProperty('ViewingLabel',viewing_label(info))
+    card_bits=[]
+    if _kind(info)=='episode':card_bits.append('S%sE%s'%(str(info.get('season') or 0).zfill(2),str(info.get('episode') or 0).zfill(2)))
+    elif _kind(info)=='season':card_bits.append('Season '+str(info.get('season') or ''))
+    elif _year_label(info):card_bits.append(_year_label(info))
+    secondary=viewing_label(info) or _runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
+    if secondary:card_bits.append(secondary)
+    item.setProperty('CardMeta',clean('  ·  '.join(card_bits)))
     item.setProperty('Plot', plot)
     item.setProperty('Year', _year_label(info))
     item.setProperty('Runtime', _runtime_label(info.get('duration') if info.get('duration') not in (None, '') else info.get('runtime')))
@@ -406,8 +415,9 @@ def _item(row, title_art='', image_cache=None):
     try:
         tag = item.getVideoInfoTag()
         progress = _progress(info)
-        if progress and hasattr(tag, 'setResumePoint'):
-            tag.setResumePoint(progress, 100)
+        if hasattr(tag, 'setResumePoint'):
+            total=duration_seconds(info) or 100
+            tag.setResumePoint(total*progress/100,total)
         if title and hasattr(tag, 'setTitle'):
             tag.setTitle(title)
         if plot and hasattr(tag, 'setPlot'):
@@ -688,11 +698,15 @@ class AuroraHome(xbmcgui.WindowXML):
             if len(self.items) != len(self.rows):
                 self.items = [_item(row, self.title_cache.get((row.get('title') or '').upper(), ''),
                                     self.image_cache) for row in self.rows]
-            # Rebind even when native m_vecItems survived: the view control
-            # itself may have been recreated with no item binding.
-            self.clearList()
+            # The native control count establishes its binding separately from
+            # WindowXML's Python-side list. Rebind only when that binding is lost.
+            native_label=xbmc.getInfoLabel('Container(200).NumItems')
+            try:native_bound=int(native_label)==len(self.items) and before_size==len(self.items) and before_view==200
+            except (TypeError,ValueError):native_bound=False
+            if not native_bound:
+                self.clearList()
+                if self.items:self.addItems(self.items)
             if self.items:
-                self.addItems(self.items)
                 self.setCurrentListPosition(selected)
                 self.setProperty('ShowSplash', '')
             self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
@@ -710,6 +724,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.performance({'event': 'window_controls_restored', 'stage': stage,
             'request_id': (origin or {}).get('request_id'),
             'previous_view_id': before_view, 'previous_native_cards': before_size,
+            'native_binding_retained':native_bound,'clear_list_called':not native_bound,
             'view_id': view, 'native_cards': native_count, 'logical_cards': len(self.rows),
             'focused_control': focus, 'expected_index': selected, 'actual_index': position,
             'container_cards_label': xbmc.getInfoLabel('Container(200).NumItems'),
@@ -765,6 +780,10 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setFocusId(301)
         self.performance({'event':'startup_focus','control_id':301,'actual_control':self.getFocusId(),
             'initial_view':'movie_genres','catalog_pages_requested':0,'result':'success' if self.getFocusId()==301 else 'failure'})
+        self.performance({'event':'interface_configuration','stage':'presentation',
+            'content_columns':5,'content_rows':2,'content_card_ratio':'16:9','base_background':'000000',
+            'genre_artwork':'bundled_public_title_pairs','genre_artwork_network_requests':0,
+            'native_binding_retained_when_confirmed':True,'result':'success'})
         self.worker.start()
         self.detail_worker.start()
         self.visual_worker.start()
@@ -999,9 +1018,13 @@ class AuroraHome(xbmcgui.WindowXML):
                     'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at,
                     'selected': selected, 'series': deepcopy(self.series_context)}}
 
-    def _start_playback(self, row, origin=None):
+    def _start_playback(self, row, origin=None,resume_mode='ask'):
         """Keep the launching card and original browse context until return."""
         origin = origin or self._capture_playback_origin()
+        if resume_mode=='start':
+            from urllib.parse import urlsplit,urlunsplit,parse_qsl,urlencode
+            parts=urlsplit(row['url']);query=dict(parse_qsl(parts.query));query['resume']='start'
+            row=dict(row,url=urlunsplit((parts.scheme,parts.netloc,parts.path,urlencode(query),parts.fragment)))
         self.playback_origin = origin
         play_row(row, self.g.DATA_PATH)
         note = _read_note(self.g.DATA_PATH) or {}
@@ -1202,6 +1225,9 @@ class AuroraHome(xbmcgui.WindowXML):
                     continue
                 seen.add(key)
                 info = dict(row.get('info') or {})
+                saved=self.detail_cache.get(_detail_path(self.g.pluginid,row)) or {}
+                for field in _DETAIL_KEYS:
+                    if not info.get(field) and (saved.get('info') or {}).get(field):info[field]=saved['info'][field]
                 staged.append(dict(row, info=info))
         # Publish cheap card objects immediately. The visual worker renders only
         # the focused/nearby title plates after these cards are already usable.
@@ -1210,8 +1236,11 @@ class AuroraHome(xbmcgui.WindowXML):
             fresh_artwork.update(self._note_artwork(row['info']))
         if fresh_artwork:
             try:
-                with (Path(self.g.DATA_PATH) / 'account-artwork.jsonl').open('a', encoding='utf-8') as output:
-                    output.write(''.join(dumps(value) + '\n' for value in fresh_artwork))
+                from .account_state import persist_if_current
+                def track():
+                    with (Path(self.g.DATA_PATH) / 'account-artwork.jsonl').open('a', encoding='utf-8') as output:
+                        output.write(''.join(dumps(value) + '\n' for value in fresh_artwork))
+                persist_if_current(self.g.DATA_PATH,self.account_generation,track)
             except OSError as error:
                 self.performance({'event': 'artwork_tracking_failed', 'exception': exception_details(error), 'result': 'failure'})
         additions = [_item(row, self.title_cache.get((row.get('title') or '').upper(), ''),
@@ -1278,8 +1307,12 @@ class AuroraHome(xbmcgui.WindowXML):
                 if key in keys:
                     old=keys.index(key);existing=items[old]
                     existing.setLabel(item.getLabel())
-                    for prop in ('Meta','Watched','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
+                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
                         existing.setProperty(prop,item.getProperty(prop))
+                    values=row.get('info') or {};total=duration_seconds(values) or 100
+                    try:existing.getVideoInfoTag().setResumePoint(total*_progress(values)/100,total)
+                    except Exception as error:self.performance({'event':'progress_indicator_update_failed','stage':'in_place_refresh',
+                        'exception':exception_details(error),'result':'failure'})
                     existing.setArt({name:item.getArt(name) for name in ('thumb','landscape','poster','icon','fanart') if item.getArt(name)})
                     if old!=index:
                         self.removeItem(old);self.addItem(existing,index)
@@ -1658,7 +1691,7 @@ class AuroraHome(xbmcgui.WindowXML):
                     if offset < 3:
                         urls.append(_fit_art(info.get('fanart'), _HERO_ART))
                 if self.image_cache is not None:
-                    self.image_cache.warm([url for url in urls if url])
+                    self.image_cache.warm([url for url in urls if url],priority=True)
                 for offset, (position, row, item) in enumerate(nearby):
                     if self.stop.is_set() or token != self.generation:
                         break
@@ -1719,7 +1752,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 with (Path(self.g.DATA_PATH)/'account-artwork.jsonl').open('a',encoding='utf-8') as output:
                     output.write(''.join(dumps(value)+'\n' for value in fresh))
             persist_if_current(self.g.DATA_PATH,self.account_generation,track)
-        if self.image_cache is not None:self.image_cache.warm([url for url in urls if url])
+        if self.image_cache is not None:self.image_cache.warm([url for url in urls if url],priority=path==self.loader.focus_path)
         # Listing descriptions are already in the exact cached packet. Prepare
         # its leading title plate while the genre selector is still visible.
         if rows and self.genre_owner is not None:
@@ -1759,7 +1792,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 if job[2] == self.generation and _detail_path(self.g.pluginid, self._selected_row()) == job[1]:
                     self._enrich(job[1])
             elif kind == 'play':
-                self._play_resolved(job[1], job[2], job[3], job[4], job[5])
+                self._play_resolved(*job[1:])
 
     def _queue_enrich(self):
         """Read the focused title and next ten descriptions before selection."""
@@ -1771,6 +1804,15 @@ class AuroraHome(xbmcgui.WindowXML):
             order = (list(range(selected, min(selected + _DESCRIPTION_AHEAD + 1, len(self.rows))))
                      + list(range(max(0, selected - _DESCRIPTION_BEHIND), selected)))
             candidates = [(index, dict(self.rows[index])) for index in order]
+            if self.genre_owner in (301,302) and self.loader is not None:
+                section='movies' if self.genre_owner==301 else 'tv'
+                focused=self.loader.focus_path or ''
+                preload=focused if focused.startswith('__genre__/'+section+'/') else '__prime_'+section+'__'
+                packet=self.loader.peek(preload) or {}
+                candidates=list(enumerate((packet.get('rows') or [])[:3]))
+                for _,row in candidates:
+                    if row.get('identity') and row.get('detail_url'):
+                        self.known_details[row['identity']]={'title':row.get('title'),'lazyLoadURL':row['detail_url']}
         window = (generation, selected, len(candidates))
         if window != self._description_window:
             self._description_window = window
@@ -1959,6 +2001,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 else:
                     continue
             painted = {'title': row.get('title'), 'info': current}
+            refreshed=_item(painted,image_cache=self.image_cache)
+            item.setProperty('CardMeta',refreshed.getProperty('CardMeta'))
+            item.setProperty('ViewingLabel',refreshed.getProperty('ViewingLabel'))
             item.setProperty('Meta', _meta(painted))
             item.setProperty('Plot', _plain(current.get('plot') or ''))
             item.setProperty('Year', _year_label(current))
@@ -1977,7 +2022,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if art and hasattr(item, 'setArt'):
                 item.setArt(art)
 
-    def _play_resolved(self, token, generation, path, title, origin=None):
+    def _play_resolved(self, token, generation, path, title, origin=None,resume_mode='ask'):
         try:
             cached = self.detail_cache.get(path)
             if cached is None or cached.get('how') in ('error', 'wait', 'metadata'):
@@ -2003,7 +2048,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
             if playable is not None:
                 xbmc.log('[Prime Scene] Playing %s (%s) without a detail page' % (path, how), xbmc.LOGINFO)
-                self._start_playback(playable, origin)
+                self._start_playback(playable, origin,resume_mode=resume_mode)
                 return
             if how == 'picker':
                 self.navigate(path, heading=title or 'Smooth Prime')
@@ -2095,6 +2140,8 @@ class AuroraHome(xbmcgui.WindowXML):
                     fitted=_fit_art(artwork,_CARD_ART)
                     item.setArt({'thumb':self.image_cache.local(fitted) if self.image_cache else fitted})
                 item.setProperty('GridLabel',clean(row.get('grid_label') or (row['title'] if not artwork else '')))
+                collage=row.get('collage') or []
+                for index in (0,1):item.setProperty('GenreImage'+str(index+1),collage[min(index,len(collage)-1)] if collage else '')
                 item.setProperty('Caption',clean(row['caption']));items.append(item)
                 self._tile_items[row['path']]=item
             listing.reset();listing.addItems(items);listing.selectItem(selected)
@@ -2168,6 +2215,7 @@ class AuroraHome(xbmcgui.WindowXML):
         for row in list(self._genre_rows):
             if owner!=self.genre_owner or self.stop.is_set():return
             path=row['path'];item=self._tile_items.get(path);artwork=row.get('artwork')
+            if row.get('collage'):continue
             if item is None or not artwork:continue
             if self._tile_art.get(path)!=artwork:
                 self._tile_art[path]=artwork;self._track_tile_art(artwork)
@@ -2283,6 +2331,9 @@ class AuroraHome(xbmcgui.WindowXML):
         # so updating it from here only delays the move.
         action_id = action.getId()
         focus=self.getFocusId()
+        if focus==200 and action_id in (11,117):
+            self._card_actions(info_only=action_id==11)
+            return
         if action_id==4 and focus in (301,302,303):
             self._show_genres(focus)
             return
@@ -2296,11 +2347,43 @@ class AuroraHome(xbmcgui.WindowXML):
             path, query, heading, nav, selected, series = self.history.pop()
             self.nav = nav
             self.navigate(path, remember=False, query=query, heading=heading, selection=selected, series=series)
+        elif self.genre_owner is None and (self.path in ('__prime_movies__','__prime_tv__') or self.path.startswith('__genre__/')):
+            self._show_genres(301 if self.nav=='movies' else 302,focus_grid=True)
+            self.performance({'event':'back_to_genre_grid','stage':'back_navigation','section':self.nav,'result':'success'})
         else:
             self.stop.set()
             self._unregister_return()
             record(self.g, 'window_exit_to_kodi_home')
             self.close()
+
+    def _card_actions(self,info_only=False):
+        row=self._selected_row()
+        if not row:return
+        title=clean(row.get('title') or 'Title information');series=_tv_container(row)
+        selected=2 if info_only else self.g.dialog.contextmenu(
+            ['Browse seasons','More information'] if series else ['Play / resume','Play from beginning','More information'])
+        if selected<0:
+            self.performance({'event':'card_action','stage':'context_menu','result':'cancelled'});return
+        if info_only or selected==(1 if series else 2):
+            info=dict(row.get('info') or {});saved=self.detail_cache.get(_detail_path(self.g.pluginid,row)) or {}
+            info.update(saved.get('info') or {})
+            self.g.dialog.textviewer(title,_meta(dict(row,info=info))+'\n\n'+_plain(info.get('plot') or 'No description is available for this title.'))
+            action='information'
+        elif series:self._open_series(row);action='seasons'
+        elif selected==0:self.onClick(200);action='play'
+        else:
+            target=playback_row(row)
+            saved=self.detail_cache.get(_detail_path(self.g.pluginid,row)) or {}
+            target=target or saved.get('playable')
+            if target is None:
+                path=_detail_path(self.g.pluginid,row)
+                if not path:
+                    self.performance({'event':'card_action_failed','stage':'context_menu','reason':'missing_selected_title_route','result':'failure'});return
+                self._play_token+=1
+                self.detail_jobs.put(('play',self._play_token,self.generation,path,title,self._capture_playback_origin(),'start'))
+            else:self._start_playback(target,resume_mode='start')
+            action='start_over'
+        self.performance({'event':'card_action','stage':'context_menu','action':action,'media_kind':_kind(row.get('info')),'result':'success'})
 
 
 def _playing(player):
