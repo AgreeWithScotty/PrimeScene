@@ -1,0 +1,162 @@
+{
+  "version": "0.2.25",
+  "sha256": "5c09d8e64ee253ca90021f452a96f759d32a6a3be5b9b52169008b2b7cd3a97a",
+  "bytes": 32157305,
+  "files": 105,
+  "source_checks": {
+    "python_files_parsed": 46,
+    "xml_files_parsed": 4,
+    "import_export_edges_checked": 159,
+    "preserved_media_authentication_modules": [
+      "media_resources",
+      "media_proxy",
+      "playback_engine",
+      "playback_progress",
+      "http_transport",
+      "prime_login",
+      "prime_signin",
+      "account_auth",
+      "accounts",
+      "account_state",
+      "session_store",
+      "prime_device",
+      "account_region"
+    ],
+    "original_glow_texture_reference_restored": true,
+    "horizontal_card_edges_noop": true,
+    "progress_refresh_uses_incremental_add_remove_without_clear": true,
+    "native_api_reference": "https://github.com/xbmc/xbmc/blob/master/xbmc/interfaces/legacy/WindowXML.h",
+    "navigation_reference": "https://github.com/xbmc/xbmc/blob/master/xbmc/guilib/GUIBaseContainer.cpp",
+    "mocked_provider_or_device_tests": false,
+    "kodi_outcome_observed": false
+  },
+  "actual_output_checks": {
+    "actual_page_samples": [
+      {
+        "sample": "anonymous-prime.html",
+        "cards": 117,
+        "actual_next_link_detected": true,
+        "genre_top_sports_misclassified": false
+      },
+      {
+        "sample": "anonymous-tv.html",
+        "cards": 129,
+        "actual_next_link_detected": true,
+        "genre_top_sports_misclassified": false
+      },
+      {
+        "sample": "anonymous-movies.html",
+        "cards": 121,
+        "actual_next_link_detected": true,
+        "genre_top_sports_misclassified": false
+      }
+    ],
+    "title_boxes": [
+      {
+        "scale": 1.0,
+        "top": 0,
+        "height": 140
+      },
+      {
+        "scale": 0.5,
+        "top": 154,
+        "height": 70
+      }
+    ],
+    "title_alpha_bands": [
+      [
+        0,
+        140
+      ],
+      [
+        154,
+        223
+      ]
+    ],
+    "provider_katakana_separator_replaced": true,
+    "genres_published": 12,
+    "mocked_provider_or_device_tests": false,
+    "kodi_ui_outcome_observed": false
+  },
+  "actual_saved_response_observations": [
+    {
+      "file": "anonymous-prime.html",
+      "nested_next_links": 0,
+      "pagination_fields": {
+        "pagination": 1,
+        "HorizontalPagination": 1,
+        "DV_WEB_ARIA_NEXT_N_TITLES": 1,
+        "DV_WEB_ARIA_NEXT_TITLE": 1,
+        "DV_WEB_ARIA_NEXT_TITLE_INDEX": 1,
+        "isPaginationLimitedOnMShop": 1,
+        "paginationServiceToken": 7,
+        "paginationStartIndex": 7,
+        "paginationTargetId": 7
+      },
+      "plot_codepoints": {
+        "U+30FB KATAKANA MIDDLE DOT": 81,
+        "U+2019 RIGHT SINGLE QUOTATION MARK": 3,
+        "U+00EF LATIN SMALL LETTER I WITH DIAERESIS": 1,
+        "U+00AE REGISTERED SIGN": 1,
+        "U+2013 EN DASH": 2,
+        "U+00F1 LATIN SMALL LETTER N WITH TILDE": 1,
+        "U+00F3 LATIN SMALL LETTER O WITH ACUTE": 1
+      }
+    },
+    {
+      "file": "anonymous-tv.html",
+      "nested_next_links": 0,
+      "pagination_fields": {
+        "pagination": 1,
+        "HorizontalPagination": 1,
+        "DV_WEB_ARIA_NEXT_N_TITLES": 1,
+        "DV_WEB_ARIA_NEXT_TITLE": 1,
+        "DV_WEB_ARIA_NEXT_TITLE_INDEX": 1,
+        "isPaginationLimitedOnMShop": 1,
+        "paginationServiceToken": 6,
+        "paginationStartIndex": 6,
+        "paginationTargetId": 6
+      },
+      "plot_codepoints": {
+        "U+30FB KATAKANA MIDDLE DOT": 138,
+        "U+00F1 LATIN SMALL LETTER N WITH TILDE": 1,
+        "U+00F3 LATIN SMALL LETTER O WITH ACUTE": 1,
+        "U+00EF LATIN SMALL LETTER I WITH DIAERESIS": 2,
+        "U+00AE REGISTERED SIGN": 2,
+        "U+00A0 NO-BREAK SPACE": 2
+      }
+    },
+    {
+      "file": "anonymous-movies.html",
+      "nested_next_links": 0,
+      "pagination_fields": {
+        "pagination": 1,
+        "HorizontalPagination": 1,
+        "DV_WEB_ARIA_NEXT_N_TITLES": 1,
+        "DV_WEB_ARIA_NEXT_TITLE": 1,
+        "DV_WEB_ARIA_NEXT_TITLE_INDEX": 1,
+        "isPaginationLimitedOnMShop": 1,
+        "paginationServiceToken": 6,
+        "paginationStartIndex": 6,
+        "paginationTargetId": 6
+      },
+      "plot_codepoints": {
+        "U+00ED LATIN SMALL LETTER I WITH ACUTE": 1
+      }
+    }
+  ],
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/display_text.py",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/title_art.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "device_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false
+}

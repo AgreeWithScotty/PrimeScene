@@ -1,0 +1,10 @@
+0.2.25
+- Restore the original blue texture glow; extend its width without changing its rendering style.
+- Keep verified genres during live navigation refresh; never replace genres with the Sports top-level link.
+- Keep horizontal focus at the first/last content card. Only Up returns to the current top selector.
+- Recognize Amazon's actual page-pagination-button links inside container markup instead of discarding them.
+- Invalidate truncated saved pages and request later pages twelve cards before their boundary.
+- Replace Amazon's U+30FB synopsis separator with the supported middle dot.
+- Reconcile fresh In Progress cards in place; retain the current frame during network refresh instead of blanking the rail.
+- Keep the large first title word, with smaller words underneath and a positive line gap.
+- Preserve all authentication, media and playback implementations byte-for-byte.

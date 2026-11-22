@@ -77,7 +77,7 @@ def navigation(data,content_type,address,observer):
     rows=[];seen=set()
     for link,label in candidates:
         target=safe_url(link,STOREFRONT_HOSTS,address);name=genre_name(label)
-        if not target or not name or any(p in urlsplit(target).path for p in ('/detail/','/dp/')):continue
+        if not target or not name or not any(p in urlsplit(target).path for p in ('/genre/','/kids')):continue
         if (name,target) in seen:continue
         seen.add((name,target));rows.append({'title':name,'address':target})
     observer({'event':'genre_navigation_parsed','stage':'genre_discovery','documents':len(docs),
@@ -89,7 +89,7 @@ def discover(client,section,observer):
     from .public_catalog import PAGES
     response=client.request(ORIGIN+PAGES[section],stage='genre_navigation_fetch')
     rows,links=navigation(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address,observer)
-    if not rows:
+    if links:
         for address in links[:2]:
             response=client.request(address,stage='genre_categories_fetch')
             found,_=navigation(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address,observer)

@@ -1,24 +1,29 @@
-# Smooth Prime 0.2.24 browse corrections
+# Smooth Prime 0.2.25: observed browse corrections
 
-Show clicks display actual linked seasons before episodes. The series view mode
-is part of navigation/history decisions, including the same provider URL being
-used for a show and its first season. Movies remain direct playback leaves.
+The original 0.2.22 blue glow textures and animation style are restored, with
+18% more horizontal extent. No replacement text-layer glow or bitmap edit.
+Genre discovery accepts actual genre/kids links, excludes top-level Sports,
+always follows the Categories navigation and merges refreshes without discarding
+the verified genre list. Unchanged drawer labels are not reset while scrolling.
 
-Content tabs load on focus; Enter focuses cards. Down on Movies/TV opens a native
-genre drawer. Twelve exact links published on Amazon's Categories page are bundled
-for immediate navigation, refreshed through the signed-in session. Genre content
-is read from Amazon, with typed Prime-only filtering and normal two-page warming.
-No invented genre endpoint or filtering of only the currently displayed cards.
+Card-edge Left/Right actions are noop. Kodi's native container code confirms that
+explicit noop prevents both edge focus transfer and wraparound; Up retains the
+current content-tab target. The real page-pagination-button rel=next was wrongly
+classified as a nested carousel link. It is now retained. Saved truncated pages
+invalidate with schema 5, the first two pages still preload, and subsequent pages
+request twelve cards before their start, retaining selection on append.
 
-The signed-in right button displays Sign out and signs out directly. The focus
-glow uses the exact active font/label alignment with padded native text layers,
-covering leading/trailing glyphs. Display cleanup decodes HTML entities and removes
-non-rendering/private/invalid characters; diagnostics record codepoint inventory
-without raw descriptions. Authentication/media/playback source is byte-identical
-to 0.2.23. All account guards, fresh In Progress and card return are preserved.
+Amazon's observed U+30FB separator maps to the U+00B7 middle dot that the interface
+already displays. In Progress keeps live same-account UI objects while fetching
+a new provider snapshot, then reconciles list additions/removals/order in place.
+It does not reuse old server results or save progress lists. Current loaded art
+is retained during native rebinding. Account invalidation clears that frame and
+all transient state. Fresh rows register their exact detail URLs and artwork for
+playback and full sign-out purge.
 
-Concrete checks cover Python/XML syntax, import/export closure, byte preservation,
-actual saved TV season/episode relationships, verified primary Amazon genre links,
-layout/focus wiring and archive/download bytes. Anonymous direct Categories HTTP
-returned 503; its public page and genre destinations were inspected through the
-web tool. No mocked Kodi/provider tests or claims of an observed device UI result.
+Title layout keeps the first word at the original font scale and uses half-size
+lower words with a positive gap. Actual production PNG output confirms separate
+ink bands; cache keys version the new layout. Source/import/layout checks, saved
+real provider responses, actual renderer output, archive bytes and publication
+downloads are evidence. No simulated Kodi/provider tests or device-success claim.
+All 13 authentication/media/playback files remain byte-identical to 0.2.24.

@@ -103,7 +103,7 @@ class StorefrontLoader:
             if path.stat().st_size > 8 * 1024 * 1024:
                 raise ValueError('Catalog cache exceeds its size limit')
             saved = json.loads(path.read_text(encoding='utf-8'))
-            if (saved.get('schema') != 4 or saved.get('epoch') != self.epoch
+            if (saved.get('schema') != 5 or saved.get('epoch') != self.epoch
                     or saved.get('root') != root or not 0 <= time() - saved['saved'] < MAX_AGE):
                 return
             packet = saved['packet']
@@ -141,7 +141,7 @@ class StorefrontLoader:
         if root == '__watching__': return
         # Only first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
-        content = json.dumps({'schema': 4, 'epoch': self.epoch, 'root': root,
+        content = json.dumps({'schema': 5, 'epoch': self.epoch, 'root': root,
                               'saved': saved, 'packet': packet,
                               'continuations': bridge.continuations}, ensure_ascii=True)
         target = self._filename(root)

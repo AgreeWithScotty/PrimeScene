@@ -508,7 +508,8 @@ class StorefrontParser(HTMLParser):
         if tag in ('link', 'a') and 'next' in (attrs.get('rel') or '').lower().split():
             found = _link(attrs.get('href'), self.page_url)
             if found:
-                (self.ignored_next_links if scope or any(value for _, value in self.scopes)
+                (self.next_links if attrs.get('data-testid')=='page-pagination-button' else
+                 self.ignored_next_links if scope or any(value for _, value in self.scopes)
                  else self.next_links).add(found)
         if tag not in {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param',
                        'source', 'track', 'wbr'}:

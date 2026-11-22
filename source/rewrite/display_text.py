@@ -14,6 +14,6 @@ def clean(value):
     value=unescape(value)
     with _lock:
         _observed.update('U+%04X'%ord(c) for c in value if ord(c)>127)
-    return ''.join(' ' if c in ('\ufffd','\u00a0','\u202f') else c for c in value
+    return ''.join(' · ' if c=='\u30fb' else ' ' if c in ('\ufffd','\ufffc','\u00a0','\u202f') else c for c in value
         if unicodedata.category(c) not in ('Cf','Co','Cs') and
         (unicodedata.category(c)!='Cc' or c in '\n\t'))

@@ -49,28 +49,37 @@ def _width(text):
     return sum(_glyph(char)['adv'] for char in text)
 
 
+def arrange(text):
+    words=normalize(text).split() or ['SMOOTH','PRIME']
+    first=words[0]
+    primary=min(1.,_MAX_W/float(max(1,_width(first))))
+    primary_height=max(1,round(_CAP_H*primary))
+    boxes=[{'text':first,'scale':primary,'top':0,'height':primary_height}]
+    if len(words)==1:return boxes
+    gap=max(14,round(_CAP_H*.09));available=max(1,_MAX_H-primary_height-gap)
+    secondary=min(primary*.5,available/float(_CAP_H))
+    for _ in range(5):
+        lines=[];line=''
+        for word in words[1:]:
+            candidate=(line+' '+word).strip()
+            if line and _width(candidate)*secondary>_MAX_W:
+                lines.append(line);line=word
+            else:line=candidate
+        if line:lines.append(line)
+        total=len(lines)*_CAP_H*secondary+max(0,len(lines)-1)*8
+        widest=max(_width(line)*secondary for line in lines)
+        if total<=available and widest<=_MAX_W:break
+        secondary*=min(available/max(1,total),_MAX_W/max(1,widest))*.98
+    top=primary_height+gap
+    for line in lines:
+        height=max(1,round(_CAP_H*secondary))
+        boxes.append({'text':line,'scale':secondary,'top':top,'height':height})
+        top+=height+8
+    return boxes
+
 def layout(text):
-    """Up to two lines. Scale so the block stays inside the hero box."""
-    words = [word for word in normalize(text).split(' ') if word]
-    if not words:
-        words = ['SMOOTH PRIME']
-    lines = [' '.join(words)]
-    if _width(lines[0]) > _MAX_W and len(words) > 1:
-        best = None
-        for split in range(1, len(words)):
-            pair = [' '.join(words[:split]), ' '.join(words[split:])]
-            wide = max(_width(line) for line in pair)
-            if best is None or wide < best[0]:
-                best = (wide, pair)
-        lines = best[1]
-    scale = 1.0
-    widest = max(_width(line) for line in lines)
-    height = _CAP_H + _LINE * (len(lines) - 1)
-    if widest > _MAX_W:
-        scale = min(scale, _MAX_W / float(widest))
-    if height * scale > _MAX_H:
-        scale = min(scale, _MAX_H / float(height))
-    return lines, scale
+    boxes=arrange(text)
+    return [box['text'] for box in boxes],boxes[0]['scale']
 
 
 def _scale_span(raw, width, height, scale):
@@ -101,7 +110,7 @@ def _blit(canvas, canvas_w, glyph, x, y, scale):
     left, top = x + ox, y + oy
     for row in range(height):
         dest_y = top + row
-        if dest_y < 0 or dest_y >= _MAX_H:
+        if dest_y < 0 or dest_y >= len(canvas)//(canvas_w*4):
             continue
         src = row * width * 4
         for col in range(width):
@@ -116,20 +125,17 @@ def _blit(canvas, canvas_w, glyph, x, y, scale):
 
 
 def render_rgba(text):
-    lines, scale = layout(text)
-    line_step = max(1, int(round(_LINE * scale)))
-    cap = max(1, int(round(_CAP_H * scale)))
-    width = min(_MAX_W, max(1, int(round(max(_width(line) for line in lines) * scale)) + 2))
-    height = min(_MAX_H, cap + line_step * (len(lines) - 1))
-    canvas = bytearray(width * height * 4)
-    for index, line in enumerate(lines):
-        cursor = 0
-        top = index * line_step
-        for char in line:
-            glyph = _glyph(char)
-            _blit(canvas, width, glyph, cursor, top, scale)
-            cursor += int(round(glyph['adv'] * scale))
-    return width, height, bytes(canvas)
+    boxes=arrange(text)
+    width=min(_MAX_W,max(1,max(round(_width(box['text'])*box['scale'])+3 for box in boxes)))
+    height=min(_MAX_H,max(box['top']+box['height'] for box in boxes))
+    canvas=bytearray(width*height*4)
+    for box in boxes:
+        cursor=0
+        for char in box['text']:
+            glyph=_glyph(char)
+            _blit(canvas,width,glyph,cursor,box['top'],box['scale'])
+            cursor+=int(round(glyph['adv']*box['scale']))
+    return width,height,bytes(canvas)
 
 
 def _png(width, height, rgba):
@@ -145,7 +151,7 @@ def _png(width, height, rgba):
 def render_title(text, cache_dir):
     """Write one cached PNG and return its path. Empty titles still get a plate."""
     lines, _scale = layout(text)
-    key = sha1(('|'.join(lines)).encode('utf-8')).hexdigest()[:20]
+    key = sha1(('hierarchy-v2|'+'|'.join(lines)).encode('utf-8')).hexdigest()[:20]
     folder = Path(cache_dir)
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / ('title-%s.png' % key)
