@@ -13,7 +13,7 @@ def genre_art(section,title):
         _ART=json.loads(index.read_text(encoding='utf-8'))['tiles'] if index.is_file() else {}
     # These are public release assets, never an account's catalog snapshot.
     names=_ART.get(section+'|'+title) or _ART.get(('tv' if section=='movies' else 'movies')+'|'+title) or []
-    return [str(_ASSETS/name) for name in names if Path(name).name==name and (_ASSETS/name).is_file()][:2]
+    return [str(_ASSETS/name) for name in names if Path(name).name==name and (_ASSETS/name).is_file()][:1]
 
 def genre_path(section,address):
     return '__genre__/'+section+'/'+quote_plus(address) if address else '__prime_movies__' if section=='movies' else '__prime_tv__'
@@ -26,7 +26,7 @@ def genres(section,rows):
         grid_label=row.get('artwork_label','')) for row in rows]
     for row in result:
         images=genre_art(section,'*' if row is all_row else row['title'])
-        if images:row.update(collage=images,grid_label=row['title'])
+        if images:row.update(artwork=images[0],artwork_source='bundled_landscape',grid_label=row['title'])
     return result
 
 def extras(services=()):

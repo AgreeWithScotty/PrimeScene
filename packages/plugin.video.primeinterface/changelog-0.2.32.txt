@@ -1,0 +1,6 @@
+0.2.32
+- Restore the preferred single horizontal row of larger content cards and established hero proportions.
+- Replace split genre collages with one complete, full-width landscape image per genre, without cropping.
+- Bundle all 26 genre choices locally; remove the old split-poster assets from the install package.
+- Keep strong focus, progress, loading, early paging, title actions and playback-return fixes.
+- Record the single-row layout and bundled landscape artwork correctly in diagnostics.

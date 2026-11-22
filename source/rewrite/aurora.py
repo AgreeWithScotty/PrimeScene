@@ -781,8 +781,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.performance({'event':'startup_focus','control_id':301,'actual_control':self.getFocusId(),
             'initial_view':'movie_genres','catalog_pages_requested':0,'result':'success' if self.getFocusId()==301 else 'failure'})
         self.performance({'event':'interface_configuration','stage':'presentation',
-            'content_columns':5,'content_rows':2,'content_card_ratio':'16:9','base_background':'000000',
-            'genre_artwork':'bundled_public_title_pairs','genre_artwork_network_requests':0,
+            'content_columns':4,'content_rows':1,'content_flow':'horizontal_fixedlist','content_card_ratio':'16:9','base_background':'000000',
+            'genre_artwork':'bundled_complete_landscape','genre_artwork_network_requests':0,
             'native_binding_retained_when_confirmed':True,'result':'success'})
         self.worker.start()
         self.detail_worker.start()
@@ -2137,11 +2137,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 item=xbmcgui.ListItem(label=clean(row['title']))
                 artwork=row.get('artwork') or self._tile_art.get(row['path'],'')
                 if artwork:
-                    fitted=_fit_art(artwork,_CARD_ART)
+                    fitted=_fit_art(artwork,_CARD_ART) if artwork.startswith('https://') else artwork
                     item.setArt({'thumb':self.image_cache.local(fitted) if self.image_cache else fitted})
                 item.setProperty('GridLabel',clean(row.get('grid_label') or (row['title'] if not artwork else '')))
-                collage=row.get('collage') or []
-                for index in (0,1):item.setProperty('GenreImage'+str(index+1),collage[min(index,len(collage)-1)] if collage else '')
                 item.setProperty('Caption',clean(row['caption']));items.append(item)
                 self._tile_items[row['path']]=item
             listing.reset();listing.addItems(items);listing.selectItem(selected)
@@ -2215,16 +2213,15 @@ class AuroraHome(xbmcgui.WindowXML):
         for row in list(self._genre_rows):
             if owner!=self.genre_owner or self.stop.is_set():return
             path=row['path'];item=self._tile_items.get(path);artwork=row.get('artwork')
-            if row.get('collage'):continue
             if item is None or not artwork:continue
             if self._tile_art.get(path)!=artwork:
                 self._tile_art[path]=artwork;self._track_tile_art(artwork)
-            fitted=_fit_art(artwork,_CARD_ART)
+            fitted=_fit_art(artwork,_CARD_ART) if artwork.startswith('https://') else artwork
             if self.image_cache:fitted=self.image_cache.local(fitted)
             if item.getProperty('TileArt')!=fitted:
                 item.setArt({'thumb':fitted});item.setProperty('TileArt',fitted);updated+=1
         if updated:self.performance({'event':'navigation_artwork_bound','stage':'tile_artwork','section':self.nav,
-            'tiles_updated':updated,'source':'provider_navigation','catalog_requests':0,
+            'tiles_updated':updated,'source':'bundled_landscape' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
             'image_loader':'kodi_background_texture_cache','result':'success'})
 
     def _genre_loop(self):

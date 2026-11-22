@@ -1,0 +1,588 @@
+{
+  "version": "0.2.32",
+  "sha256": "c7b2791c78ac4e8d03ad186323bf79b65bbffaa4da81a2ccb438f2341e68a0f7",
+  "bytes": 3915290,
+  "files": 112,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_tiles.py",
+    "plugin.video.primeinterface/resources/lib/genre_art.json",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-12d04f04b5c5acfe77f35671.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-16f9547113dff69aefc0c662.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-32d76299b6a75d5edd275267.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-38a38bbe060bd887f9bc28a0.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-43f61683e521760e11d21adf.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-45dedfb51202f6a482cd2bb9.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-5c7ed53aebf77f972e21306e.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-5e5499df0ce5041cc3f48dcd.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-611243b8f403bee437178a8e.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-66643306e8b2dbc26890ee38.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-72a1c77bc200034c9659ab87.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-788f982eace064a0a419bc28.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-ac801836eab29dcf8a2ec274.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-b9ec282deb80782f8871a212.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-bd423e3ec2f92b549bc2a250.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-c2427213395c8bec11669840.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-c25576c23ced1bff7ae9fb3a.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-e8ecadd49f799012f59acbbf.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-ee55e3c1cc39ca777b6ed8a6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-fe3add7b5eb66a5b56cdfbcc.jpg"
+  ],
+  "removed_files": [
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/12d04f04b5c5acfe77f35671.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/16dbd6b3c25c8cf7144cb7ed.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/16f9547113dff69aefc0c662.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/2c8c020d9f09a9adf3f2d28f.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/32d76299b6a75d5edd275267.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/38a38bbe060bd887f9bc28a0.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/3b2575a37fbbbd255ab5063e.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/43f61683e521760e11d21adf.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/45dedfb51202f6a482cd2bb9.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/49c7c6511a649ea2eadfe074.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/5c7ed53aebf77f972e21306e.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/5e5499df0ce5041cc3f48dcd.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/611243b8f403bee437178a8e.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/66643306e8b2dbc26890ee38.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/72a1c77bc200034c9659ab87.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/75f968dc60b05b978645ffcf.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/7638967e75b354b7f476e8f8.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/788f982eace064a0a419bc28.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/800e385642a8b4535ff0e046.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/823c0b4f9b80cee21110e8d9.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/9076e7812366b9d58132a56a.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/9b6d27cba21b7b4da7f67591.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/a1a7677fc17a43da7c765488.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/ac801836eab29dcf8a2ec274.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/b9ec282deb80782f8871a212.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/bb01afbb15287560a3b7eabe.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/bd423e3ec2f92b549bc2a250.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/bde0612ade8572959169d65b.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/c2427213395c8bec11669840.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/c25576c23ced1bff7ae9fb3a.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/c7d576e2738f53d15d128a12.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/d4adc74d15a047a37aa5f7eb.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/dfcc7d58ae75b57f74bc7bdb.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/e8ecadd49f799012f59acbbf.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/ee55e3c1cc39ca777b6ed8a6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/fe3add7b5eb66a5b56cdfbcc.jpg"
+  ],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "source_checks": {
+    "content_rows": 1,
+    "native_content_control": "horizontal fixedlist",
+    "card_frame": [
+      392,
+      220
+    ],
+    "genre_choices": 26,
+    "genre_asset_files": 20,
+    "one_landscape_per_choice": true,
+    "actual_asset_dimensions": {
+      "landscape-12d04f04b5c5acfe77f35671.jpg": [
+        720,
+        405
+      ],
+      "landscape-16f9547113dff69aefc0c662.jpg": [
+        720,
+        405
+      ],
+      "landscape-32d76299b6a75d5edd275267.png": [
+        720,
+        405
+      ],
+      "landscape-38a38bbe060bd887f9bc28a0.jpg": [
+        720,
+        405
+      ],
+      "landscape-43f61683e521760e11d21adf.jpg": [
+        720,
+        405
+      ],
+      "landscape-45dedfb51202f6a482cd2bb9.jpg": [
+        720,
+        405
+      ],
+      "landscape-5c7ed53aebf77f972e21306e.jpg": [
+        720,
+        405
+      ],
+      "landscape-5e5499df0ce5041cc3f48dcd.jpg": [
+        720,
+        405
+      ],
+      "landscape-611243b8f403bee437178a8e.jpg": [
+        720,
+        405
+      ],
+      "landscape-66643306e8b2dbc26890ee38.jpg": [
+        720,
+        405
+      ],
+      "landscape-72a1c77bc200034c9659ab87.jpg": [
+        720,
+        405
+      ],
+      "landscape-788f982eace064a0a419bc28.jpg": [
+        720,
+        405
+      ],
+      "landscape-ac801836eab29dcf8a2ec274.png": [
+        720,
+        405
+      ],
+      "landscape-b9ec282deb80782f8871a212.png": [
+        720,
+        405
+      ],
+      "landscape-bd423e3ec2f92b549bc2a250.jpg": [
+        720,
+        405
+      ],
+      "landscape-c2427213395c8bec11669840.jpg": [
+        720,
+        405
+      ],
+      "landscape-c25576c23ced1bff7ae9fb3a.jpg": [
+        720,
+        405
+      ],
+      "landscape-e8ecadd49f799012f59acbbf.jpg": [
+        720,
+        405
+      ],
+      "landscape-ee55e3c1cc39ca777b6ed8a6.png": [
+        720,
+        405
+      ],
+      "landscape-fe3add7b5eb66a5b56cdfbcc.jpg": [
+        720,
+        405
+      ]
+    },
+    "genre_image_frame": [
+      338,
+      190
+    ],
+    "genre_aspectratio": "keep",
+    "split_panels_removed": true,
+    "runtime_genre_image_requests": 0,
+    "unchanged_program_files": 85,
+    "removed_portrait_assets": 36,
+    "mocked_provider_or_kodi_tests": false,
+    "kodi_ui_outcome_observed": false
+  },
+  "actual_public_artwork": {
+    "tiles": 26,
+    "files": 20,
+    "bytes": 967138,
+    "genre_content_requests_at_runtime": 0,
+    "observations": [
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Anime",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Action & adventure",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Comedy",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Documentary",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Drama",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Fantasy",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Historical",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Horror",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Kids & family",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Mystery & thriller",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Romance",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "source": "saved_actual_public_response",
+        "stage": "public_genre_metadata",
+        "genre": "Science fiction",
+        "declared_carousels": {
+          "movies": 20,
+          "tv": 20
+        },
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#9804a712/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 36758,
+        "request_ms": 171,
+        "stage": "public_title_image",
+        "asset": "landscape-66643306e8b2dbc26890ee38.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#1898a56b/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 38100,
+        "request_ms": 312,
+        "stage": "public_title_image",
+        "asset": "landscape-72a1c77bc200034c9659ab87.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#865432d3/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#4f259f0a",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 42980,
+        "request_ms": 546,
+        "stage": "public_title_image",
+        "asset": "landscape-b9ec282deb80782f8871a212.png",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#628bb418/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 47764,
+        "request_ms": 469,
+        "stage": "public_title_image",
+        "asset": "landscape-38a38bbe060bd887f9bc28a0.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#5de29d69/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 48288,
+        "request_ms": 328,
+        "stage": "public_title_image",
+        "asset": "landscape-e8ecadd49f799012f59acbbf.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#bfd6b5ce/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 63185,
+        "request_ms": 297,
+        "stage": "public_title_image",
+        "asset": "landscape-12d04f04b5c5acfe77f35671.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#c090e435/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 36216,
+        "request_ms": 375,
+        "stage": "public_title_image",
+        "asset": "landscape-45dedfb51202f6a482cd2bb9.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#3af12e63/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#4f259f0a",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 33335,
+        "request_ms": 484,
+        "stage": "public_title_image",
+        "asset": "landscape-32d76299b6a75d5edd275267.png",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#9a891eef/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#4f259f0a",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 41640,
+        "request_ms": 360,
+        "stage": "public_title_image",
+        "asset": "landscape-ac801836eab29dcf8a2ec274.png",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 45037,
+        "request_ms": 375,
+        "stage": "public_title_image",
+        "asset": "landscape-43f61683e521760e11d21adf.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#de115feb/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 53021,
+        "request_ms": 297,
+        "stage": "public_title_image",
+        "asset": "landscape-c2427213395c8bec11669840.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#2ba2e7f7/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 48454,
+        "request_ms": 390,
+        "stage": "public_title_image",
+        "asset": "landscape-fe3add7b5eb66a5b56cdfbcc.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#9e4dcb7e/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 53068,
+        "request_ms": 281,
+        "stage": "public_title_image",
+        "asset": "landscape-5e5499df0ce5041cc3f48dcd.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#e190880b/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#ed17fe6b/#df576cfb/#64330525/#093962d5",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 46811,
+        "request_ms": 391,
+        "stage": "public_title_image",
+        "asset": "landscape-16f9547113dff69aefc0c662.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#bee5f76e/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 73361,
+        "request_ms": 360,
+        "stage": "public_title_image",
+        "asset": "landscape-c25576c23ced1bff7ae9fb3a.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#01534626/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 79454,
+        "request_ms": 454,
+        "stage": "public_title_image",
+        "asset": "landscape-788f982eace064a0a419bc28.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#f844f1a0/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#4f259f0a",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 54583,
+        "request_ms": 328,
+        "stage": "public_title_image",
+        "asset": "landscape-ee55e3c1cc39ca777b6ed8a6.png",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#1f771094/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 31629,
+        "request_ms": 469,
+        "stage": "public_title_image",
+        "asset": "landscape-5c7ed53aebf77f972e21306e.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#63e666f9/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 39707,
+        "request_ms": 265,
+        "stage": "public_title_image",
+        "asset": "landscape-bd423e3ec2f92b549bc2a250.jpg",
+        "result": "success"
+      },
+      {
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#a8fd6ae2/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "bytes": 53747,
+        "request_ms": 468,
+        "stage": "public_title_image",
+        "asset": "landscape-611243b8f403bee437178a8e.jpg",
+        "result": "success"
+      }
+    ],
+    "account_session_used": false
+  }
+}

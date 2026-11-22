@@ -1,111 +1,85 @@
 {
-  "schema": 1,
+  "schema": 2,
   "verified": "2026-11-22",
-  "source": "public_provider_title_art",
+  "source": "public_provider_landscape_art",
   "tiles": {
     "movies|Anime": [
-      "72a1c77bc200034c9659ab87.jpg",
-      "9b6d27cba21b7b4da7f67591.png"
+      "landscape-72a1c77bc200034c9659ab87.jpg"
     ],
     "tv|Anime": [
-      "b9ec282deb80782f8871a212.png",
-      "2c8c020d9f09a9adf3f2d28f.jpg"
+      "landscape-b9ec282deb80782f8871a212.png"
     ],
     "movies|Action & adventure": [
-      "66643306e8b2dbc26890ee38.jpg",
-      "e8ecadd49f799012f59acbbf.jpg"
+      "landscape-66643306e8b2dbc26890ee38.jpg"
     ],
     "tv|Action & adventure": [
-      "38a38bbe060bd887f9bc28a0.jpg",
-      "5c7ed53aebf77f972e21306e.jpg"
+      "landscape-38a38bbe060bd887f9bc28a0.jpg"
     ],
     "movies|Comedy": [
-      "e8ecadd49f799012f59acbbf.jpg",
-      "7638967e75b354b7f476e8f8.jpg"
+      "landscape-e8ecadd49f799012f59acbbf.jpg"
     ],
     "tv|Comedy": [
-      "12d04f04b5c5acfe77f35671.jpg",
-      "9076e7812366b9d58132a56a.jpg"
+      "landscape-12d04f04b5c5acfe77f35671.jpg"
     ],
     "movies|Documentary": [
-      "45dedfb51202f6a482cd2bb9.jpg",
-      "dfcc7d58ae75b57f74bc7bdb.png"
+      "landscape-45dedfb51202f6a482cd2bb9.jpg"
     ],
     "tv|Documentary": [
-      "32d76299b6a75d5edd275267.png",
-      "3b2575a37fbbbd255ab5063e.jpg"
+      "landscape-32d76299b6a75d5edd275267.png"
     ],
     "movies|Drama": [
-      "ac801836eab29dcf8a2ec274.png",
-      "49c7c6511a649ea2eadfe074.jpg"
+      "landscape-ac801836eab29dcf8a2ec274.png"
     ],
     "tv|Drama": [
-      "38a38bbe060bd887f9bc28a0.jpg",
-      "fe3add7b5eb66a5b56cdfbcc.jpg"
+      "landscape-38a38bbe060bd887f9bc28a0.jpg"
     ],
     "movies|Fantasy": [
-      "43f61683e521760e11d21adf.jpg",
-      "611243b8f403bee437178a8e.jpg"
+      "landscape-43f61683e521760e11d21adf.jpg"
     ],
     "tv|Fantasy": [
-      "38a38bbe060bd887f9bc28a0.jpg",
-      "16f9547113dff69aefc0c662.jpg"
-    ],
-    "movies|Horror": [
-      "5e5499df0ce5041cc3f48dcd.jpg",
-      "16dbd6b3c25c8cf7144cb7ed.jpg"
-    ],
-    "tv|Horror": [
-      "16f9547113dff69aefc0c662.jpg",
-      "75f968dc60b05b978645ffcf.jpg"
+      "landscape-38a38bbe060bd887f9bc28a0.jpg"
     ],
     "movies|Historical": [
-      "c2427213395c8bec11669840.jpg",
-      "823c0b4f9b80cee21110e8d9.jpg"
+      "landscape-c2427213395c8bec11669840.jpg"
     ],
     "tv|Historical": [
-      "fe3add7b5eb66a5b56cdfbcc.jpg",
-      "c7d576e2738f53d15d128a12.jpg"
+      "landscape-fe3add7b5eb66a5b56cdfbcc.jpg"
+    ],
+    "movies|Horror": [
+      "landscape-5e5499df0ce5041cc3f48dcd.jpg"
+    ],
+    "tv|Horror": [
+      "landscape-16f9547113dff69aefc0c662.jpg"
     ],
     "movies|Kids & family": [
-      "c25576c23ced1bff7ae9fb3a.jpg",
-      "d4adc74d15a047a37aa5f7eb.png"
+      "landscape-c25576c23ced1bff7ae9fb3a.jpg"
     ],
     "tv|Kids & family": [
-      "788f982eace064a0a419bc28.jpg",
-      "a1a7677fc17a43da7c765488.png"
+      "landscape-788f982eace064a0a419bc28.jpg"
     ],
     "movies|Mystery & thriller": [
-      "e8ecadd49f799012f59acbbf.jpg",
-      "5e5499df0ce5041cc3f48dcd.jpg"
+      "landscape-e8ecadd49f799012f59acbbf.jpg"
     ],
     "tv|Mystery & thriller": [
-      "5c7ed53aebf77f972e21306e.jpg",
-      "bde0612ade8572959169d65b.jpg"
+      "landscape-5c7ed53aebf77f972e21306e.jpg"
     ],
     "movies|Romance": [
-      "ac801836eab29dcf8a2ec274.png",
-      "49c7c6511a649ea2eadfe074.jpg"
+      "landscape-ac801836eab29dcf8a2ec274.png"
     ],
     "tv|Romance": [
-      "ee55e3c1cc39ca777b6ed8a6.png",
-      "c7d576e2738f53d15d128a12.jpg"
+      "landscape-ee55e3c1cc39ca777b6ed8a6.png"
     ],
     "movies|Science fiction": [
-      "611243b8f403bee437178a8e.jpg",
-      "800e385642a8b4535ff0e046.jpg"
+      "landscape-611243b8f403bee437178a8e.jpg"
     ],
     "tv|Science fiction": [
-      "bd423e3ec2f92b549bc2a250.jpg",
-      "bb01afbb15287560a3b7eabe.jpg"
+      "landscape-bd423e3ec2f92b549bc2a250.jpg"
     ],
     "movies|*": [
-      "72a1c77bc200034c9659ab87.jpg",
-      "9b6d27cba21b7b4da7f67591.png"
+      "landscape-72a1c77bc200034c9659ab87.jpg"
     ],
     "tv|*": [
-      "b9ec282deb80782f8871a212.png",
-      "2c8c020d9f09a9adf3f2d28f.jpg"
+      "landscape-b9ec282deb80782f8871a212.png"
     ]
   }
 }
