@@ -209,6 +209,8 @@ def _meta(row):
     genre = _genre_label(info)
     if genre:
         bits.append(genre)
+    if info.get('access_label'):
+        bits.append(info['access_label'])
     return '  ·  '.join(bits)
 
 
@@ -224,9 +226,10 @@ def _browse_path(pluginid, url):
 
 
 _PRIMARY_SECTIONS = {'__watching__': ('home', 'In Progress'), '__prime_movies__': ('movies', 'Movies'), '__prime_tv__': ('tv', 'TV'),
-                     '__prime_sports__': ('sports', 'Sports'), '__prime_purchases__': ('purchases', 'Purchases')}
-_NAV_VALUES = ('home', 'movies', 'tv', 'sports', 'purchases')
-_SECTION_PATHS = set(_PRIMARY_SECTIONS) | {'root', '__prime_home__', '__legacy_sports__'}
+                     '__prime_sports__': ('extras', 'Sports'), '__prime_channels__': ('extras', 'Add-on subscriptions'),
+                     '__extras__': ('extras','Extras'), '__prime_purchases__': ('purchases', 'Purchases')}
+_NAV_VALUES = ('home', 'movies', 'tv', 'extras', 'purchases')
+_SECTION_PATHS = set(_PRIMARY_SECTIONS) | {'root', '__prime_home__', '__legacy_sports__','__genres__/movies','__genres__/tv'}
 _DETAIL_KEYS = ('plot', 'year', 'duration', 'runtime', 'mpaa', 'rating', 'genre', 'genres',
                 'seasons', 'season', 'episode', 'premiered', 'mediatype', 'fanart', 'thumb', 'poster')
 
@@ -658,6 +661,15 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.show_signed_out()
                 self._reactivation_ready.set()
                 return
+        if self.genre_owner is not None and self.getProperty('GenrePanel'):
+            owner=self.genre_owner;selected=self.getControl(410).getSelectedPosition()
+            self._genre_rows=[]
+            self._populate_genres({301:'movies',302:'tv',303:'extras'}[owner])
+            self.getControl(410).selectItem(max(0,selected));self.setFocusId(owner)
+            self.performance({'event':'browse_grid_controls_restored','stage':stage,'owner':owner,
+                'tiles':len(self._genre_rows),'result':'success'})
+            self._reactivation_ready.set()
+            return
         if self.playback_origin and self.playback_origin.get('path') == '__watching__' and not _playing(xbmc.Player()):
             self._refresh_progress_return(self.playback_origin)
         with self.lock:
@@ -1113,7 +1125,6 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def onFocus(self, control_id):
         if control_id in (309,301,302,303,308) and self.worker is not None and self.worker.is_alive():
-            if self.getProperty('GenrePanel'):self._hide_genres(restore=False)
             self._focus_first_generation=None
             self._activate_section(control_id)
         if control_id == 200 and self._focus_receipt == self.generation:
@@ -1203,6 +1214,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._focus_first_card()
             self._section_label()
             self.performance({'event': 'cards_published', 'added': len(additions), 'total': count,
+                'selected_index':self._selected_index(),
                 'navigation_entries_hidden': sum(_top_selector_row(self.g.pluginid, row) for row in packet.get('rows') or []),
                 'generation': token,
                 'build_and_bind_ms': round((monotonic() - started) * 1000),
@@ -1379,9 +1391,12 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _prefetch(self):
         with self.lock:
-            if self.busy or not self.next_path or self.stop.is_set():
+            if self.genre_owner is not None or self.busy or not self.next_path or self.stop.is_set():
                 return
             if self._selected_index() >= self.prefetch_at:
+                self.performance({'event':'lookahead_page_requested','generation':self.generation,
+                    'selected_index':self._selected_index(),'request_at_index':self.prefetch_at,
+                    'loaded_cards':len(self.rows),'result':'success'})
                 path = self.next_path
                 self.pending_path = path
                 self.next_path = None
@@ -1912,64 +1927,94 @@ class AuroraHome(xbmcgui.WindowXML):
         phrase = self.g.dialog.input('Search Prime Video')
         if not isinstance(phrase, str) or not phrase.strip():
             return
+        self._hide_genres(restore=False)
         self.nav = ''
         self.navigate('search', query=phrase.strip(), heading='Search')
 
     def _activate_section(self,control_id,focus_cards=False):
-        primary={309:'__watching__',301:'__prime_movies__',302:'__prime_tv__',303:'__prime_sports__',308:'__prime_purchases__'}
+        if control_id in (301,302,303):
+            self._show_genres(control_id,focus_grid=focus_cards)
+            return
+        primary={309:'__watching__',308:'__prime_purchases__'}
         path=primary[control_id]
+        self._hide_genres(restore=False)
         self.nav,heading=_PRIMARY_SECTIONS[path]
-        if self.genre_owner is not None and self.genre_owner!=control_id:self._hide_genres(restore=False)
         if self.path!=path or self.query is not None or focus_cards and path=='__watching__' and not self.busy:
             self.history.clear();self.navigate(path,remember=False,heading=heading)
             self.performance({'event':'menu_focus_section_activated','control_id':control_id,'section':self.nav,'result':'success'})
         if focus_cards:self._focus_first_card()
 
-    def _show_genres(self,owner):
+    def _show_genres(self,owner,focus_grid=True):
         if self.account_name is not None and not self.account_name():return
-        self.genre_owner=owner
-        self.setProperty('GenreMessage','')
-        section='movies' if owner==301 else 'tv'
-        if section not in self.genre_cache:
+        if self.genre_owner==owner and self.getProperty('GenrePanel'):
+            if focus_grid:self.setFocusId(410)
+            return
+        section={301:'movies',302:'tv',303:'extras'}[owner]
+        with self.lock:
+            self._save_view()
+            self.generation+=1
+            self.rows=[];self.items=[];self.row_keys=set()
+            self.next_path=self.pending_path=None
+            self.busy=False;self._focus_first_generation=None
+            self._progress_refresh_generation=None;self._pending_progress_return=None
+            self.series_context=None;self.history.clear();self.query=None
+            self.path='__extras__' if owner==303 else '__genres__/'+section
+            self.nav=section;self.genre_owner=owner;self.heading=''
+        self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
+        self.setProperty('ShowSplash','');self.setProperty('Section','');self._season_properties()
+        self.setProperty('Nav',section);self.setProperty('GenreMessage','')
+        if section!='extras' and section not in self.genre_cache:
             from .genre_catalog import published_genres
             self.genre_cache[section]=published_genres()
-        self.setProperty('GenreHeading','Movie genres' if owner==301 else 'TV genres')
+        self.setProperty('GenreHeading',{'movies':'Movie genres','tv':'TV genres','extras':'Extras'}[section])
         self.setProperty('GenrePanel','1')
         self._populate_genres(section)
-        self.setFocusId(410)
-        if section not in self.genre_requested:
+        if focus_grid:self.setFocusId(410)
+        if section!='extras' and section not in self.genre_requested:
             self.genre_requested.add(section);self.genre_jobs.put(section)
-        self.performance({'event':'genre_drawer_opened','section':section,'available_genres':len(self.genre_cache.get(section,[])),'result':'success'})
+        self.performance({'event':'browse_grid_opened','section':section,'tiles':len(self._genre_rows),
+            'cards_hidden_until_selection':True,'focused_control':self.getFocusId(),'result':'success'})
 
     def _populate_genres(self,section):
+        from .browse_tiles import genres,extras
         with self.lock:
+            if self.genre_owner!={'movies':301,'tv':302,'extras':303}[section]:return
             listing=self.getControl(410);selected=max(0,listing.getSelectedPosition())
             title=self._genre_rows[selected]['title'] if selected<len(self._genre_rows) else None
-            previous_labels=[row['title'] for row in self._genre_rows]
-            self._genre_rows=[{'title':'All movies' if section=='movies' else 'All TV shows','address':None}]+self.genre_cache.get(section,[])
-            if previous_labels==[row['title'] for row in self._genre_rows] and self.getFocusId()==410:return
-            selected=next((i for i,row in enumerate(self._genre_rows) if row['title']==title),0)
-            listing.reset();listing.addItems([xbmcgui.ListItem(label=row['title']) for row in self._genre_rows])
-            listing.selectItem(selected)
+            rows=extras() if section=='extras' else genres(section,self.genre_cache.get(section,[]))
+            if rows==self._genre_rows:return
+            self._genre_rows=rows
+            selected=next((i for i,row in enumerate(rows) if row['title']==title),0)
+            media=Path(self.g.addon.getAddonInfo('path'))/'resources/skins/Default/media'
+            items=[]
+            for row in rows:
+                item=xbmcgui.ListItem(label=row['title'])
+                item.setArt({'thumb':str(media/('category-'+row['art']+'.webp'))})
+                item.setProperty('Caption',row['caption']);items.append(item)
+            listing.reset();listing.addItems(items);listing.selectItem(selected)
+            self.performance({'event':'browse_grid_updated','section':section,'tiles':len(rows),
+                'selection_preserved':bool(title and rows[selected]['title']==title),'result':'success'})
 
     def _hide_genres(self,restore=True):
         owner=self.genre_owner;self.genre_owner=None;self.setProperty('GenrePanel','')
         if restore and owner is not None:self.setFocusId(owner)
 
     def _choose_genre(self):
-        if self.genre_owner not in (301,302):return
-        owner=self.genre_owner;section='movies' if owner==301 else 'tv'
+        if self.genre_owner not in (301,302,303):return
+        owner=self.genre_owner;section={301:'movies',302:'tv',303:'extras'}[owner]
         index=self.getControl(410).getSelectedPosition()
         if not 0<=index<len(self._genre_rows):return
         row=self._genre_rows[index];self._hide_genres(restore=False)
-        if not row['address']:
-            self._activate_section(owner,focus_cards=True);return
-        from urllib.parse import quote_plus
-        path='__genre__/'+section+'/'+quote_plus(row['address'])
-        if self.loader is not None:self.loader.register_genre(path)
+        if section=='extras':path=row['path']
+        elif not row.get('address'):path='__prime_movies__' if owner==301 else '__prime_tv__'
+        else:
+            from urllib.parse import quote_plus
+            path='__genre__/'+section+'/'+quote_plus(row['address'])
+            if self.loader is not None:self.loader.register_genre(path)
         self.nav=section;self.history.clear();self.navigate(path,remember=False,heading=row['title'])
         self._focus_first_card()
-        self.performance({'event':'genre_selected','section':section,'provider_route':True,'prime_only':True,'result':'success'})
+        self.performance({'event':'browse_tile_selected','section':section,'provider_route':True,
+            'prime_only':section in ('movies','tv'),'result':'success'})
 
     def _genre_loop(self):
         from .genre_catalog import discover
@@ -1990,14 +2035,14 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.performance({'event':'genres_ready','section':section,'genres':len(rows),'result':'success'})
             except Exception as error:
                 self.genre_requested.discard(section)
-                self.performance({'event':'genre_discovery_failed','section':section,'stage':'genre_drawer',
+                self.performance({'event':'genre_discovery_failed','section':section,'stage':'genre_grid',
                     'exception':exception_details(error),'result':'failure'})
                 if not self.stop.is_set() and not self.genre_cache.get(section) and self.genre_owner==(301 if section=='movies' else 302):
                     self.setProperty('GenreMessage','Genres unavailable. Open Diagnostics for details.')
 
     def onClick(self, control_id):
         primary = {309: '__watching__', 301: '__prime_movies__', 302: '__prime_tv__',
-                   303: '__prime_sports__', 308: '__prime_purchases__'}
+                   303: '__extras__', 308: '__prime_purchases__'}
         if control_id in primary:
             path = primary[control_id]
             self._activate_section(control_id,focus_cards=True)
@@ -2068,11 +2113,11 @@ class AuroraHome(xbmcgui.WindowXML):
         # so updating it from here only delays the move.
         action_id = action.getId()
         focus=self.getFocusId()
-        if action_id==4 and focus in (301,302):
+        if action_id==4 and focus in (301,302,303):
             self._show_genres(focus)
             return
-        if self.getProperty('GenrePanel') and action_id in _BACK+(1,2):
-            self._hide_genres()
+        if self.getProperty('GenrePanel') and action_id in _BACK and focus==410:
+            self.setFocusId(self.genre_owner)
             return
         if action_id not in _BACK or self.stop.is_set():
             return

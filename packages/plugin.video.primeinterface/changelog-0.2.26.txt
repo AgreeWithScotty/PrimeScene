@@ -1,0 +1,8 @@
+0.2.26
+- Replace the genre dropdown with a full illustrated five-column grid on Movies/TV focus; show content only after a genre or All selection.
+- Move In Progress after TV. Group sports and add-on subscriptions under Extras, with access labels that distinguish confirmed Prime inclusion.
+- Recognize Amazon's genre See more links despite decorative Link Arrow text.
+- Follow the actual page-owned Grid PaginateCollection protocol with unchanged provider tokens and capability fields.
+- Preserve first-two-page warming, early lookahead and current card selection on append.
+- Report collection request fields, parser structure, returned counts, next state and explicit provider-declared end without exposing tokens or account identifiers.
+- Preserve original glow textures, title hierarchy, description cleanup, fresh in-place In Progress and all native authentication/playback code.

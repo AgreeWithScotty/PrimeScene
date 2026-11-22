@@ -12,7 +12,7 @@ from .catalog_gateway import CatalogGateway
 from .prime_diagnostics import DiagnosticLog, exception_details
 from .public_catalog import STOREFRONT_HOSTS, safe_url
 
-ROOTS = ('__watching__', '__prime_movies__', '__prime_tv__', '__prime_sports__', '__prime_purchases__')
+ROOTS = ('__watching__', '__prime_movies__', '__prime_tv__', '__prime_sports__', '__prime_channels__', '__prime_purchases__')
 FRESH_SECONDS = 15 * 60
 MAX_AGE = 24 * 60 * 60
 
@@ -103,12 +103,13 @@ class StorefrontLoader:
             if path.stat().st_size > 8 * 1024 * 1024:
                 raise ValueError('Catalog cache exceeds its size limit')
             saved = json.loads(path.read_text(encoding='utf-8'))
-            if (saved.get('schema') != 5 or saved.get('epoch') != self.epoch
+            if (saved.get('schema') != 6 or saved.get('epoch') != self.epoch
                     or saved.get('root') != root or not 0 <= time() - saved['saved'] < MAX_AGE):
                 return
             packet = saved['packet']
             policy = ('prime_only' if root in ('__prime_movies__', '__prime_tv__') else
-                      'account_library' if root == '__prime_purchases__' else 'watch_progress' if root == '__watching__' else 'sports')
+                      'account_library' if root == '__prime_purchases__' else 'watch_progress' if root == '__watching__' else
+                      'channels' if root=='__prime_channels__' else 'sports')
             if packet.get('catalog_policy') != policy:
                 return
             if not isinstance(packet.get('rows'), list) or len(packet['rows']) > 2000:
@@ -121,7 +122,7 @@ class StorefrontLoader:
             for alias, state in saved.get('continuations', {}).items():
                 if (not alias.startswith('__prime_page__/') or not alias.endswith('/nextPage')
                         or len(state) != 4 or state[0] != self.epoch
-                        or not safe_url(state[2], STOREFRONT_HOSTS)):
+                        or not self._valid_continuation(state[2])):
                     raise ValueError('Invalid cached continuation')
                 bridge.continuations[alias] = (state[0], state[1], state[2], tuple(state[3]))
                 self.routes[alias] = root
@@ -137,11 +138,18 @@ class StorefrontLoader:
             with self.lock:
                 if self.futures.get(path) is future: self.futures.pop(path,None)
 
+    @staticmethod
+    def _valid_continuation(value):
+        if isinstance(value,dict):
+            from .collection_paging import valid_request
+            return valid_request(value)
+        return bool(safe_url(value,STOREFRONT_HOSTS))
+
     def _save(self, root, packet, bridge, saved):
         if root == '__watching__': return
         # Only first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
-        content = json.dumps({'schema': 5, 'epoch': self.epoch, 'root': root,
+        content = json.dumps({'schema': 6, 'epoch': self.epoch, 'root': root,
                               'saved': saved, 'packet': packet,
                               'continuations': bridge.continuations}, ensure_ascii=True)
         target = self._filename(root)

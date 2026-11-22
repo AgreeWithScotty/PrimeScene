@@ -22,25 +22,36 @@ def published_genres():
 
 class GenreSection(HTMLParser):
     def __init__(self,address):
-        super().__init__();self.address=address;self.heading='';self.collect=False;self.last='';self.anchor=None;self.links={}
+        super().__init__();self.address=address;self.heading='';self.collect=False;self.last='';self.anchor=None;self.links={};self.see_more_count=0
     def handle_starttag(self,tag,attrs):
         if tag in ('h2','h3'):self.heading='';self.collect=True
-        if tag=='a':self.anchor=[dict(attrs).get('href',''),'']
+        if tag=='a':
+            attributes=dict(attrs)
+            self.anchor=[attributes.get('href',''),'',attributes.get('data-testid'),attributes.get('aria-label','')]
     def handle_data(self,data):
         if self.collect:self.heading+=data
         if self.anchor:self.anchor[1]+=data
     def handle_endtag(self,tag):
         if tag=='a' and self.anchor:
-            address,label=self.anchor;self.anchor=None
+            address,label,testid,accessible=self.anchor;self.anchor=None
             heading=(self.heading if self.collect else self.last).lower().replace('see more','').strip()
             section='movies' if heading=='movies' else 'tv' if heading in ('tv shows','tv') else None
             target=safe_url(address,STOREFRONT_HOSTS,self.address)
-            if section and target and label.strip().lower() in ('see more','movies','tv shows'):
+            # Arrow SVGs contribute "Link Arrow" to the raw anchor text. The
+            # provider's explicit see-more marker/accessible label establish
+            # the link even when that decorative text follows "See more".
+            expected=('movies',) if section=='movies' else ('tv shows','tv')
+            explicit=testid=='see-more' and accessible.strip().casefold() in expected
+            if testid=='see-more':self.see_more_count+=1
+            if section and target and (explicit or label.strip().lower() in ('see more','movies','tv shows')):
                 self.links.setdefault(section,target)
         if tag in ('h2','h3'):self.collect=False;self.last=self.heading
 
-def section_link(data,address,section):
+def section_link(data,address,section,observer=None):
     parser=GenreSection(address);parser.feed(data);parser.close()
+    if observer:observer({'event':'genre_section_inventory','stage':'genre_scope','section':section,
+        'see_more_markers':parser.see_more_count,'recognized_sections':sorted(parser.links),
+        'section_link_found':section in parser.links,'result':'success' if section in parser.links else 'unavailable'})
     return parser.links.get(section)
 
 def genre_name(text):

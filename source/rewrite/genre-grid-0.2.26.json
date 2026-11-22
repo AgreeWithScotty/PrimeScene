@@ -1,0 +1,114 @@
+{
+  "version": "0.2.26",
+  "sha256": "db514d5867fa9d3a42474493cff5829ce3a492c0502f920a6296bd35c3558d10",
+  "bytes": 32162514,
+  "files": 107,
+  "artifact_checks": {
+    "python_files_parsed": 48,
+    "xml_files_parsed": 4,
+    "unchanged_native_modules": [
+      "media_resources",
+      "media_proxy",
+      "playback_engine",
+      "playback_progress",
+      "http_transport",
+      "prime_login",
+      "prime_signin",
+      "account_auth",
+      "accounts",
+      "account_state",
+      "session_store",
+      "prime_device",
+      "account_region",
+      "display_text",
+      "title_art",
+      "home_catalog",
+      "watch_home"
+    ],
+    "skin_fonts_images_unchanged": 41,
+    "menu_order": [
+      "Movies",
+      "TV",
+      "In Progress",
+      "Extras"
+    ],
+    "genre_grid_columns": 5,
+    "genre_grid_rows": 3,
+    "published_genre_tiles": 13,
+    "all_graphics_references_exist": true,
+    "chooser_does_not_navigate_to_content_on_focus": true,
+    "actual_saved_provider_responses": [
+      {
+        "section": "movies",
+        "real_next_page_cards": 40,
+        "end_declared_by_provider": true
+      },
+      {
+        "section": "tv",
+        "real_next_page_cards": 40,
+        "end_declared_by_provider": true
+      }
+    ],
+    "mocked_provider_or_kodi_tests": false,
+    "device_ui_outcome_observed": false
+  },
+  "actual_public_requests": [
+    {
+      "genre": "fantasy",
+      "page": 1,
+      "source_cards": 20,
+      "new_identities": 20,
+      "prime_movies": 15,
+      "has_next": true,
+      "next_kind": "collection",
+      "result": "success"
+    },
+    {
+      "genre": "fantasy",
+      "page": 2,
+      "source_cards": 40,
+      "new_identities": 40,
+      "prime_movies": 22,
+      "has_next": false,
+      "next_kind": "end",
+      "result": "success"
+    },
+    {
+      "genre": "comedy",
+      "page": 1,
+      "source_cards": 20,
+      "new_identities": 20,
+      "prime_movies": 19,
+      "has_next": true,
+      "next_kind": "collection",
+      "result": "success"
+    },
+    {
+      "genre": "comedy",
+      "page": 2,
+      "source_cards": 40,
+      "new_identities": 40,
+      "prime_movies": 35,
+      "has_next": false,
+      "next_kind": "end",
+      "result": "success"
+    }
+  ],
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_tiles.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/collection_paging.py",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "device_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "protocol_source": "Amazon public DVWebClient_app.4913ccd6.js and DVWebClient_page-browse.67fab3ee.js",
+  "subscription_information": "https://www.aboutamazon.com/news/entertainment/live-sports-streaming-prime-video"
+}

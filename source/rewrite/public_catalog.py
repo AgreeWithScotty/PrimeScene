@@ -7,6 +7,7 @@ import json
 import logging
 import re
 from time import perf_counter
+from secrets import token_hex
 from urllib.error import HTTPError
 from urllib.parse import urljoin, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -23,7 +24,7 @@ ORIGIN = 'https://www.primevideo.com'
 # Use Amazon's published Prime membership storefront, then split by title type.
 # The broad /movie and /tv feeds also market rentals, channels and free-with-ads.
 PAGES = {'watching': '/storefront', 'home': '/storefront', 'movies': '/storefront/subscription/prime',
-         'tv': '/storefront/subscription/prime', 'sports': '/sports', 'purchases': '/mystuff'}
+         'tv': '/storefront/subscription/prime', 'sports': '/sports', 'channels': '/addons', 'purchases': '/mystuff'}
 STOREFRONT_HOSTS = {'www.primevideo.com', 'primevideo.com', 'na.primevideo.com'}
 IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
 MAX_PAGE_BYTES = 8 * 1024 * 1024
@@ -40,6 +41,8 @@ def _protocol_shape(document):
                  'view-filter filters viewType active applied isCurrentlyApplied baseOutput containers '
                  'emptyState errorCode errorType entitlementCues offerClassification providerLogo '
                  'entitlementType offerType').split())
+    known.update(('entities','hasMoreItems','startIndex','serviceToken','paginationServiceToken',
+        'paginationTargetId','paginationStartIndex','swiftPageParameters','primeVideoCapability'))
     stack, result = [('$', document, 0)], []
     while stack and len(result) < 60:
         path, value, depth = stack.pop()
@@ -84,6 +87,7 @@ class CatalogPage:
     cards: list
     next_url: str = None
     library_confirmed: bool = False
+    next_request: dict = None
 
 
 def _remember_card(cards, key, card):
@@ -660,18 +664,24 @@ def _read_page(data, content_type, page_url):
 def fetch_page(page, opener=None, continuation=None, observer=None, _library_depth=0):
     """Fetch one server page; continuation must be an actual link from its predecessor."""
     started = perf_counter()
+    parent_observer=observer;request_id=token_hex(8)
+    observer=lambda value:_emit(parent_observer,dict({'request_id':request_id},**value))
     address, stage = '', 'validate_request'
     try:
         if page not in PAGES:
             raise PublicCatalogError('Unknown Prime Video catalog section.')
-        address = safe_url(continuation, STOREFRONT_HOSTS) if continuation is not None else ORIGIN + PAGES[page]
+        from . import collection_paging
+        collection=isinstance(continuation,dict)
+        address,request_data,extra_headers=collection_paging.request_arguments(continuation) if collection else (
+            safe_url(continuation, STOREFRONT_HOSTS) if continuation is not None else ORIGIN + PAGES[page],None,{})
         if not address:
             raise PublicCatalogError('The catalog continuation is outside the trusted storefront.')
         _emit(observer, {'event': 'catalog_request_started', 'stage': 'fetch', 'page': page,
-                         'continuation': continuation is not None, 'address': route(address), 'method': 'GET'})
-        request_headers={'Accept':'text/html, application/json;q=0.9'}
+                         'continuation': continuation is not None, 'address': route(address), 'method': 'POST' if collection else 'GET',
+                         'collection_request':collection})
+        request_headers={'Accept':'text/html, application/json;q=0.9',**extra_headers}
         if page == 'watching':request_headers.update({'Cache-Control':'no-cache, no-store','Pragma':'no-cache'})
-        request = Request(address, headers=request_headers)
+        request = Request(address, data=request_data, headers=request_headers)
         opener = opener if opener is not None else build_opener(StorefrontRedirect(observer))
         stage = 'fetch'
         with opener.open(request, timeout=15) as response:
@@ -694,7 +704,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
         stage = 'parse_response'
         if page in ('movies','tv') and continuation is not None and urlsplit(final_url).path.startswith(('/genre/','/kids')):
             from .genre_catalog import section_link
-            scoped=section_link(data,final_url,page)
+            scoped=section_link(data,final_url,page,observer=lambda value:_emit(observer,value))
             if scoped and scoped!=final_url and _library_depth<3:
                 _emit(observer,{'event':'genre_section_followed','stage':'genre_scope','section':page,
                     'address':route(scoped),'result':'success'})
@@ -728,13 +738,17 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 raise PublicCatalogError('Amazon did not expose a recognized Purchases & Rentals library. Open Diagnostics for the report.')
         else:
             result, details = _read_page(data, content_type, final_url)
+            next_request=(collection_paging.advance(continuation,data,content_type,lambda value:_emit(observer,value)) if collection
+                else collection_paging.discover(data,content_type,final_url,lambda value:_emit(observer,value)))
+            if next_request:result=replace(result,next_request=next_request)
+            details['collection_continuation']=bool(next_request)
         _emit(observer, dict(details, event='catalog_page_parsed', stage=stage, bytes=len(raw),
                              status=status, address=route(final_url),
                              elapsed_ms=round((perf_counter() - started) * 1000)))
-        if not result.cards and result.next_url is None and not result.library_confirmed:
+        if not result.cards and result.next_url is None and result.next_request is None and not result.library_confirmed and not collection:
             raise PublicCatalogError('No title cards or page continuation were found in the catalog response.')
         _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'success',
-                         'cards': len(result.cards), 'has_next': result.next_url is not None,
+                         'cards': len(result.cards), 'has_next': bool(result.next_url or result.next_request),
                          'elapsed_ms': round((perf_counter() - started) * 1000)})
         return result
     except Exception as error:

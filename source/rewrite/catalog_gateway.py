@@ -9,10 +9,11 @@ from .catalog_access import prime_included
 from .public_catalog import PublicCatalogError,STOREFRONT_HOSTS,ORIGIN,detail_id,fetch_page,safe_url,_read_page
 from .prime_diagnostics import DiagnosticLog,exception_details
 from .http_transport import HttpTransport
+from .collection_paging import identity as continuation_identity
 from .detail_catalog import parse_detail,search_request
 
 STOREFRONT_PAGES={'__watching__':'watching','__prime_home__':'movies','__prime_movies__':'movies',
-    '__prime_tv__':'tv','__prime_sports__':'sports','__prime_purchases__':'purchases'}
+    '__prime_tv__':'tv','__prime_sports__':'sports','__prime_channels__':'channels','__prime_purchases__':'purchases'}
 class CatalogSigninRequired(PublicCatalogError):pass
 
 def _card_info(card):
@@ -170,9 +171,10 @@ class CatalogGateway:
     def _continuation(self, page, next_url, previous_urls):
         if not next_url:
             return None
-        if next_url in previous_urls:
+        signature=continuation_identity(next_url)
+        if signature in previous_urls:
             raise PublicCatalogError('Amazon returned a repeated catalog continuation. Reopen the category.')
-        key = (page, next_url, previous_urls)
+        key = (page, signature, previous_urls)
         path = self.continuation_paths.get(key)
         if path is None:
             path = '__prime_page__/' + token_hex(12) + '/nextPage'
@@ -184,13 +186,13 @@ class CatalogGateway:
         if not self._active(active):
             return None
         observe = self._observe(active)
-        key = (self.epoch, page, continuation)
+        key = (self.epoch, page, continuation_identity(continuation))
         if page == 'watching': self.public_pages.pop(key,None)
         cached = self.public_pages.get(key) if page != 'watching' else None
         if cached and monotonic() - cached[0] < 120:
             result = cached[1]
             observe({'event': 'catalog_cache_hit', 'section': page, 'cards': len(result.cards),
-                     'has_next': bool(result.next_url)})
+                     'has_next': bool(result.next_url or result.next_request)})
         else:
             from . import prime_signin, session_store
             jar = None
@@ -244,11 +246,15 @@ class CatalogGateway:
             if not identity:
                 continue
             self.details.setdefault(identity, {'title': card.title, 'lazyLoadURL': url})
+            info=_card_info(card)
+            if page in ('sports','channels'):
+                info['access_label']=('Included with Prime' if info['primeincluded'] else
+                    'Add-on subscription' if page=='channels' else 'Check event access')
             rows.append({'title': card.title,
                          'url': self.g.pluginid + 'pv/browse/__storefront__/' + identity,
                          'detail_url': url,
                          'video': False, 'identity': identity,
-                         'info': _card_info(card)})
+                         'info': info})
         if page == 'watching':
             from .watch_home import complete
             from .home_catalog import unique_progress_rows
@@ -256,8 +262,8 @@ class CatalogGateway:
             observe({'event':'progress_snapshot_ready','fresh':True,'source':'amazon_only',
                 'duplicates_removed':duplicates,'rows':len(rows),'result':'success'})
             for row in rows: row['watching_only'] = True
-        visited = previous_urls + ((continuation,) if continuation else ())
-        next_path = self._continuation(page, result.next_url, visited)
+        visited = previous_urls + ((continuation_identity(continuation),) if continuation else ())
+        next_path = self._continuation(page, result.next_request or result.next_url, visited)
         observe({'event': 'catalog_packet_ready', 'section': page, 'rows': len(rows),
                  'source_cards': len(result.cards), 'prime_only': page in ('movies', 'tv'),
                  'access_excluded': excluded, 'access_unknown': unknown,
@@ -266,4 +272,4 @@ class CatalogGateway:
                  'has_next': bool(next_path), 'result': 'success'})
         return {'rows': rows, 'next': next_path, 'library_confirmed': result.library_confirmed,
                 'catalog_policy': 'prime_only' if page in ('movies', 'tv') else
-                                  'account_library' if page == 'purchases' else 'watch_progress' if page == 'watching' else 'sports'}
+                                  'account_library' if page == 'purchases' else 'watch_progress' if page == 'watching' else page}

@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.25" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.26" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.25[CR]- Restore the original blue texture glow; extend its width without changing its rendering style.[CR]- Keep verified genres during live navigation refresh; never replace genres with the Sports top-level link.[CR]- Keep horizontal focus at the first/last content card. Only Up returns to the current top selector.[CR]- Recognize Amazon's actual page-pagination-button links inside container markup instead of discarding them.[CR]- Invalidate truncated saved pages and request later pages twelve cards before their boundary.[CR]- Replace Amazon's U+30FB synopsis separator with the supported middle dot.[CR]- Reconcile fresh In Progress cards in place; retain the current frame during network refresh instead of blanking the rail.[CR]- Keep the large first title word, with smaller words underneath and a positive line gap.[CR]- Preserve all authentication, media and playback implementations byte-for-byte.</news>
+    <news>0.2.26[CR]- Replace the genre dropdown with a full illustrated five-column grid on Movies/TV focus; show content only after a genre or All selection.[CR]- Move In Progress after TV. Group sports and add-on subscriptions under Extras, with access labels that distinguish confirmed Prime inclusion.[CR]- Recognize Amazon's genre See more links despite decorative Link Arrow text.[CR]- Follow the actual page-owned Grid PaginateCollection protocol with unchanged provider tokens and capability fields.[CR]- Preserve first-two-page warming, early lookahead and current card selection on append.[CR]- Report collection request fields, parser structure, returned counts, next state and explicit provider-declared end without exposing tokens or account identifiers.[CR]- Preserve original glow textures, title hierarchy, description cleanup, fresh in-place In Progress and all native authentication/playback code.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
