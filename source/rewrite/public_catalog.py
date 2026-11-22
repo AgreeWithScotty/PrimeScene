@@ -88,6 +88,7 @@ class CatalogPage:
     next_url: str = None
     library_confirmed: bool = False
     next_request: dict = None
+    empty_confirmed: bool = False
 
 
 def _remember_card(cards, key, card):
@@ -617,9 +618,27 @@ def _next_url(candidates, current_url):
     return (links[0] if len(links) == 1 else None), len(links)
 
 
+def _provider_empty(document):
+    """Only explicit native empty results qualify; unknown markup stays an error."""
+    if not isinstance(document,dict):return False
+    if document.get('hasFailed') is True or any(document.get(k) for k in ('error','errors','errorCode','pagination')):return False
+    if document.get('hasMoreItems') is False and document.get('entities')==[]:return True
+    body=((document.get('init') or {}).get('preparations') or {}).get('body') or document
+    if not isinstance(body,dict) or body.get('hasFailed') is not False:return False
+    if any(body.get(k) for k in ('error','errors','errorCode','pagination')):return False
+    containers=body.get('containers')
+    if not isinstance(containers,list):return False
+    if not containers:return (body.get('swiftPageParameters') or {}).get('pageType') in (
+        'browse','genre','home','merch','subscription','channel','movie','tv')
+    return all(isinstance(c,dict) and c.get('containerType') in ('Grid','StandardCarousel')
+        and c.get('entities')==[] and not c.get('paginationServiceToken') and not c.get('seeMore')
+        for c in containers)
+
 def _read_page(data, content_type, page_url):
+    empty_confirmed=False
     if content_type == 'application/json' or content_type.endswith('+json'):
         document = json.loads(data)
+        empty_confirmed=_provider_empty(document)
         cards, links, details = _json_content(document, page_url)
         details['format'] = 'json'
     elif content_type in ('text/html', 'application/xhtml+xml'):
@@ -637,6 +656,7 @@ def _read_page(data, content_type, page_url):
             except (ValueError, RecursionError):
                 details['embedded_json_failures'] += 1
                 continue
+            empty_confirmed=empty_confirmed or _provider_empty(document)
             found, _, structure = _json_content(document, page_url, page_continuation=False)
             for key, card in found.items():
                 _remember_card(cards, key, card)
@@ -651,14 +671,16 @@ def _read_page(data, content_type, page_url):
     else:
         raise PublicCatalogError('Prime Video returned an unsupported catalog content type.')
     next_url, count = _next_url(links, page_url)
-    details.update(cards=len(cards), descriptions_ready=sum(bool(card.plot) for card in cards.values()),
+    empty_confirmed=(empty_confirmed and not cards and not next_url
+        and not details.get('sign_in_form_present') and not details.get('verification_form_present'))
+    details.update(cards=len(cards), empty_confirmed=empty_confirmed, descriptions_ready=sum(bool(card.plot) for card in cards.values()),
                    landscape_variants=sum(bool(card.landscape_url) for card in cards.values()),
                    prime_confirmed=sum(prime_included(card.access_evidence) for card in cards.values()),
                    access_unknown=sum(not card.access_evidence for card in cards.values()),
                    descriptions_missing=sum(not card.plot for card in cards.values()),
                    continuation_candidates=count, continuation_ambiguous=count > 1,
-                   unknown_structure=not cards, next_address=route(next_url) if next_url else None)
-    return CatalogPage(list(cards.values()), next_url), details
+                   unknown_structure=not cards and not empty_confirmed, next_address=route(next_url) if next_url else None)
+    return CatalogPage(list(cards.values()), next_url,empty_confirmed=empty_confirmed), details
 
 
 def fetch_page(page, opener=None, continuation=None, observer=None, _library_depth=0):
@@ -745,10 +767,10 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
         _emit(observer, dict(details, event='catalog_page_parsed', stage=stage, bytes=len(raw),
                              status=status, address=route(final_url),
                              elapsed_ms=round((perf_counter() - started) * 1000)))
-        if not result.cards and result.next_url is None and result.next_request is None and not result.library_confirmed and not collection:
+        if not result.cards and result.next_url is None and result.next_request is None and not result.library_confirmed and not result.empty_confirmed and not collection:
             raise PublicCatalogError('No title cards or page continuation were found in the catalog response.')
         _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'success',
-                         'cards': len(result.cards), 'has_next': bool(result.next_url or result.next_request),
+                         'cards': len(result.cards), 'has_next': bool(result.next_url or result.next_request),'empty_confirmed':result.empty_confirmed,
                          'elapsed_ms': round((perf_counter() - started) * 1000)})
         return result
     except Exception as error:

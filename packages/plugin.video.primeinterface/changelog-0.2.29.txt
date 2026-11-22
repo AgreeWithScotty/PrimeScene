@@ -1,0 +1,6 @@
+0.2.29
+- Give blank Movies, TV, individual genres, Sports, services, In Progress, Purchases, Search, seasons and episodes their own messages.
+- Recognize explicit successful native empty catalog structures rather than treating them as a failed request.
+- Keep unknown structures, sign-in problems and HTTP failures distinct from empty results, with category-specific temporary-unavailability text.
+- Retain populated cards and descriptions if a later page request fails; keep full failure details in diagnostics.
+- Preserve Movies startup, native artwork-only genres, services, TV navigation, paging, playback and account handling.

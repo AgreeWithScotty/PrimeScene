@@ -1,10 +1,10 @@
 {
   "base_url": "https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/",
-  "app_version": "0.2.28",
+  "app_version": "0.2.29",
   "files": {
     ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "addons.xml": "201df3abf94eb9b8bc0734c1f3f90ea2118b1ec5e4ccb4f99d43c075a5a8091b",
-    "addons.xml.md5": "8c16ec3a811e0c457808ce745c712e83061071bab44319f3a7ccc2adda188c60",
+    "addons.xml": "6ef0e62bdd9d330899da540f5319325aaa2a0dc0caa59e36a69fe496c1a7623b",
+    "addons.xml.md5": "a7e9912b99b9e397b960e238c1418b065b3322d8511663c8e9ac0e7f00a5e34f",
     "LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
     "README.md": "da2bc05750d8914422e25a1f33fdfe0f5e58e38dd776835f06446c7d57de8ceb",
     "packages/plugin.video.primeinterface/changelog-0.1.10.txt": "fa191eda67ad1b1eacb5e7a0cdbbe3040ba3f0d1579d6882e52f7eb3b9498edf",
@@ -56,7 +56,7 @@
     "source/rewrite/prime_signin.py": "fb90c68791ac2e7a3341601fa5590126534b4dce310b2beca7385e3bb3e7b600",
     "source/rewrite/prime_device.py": "464f249b41b8396b2a4c3ce14b70a5dde473e27d93b6eb4325e3a3734a0d7c1a",
     "source/rewrite/prime_login.py": "ef4e18b2159dc237735e3b9da71d61f8906cb864e6ddf8d1828e3a84b065b78f",
-    "source/rewrite/README.md": "3f978e5460a79940b0f0f99862af186231006c09d7e11d4ebdec94776be89d2a",
+    "source/rewrite/README.md": "1d7f6f8e394d2bffa93123d4ac6d91db90bfec076d37b321116bb0f7613c9a91",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.1.25.zip": "c23298639c124f5b1ede6a10647cab8cc37c09379acdbb4c5ac198d4b0cee9a7",
     "packages/plugin.video.primeinterface/changelog-0.1.25.txt": "889cd57d1785927ed36120b9a0ac707a1577acad81863af8d0fcdc0d985202d9",
     "source/rewrite/account_state.py": "565b2c194264037d16b1d1e0d886cce15ee2d0165cc0541651c36fef6dd0bdec",
@@ -70,11 +70,11 @@
     "packages/plugin.video.primeinterface/changelog-0.1.27.txt": "38b95be5dae5cb15606088e29b14d1122a2bcf00a151366a2e1982f021cb56f4",
     "packages/plugin.video.primeinterface/changelog-0.1.28.txt": "ee97e5dc49f5c4ab9a030fd18db6a32cf5d6ffcae0c250829b21389c02bc769e",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.1.28.zip": "721d35cbf32f8b3e90ce8a8c57009694d0a09214e1edcaeda32487920289b064",
-    "source/rewrite/public_catalog.py": "225e08acb54e257257f498c31fbf7434a0f19b8e8216fbb0e3aea78eacff2282",
+    "source/rewrite/public_catalog.py": "185ed97127652ad2ffffc32428713030842a224c38fb0eaad50ed3cd759c3395",
     "source/rewrite/session_store.py": "165f54f3289c08ff7e7f3187259b6fed20e2fa8f0ebe5569ba685d3b23a1c043",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.0.zip": "e45c39daab254255c25266f8c37eef2fc5a2ac97ce9f38a173f9665626a442f1",
     "packages/plugin.video.primeinterface/changelog-0.2.0.txt": "a83d31ad162603958452abc93acaa3ae3bd35d776606846308f0cded6fcd3ea0",
-    "source/rewrite/aurora.py": "9e5dca27c999060b047d46c786fcd755d9f122494a235a6c5f2758c10ef7e141",
+    "source/rewrite/aurora.py": "fafe015689b43f90a2cb1ea5ea0a50044cee26bd04b685ef843d88907444574c",
     "tools/test_aurora_ui.py": "fe3c790a36068f1006421fa3e3f9822f25d1510cddb855155bdc0abc9a40b021",
     "source/rewrite/skins/Default/1080i/Font.xml": "250adc59a22e683831bd94f0f30d7823a2e4c58661b75f94f068ca21f554878e",
     "source/rewrite/skins/Default/1080i/PrimeSceneHome.xml": "50e19523efa2eed9ed57bdb1323eb3bf63afecd0e63d9b76b4afa43869bbbd4b",
@@ -174,7 +174,7 @@
     "source/rewrite/actions.py": "bfc6671a9232fabceb867b738b33652677a5e1730ea89d4a730c83fe897dc032",
     "source/rewrite/app_runtime.py": "b458ba3a853fc1af9f8ce8c1e7e55532fb711fd48cf565505d596073e8b9e194",
     "source/rewrite/backend-0.2.23.json": "ce7c156027b8aa1cf5a5fa4b648bf320dc60cd7482d1d4a62d6c1237ca6230e2",
-    "source/rewrite/catalog_gateway.py": "577901ef11ee259052b3595c36e48a0f28d12cd486fd494f339646b632d248ce",
+    "source/rewrite/catalog_gateway.py": "530cf860769a33de0f227e73ba5c2833408958cc8160d6936fcad5e2e5175594",
     "source/rewrite/default.py": "74d16ada397520fcf2f4b8d9e93ae1925515089352138e8ec4f8edb3042f2370",
     "source/rewrite/detail_catalog.py": "c83f3c81e58bf8599e6b7a9927825cb4c81dd85f0dc13d7046ee597083cb5af5",
     "source/rewrite/http_transport.py": "49c7c5964afe6b1c9715866e0617d8da06eaf294c39a7f9ce09dca32fa85ebfe",
@@ -208,6 +208,10 @@
     "source/rewrite/service_catalog.py": "a26923a0eb975b8afc7ab747ed45d807d43ebfaf45bd34bb9e7eb5957b979737",
     "packages/plugin.video.primeinterface/changelog-0.2.28.txt": "efed952fe7849dcde4387ab00aad2de1ffab205339587ed75a7d3bd0f5c03260",
     "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.28.zip": "5bb2e8e2cb1e78f55f76b14fb4c8a6d5b44a868371f77af48e938b1d0ffd2d2b",
-    "source/rewrite/nav-speed-0.2.28.json": "1e392ab867d22f322e1d234a2352478108c3d0fd13bad41c0fcef3f3556e116a"
+    "source/rewrite/nav-speed-0.2.28.json": "1e392ab867d22f322e1d234a2352478108c3d0fd13bad41c0fcef3f3556e116a",
+    "packages/plugin.video.primeinterface/changelog-0.2.29.txt": "0ab9f9114fc499131ddc71a4620515c8e98a9332fa8ebf07349c2659dcfa5249",
+    "packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.29.zip": "7a77e4106535bd58d99a344bb7160d3586f37bd2fefb670dbea00af4dad3e08a",
+    "source/rewrite/browse_status.py": "24149cb373a7234ab1d5468161b4ae3bbb34f681268d2ec7916231231953fdea",
+    "source/rewrite/change-0.2.29.json": "5b5a0749d2cf3d068cfb9d1f15fc229f9d7ff7188bd03d6fca3cb859bcc1dbc1"
   }
 }

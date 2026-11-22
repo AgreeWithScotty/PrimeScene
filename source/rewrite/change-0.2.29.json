@@ -1,0 +1,249 @@
+{
+  "version": "0.2.29",
+  "sha256": "7a77e4106535bd58d99a344bb7160d3586f37bd2fefb670dbea00af4dad3e08a",
+  "bytes": 32172420,
+  "files": 110,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_status.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py"
+  ],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "concrete_checks": {
+    "python_files_parsed": 51,
+    "xml_files_parsed": 4,
+    "relative_import_edges_checked": 178,
+    "category_specific_display_pairs": 12,
+    "in_progress_wording_preserved": true,
+    "generic_catalog_failure_display_removed": true,
+    "actual_nonempty_response_checks": [
+      {
+        "sample": "fantasy-movies.html",
+        "cards": 20,
+        "empty_confirmed": false
+      },
+      {
+        "sample": "apple.html",
+        "cards": 106,
+        "empty_confirmed": false
+      }
+    ],
+    "unchanged_methods": [
+      "_initialize_controls",
+      "_open_series",
+      "_episode_listing",
+      "_read_tv_detail",
+      "_choose_season",
+      "_publish",
+      "_publish_progress_refresh",
+      "_prefetch",
+      "_capture_playback_origin",
+      "_start_playback",
+      "_show_genres",
+      "_genre_loop"
+    ],
+    "unchanged_modules": [
+      "media_resources",
+      "media_proxy",
+      "playback_engine",
+      "playback_progress",
+      "http_transport",
+      "prime_login",
+      "prime_signin",
+      "account_auth",
+      "accounts",
+      "account_state",
+      "session_store",
+      "prime_device",
+      "account_region",
+      "home_catalog",
+      "watch_home",
+      "collection_paging",
+      "title_art",
+      "display_text",
+      "font_coverage",
+      "service_catalog",
+      "genre_catalog",
+      "navigation",
+      "browse_tiles"
+    ],
+    "unchanged_skin_files": 43,
+    "mocked_provider_or_kodi_tests": false,
+    "kodi_ui_outcome_observed": false
+  },
+  "display_copy_examples": {
+    "Movies": {
+      "empty": {
+        "title": "Movies",
+        "message": "No Prime-included movies are available right now.",
+        "kind": "movies",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "Movies",
+        "message": "Movies are unavailable right now. Please try again.",
+        "kind": "movies",
+        "state": "unavailable"
+      }
+    },
+    "TV": {
+      "empty": {
+        "title": "TV",
+        "message": "No Prime-included TV shows are available right now.",
+        "kind": "tv",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "TV",
+        "message": "TV shows are unavailable right now. Please try again.",
+        "kind": "tv",
+        "state": "unavailable"
+      }
+    },
+    "Fantasy movies": {
+      "empty": {
+        "title": "Fantasy",
+        "message": "No Prime-included movies are available in Fantasy right now.",
+        "kind": "genre_movies",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "Fantasy",
+        "message": "Fantasy movies are unavailable right now. Please try again.",
+        "kind": "genre_movies",
+        "state": "unavailable"
+      }
+    },
+    "Comedy TV": {
+      "empty": {
+        "title": "Comedy",
+        "message": "No Prime-included TV shows are available in Comedy right now.",
+        "kind": "genre_tv",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "Comedy",
+        "message": "Comedy TV shows are unavailable right now. Please try again.",
+        "kind": "genre_tv",
+        "state": "unavailable"
+      }
+    },
+    "Sports": {
+      "empty": {
+        "title": "Sports",
+        "message": "No sports events are available to display right now.",
+        "kind": "sports",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "Sports",
+        "message": "Sports events are unavailable right now. Please try again.",
+        "kind": "sports",
+        "state": "unavailable"
+      }
+    },
+    "HBO Max": {
+      "empty": {
+        "title": "HBO Max",
+        "message": "No titles are available in HBO Max right now.",
+        "kind": "service",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "HBO Max",
+        "message": "HBO Max titles are unavailable right now. Please try again.",
+        "kind": "service",
+        "state": "unavailable"
+      }
+    },
+    "In Progress": {
+      "empty": {
+        "title": "In Progress",
+        "message": "Your in-progress movies or TV shows will display here.",
+        "kind": "progress",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "In Progress",
+        "message": "Your in-progress movies and TV shows are unavailable right now. Please try again.",
+        "kind": "progress",
+        "state": "unavailable"
+      }
+    },
+    "Purchases": {
+      "empty": {
+        "title": "Purchases",
+        "message": "Your purchased and rented movies or TV shows will appear here.",
+        "kind": "purchases",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "Purchases",
+        "message": "Your purchases and rentals are unavailable right now. Please try again.",
+        "kind": "purchases",
+        "state": "unavailable"
+      }
+    },
+    "Search": {
+      "empty": {
+        "title": "Search",
+        "message": "No movies or TV shows matched your search.",
+        "kind": "search",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "Search",
+        "message": "Search results are unavailable right now. Please try again.",
+        "kind": "search",
+        "state": "unavailable"
+      }
+    },
+    "Service directory": {
+      "empty": {
+        "title": "Extras",
+        "message": "No subscription services are available to display right now.",
+        "kind": "services",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "Extras",
+        "message": "Subscription services are unavailable right now. Please try again.",
+        "kind": "services",
+        "state": "unavailable"
+      }
+    },
+    "Seasons": {
+      "empty": {
+        "title": "TV show",
+        "message": "No seasons are available for TV show right now.",
+        "kind": "seasons",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "TV show",
+        "message": "Seasons for TV show are unavailable right now. Please try again.",
+        "kind": "seasons",
+        "state": "unavailable"
+      }
+    },
+    "Episodes": {
+      "empty": {
+        "title": "TV show (Season 2)",
+        "message": "No episodes are available for TV show (Season 2) right now.",
+        "kind": "episodes",
+        "state": "empty"
+      },
+      "unavailable": {
+        "title": "TV show (Season 2)",
+        "message": "Episodes for TV show (Season 2) are unavailable right now. Please try again.",
+        "kind": "episodes",
+        "state": "unavailable"
+      }
+    }
+  }
+}

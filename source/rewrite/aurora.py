@@ -1318,6 +1318,14 @@ class AuroraHome(xbmcgui.WindowXML):
             if self.image_cache is not None:
                 self.image_cache.close()
 
+    def _display_category_state(self,unavailable=False):
+        from .browse_status import category_status
+        state=category_status(self.nav,self.path,self.heading,self.query,self.series_context,unavailable)
+        self._set_hero_status(state['title'],state['message'])
+        self.performance({'event':'category_state_displayed','stage':'category_message','section':self.nav,
+            'category_kind':state['kind'],'state':state['state'],'cards':len(self.rows),'generation':self.generation,
+            'result':'unavailable' if unavailable else 'empty'})
+
     def _catalog_loop(self, bridge):
         monitor = xbmc.Monitor()
         while not self.stop.is_set() and not monitor.abortRequested():
@@ -1373,13 +1381,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         if not self.rows and not self.next_path:
                             self.clearList()
                             self._replace_rail = False
-                            self._set_hero_status('IN PROGRESS' if self.nav == 'home' else 'SMOOTH PRIME',
-                                                  'NO EPISODES WERE RETURNED FOR THIS SEASON. OPEN DIAGNOSTICS.'
-                                                  if self.series_context else
-                                                  'Your in-progress movies or TV shows will display here.' if self.nav == 'home' else
-                                                  'YOUR PURCHASES & RENTALS LIBRARY IS EMPTY.' if self.nav == 'purchases' else
-                                                  'NO PRIME-INCLUDED TITLES WERE RETURNED.' if self.nav in ('movies', 'tv') else
-                                                  'NO TITLES WERE RETURNED. CHOOSE A SECTION OR SEARCH.')
+                            self._display_category_state()
             except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
@@ -1389,13 +1391,15 @@ class AuroraHome(xbmcgui.WindowXML):
                             self._pending_progress_return = None
                             self._progress_refresh_generation = None
                             self.setProperty('ProgressRefreshing','')
-                        message = ('USE THE ACCOUNT BUTTON AND CHOOSE SIGN IN AGAIN.'
-                                   if isinstance(error, CatalogSigninRequired) else
-                                   'THE CATALOG REQUEST FAILED. OPEN DIAGNOSTICS FOR DETAILS.')
                         if not self.rows:
                             self.clearList()
                             self._replace_rail = False
-                        self._set_hero_status('SMOOTH PRIME', message)
+                            if isinstance(error,CatalogSigninRequired):
+                                self._set_hero_status('Sign in','Open the account menu and sign in again to view this category.')
+                            else:self._display_category_state(unavailable=True)
+                        else:
+                            self.performance({'event':'catalog_failure_content_retained','stage':'category_message',
+                                'section':self.nav,'cards':len(self.rows),'generation':self.generation,'result':'failure'})
             finally:
                 with self.lock:
                     if token == self.generation:
@@ -2075,13 +2079,20 @@ class AuroraHome(xbmcgui.WindowXML):
                     packet=future.result()
                     if self.stop.is_set() or not loader.current():return
                     self.service_rows=list((packet or {}).get('tiles') or [])
-                    if not self.service_rows:raise RuntimeError('The service directory returned no service tiles')
+                    if not self.service_rows:
+                        if not (packet or {}).get('empty_confirmed'):raise RuntimeError('The service directory returned no service tiles')
+                        from .browse_status import category_status
+                        self._service_future=False
+                        self.setProperty('GenreMessage',category_status('extras','__service_directory__')['message'])
+                        self.performance({'event':'service_directory_empty','stage':'category_message','empty_confirmed':True,'result':'empty'})
+                        return
                     if self.genre_owner==303:self._populate_genres('extras')
                     self.performance({'event':'service_grid_ready','stage':'service_directory','services':len(self.service_rows),
                         'subscription_filter_applied':False,'complete':packet.get('directory_complete'),'result':'success'})
                 except Exception as error:
                     self._service_future=False
-                    self.setProperty('GenreMessage','The service directory could not be read. Open Diagnostics for details.')
+                    from .browse_status import category_status
+                    self.setProperty('GenreMessage',category_status('extras','__service_directory__',unavailable=True)['message'])
                     self.performance({'event':'service_grid_failed','stage':'service_directory','exception':exception_details(error),'result':'failure'})
         if owner!=self.genre_owner or self.stop.is_set():return
         # Both navigation genres and services already carry artwork. Kodi's

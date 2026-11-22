@@ -179,8 +179,9 @@ class CatalogGateway:
         observe=self._observe(active)
         with self.session(active,observe) as client:tiles,complete=discover(client,observe)
         if not self._active(active):return None
-        if not tiles:raise PublicCatalogError('Amazon did not return its service directory. Open Diagnostics.')
-        return {'rows':[],'tiles':tiles,'next':None,'catalog_policy':'services','directory_complete':complete}
+        if not tiles and not complete:raise PublicCatalogError('Amazon did not return its service directory. Open Diagnostics.')
+        return {'rows':[],'tiles':tiles,'next':None,'catalog_policy':'services','directory_complete':complete,
+            'empty_confirmed':not tiles and complete}
 
     def _continuation(self, page, next_url, previous_urls):
         if not next_url:
@@ -279,11 +280,13 @@ class CatalogGateway:
         visited = previous_urls + ((continuation_identity(continuation),) if continuation else ())
         next_path = self._continuation(page, result.next_request or result.next_url, visited)
         observe({'event': 'catalog_packet_ready', 'section': page, 'rows': len(rows),
+                 'empty_confirmed':result.empty_confirmed,'empty_after_filtering':bool(result.cards) and not rows and not next_path,
                  'source_cards': len(result.cards), 'prime_only': page in ('movies', 'tv'),
                  'access_excluded': excluded, 'access_unknown': unknown,
                  'type_excluded': wrong_type,
                  'library_confirmed': result.library_confirmed,
                  'has_next': bool(next_path), 'result': 'success'})
         return {'rows': rows, 'next': next_path, 'library_confirmed': result.library_confirmed,
+                'empty_confirmed':result.empty_confirmed or bool(result.cards) and not rows and not next_path,
                 'catalog_policy': 'prime_only' if page in ('movies', 'tv') else
                                   'account_library' if page == 'purchases' else 'watch_progress' if page == 'watching' else page}
