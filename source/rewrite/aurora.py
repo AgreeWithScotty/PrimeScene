@@ -192,7 +192,7 @@ def _meta(row):
     episode = info.get('episode')
     if kind == 'episode' and (season or episode):
         bits.append('S%sE%s' % (str(season or 0).zfill(2), str(episode or 0).zfill(2)))
-    elif kind == 'season' and season is not None:
+    elif kind == 'season' and season:
         bits.append('SEASON %s' % season)
     year = _year_label(info)
     if year:
@@ -370,7 +370,7 @@ def playback_row(row):
     return None
 
 
-def _item(row, title_art='', image_cache=None, report=None):
+def _item(row, title_art='', image_cache=None):
     info = row.get('info') or {}
     title = (clean(row.get('title') or '') or 'Untitled').upper()
     item = xbmcgui.ListItem(label=title)
@@ -397,7 +397,7 @@ def _item(row, title_art='', image_cache=None, report=None):
     item.setProperty('ViewingLabel',viewing_label(info))
     card_bits=[]
     if _kind(info)=='episode':card_bits.append('S%sE%s'%(str(info.get('season') or 0).zfill(2),str(info.get('episode') or 0).zfill(2)))
-    elif _kind(info)=='season' and info.get('season') is not None:card_bits.append('Season '+str(info['season']))
+    elif _kind(info)=='season':card_bits.append('Season '+str(info.get('season') or ''))
     elif _year_label(info):card_bits.append(_year_label(info))
     secondary=viewing_label(info) or _runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
     if secondary:card_bits.append(secondary)
@@ -426,10 +426,9 @@ def _item(row, title_art='', image_cache=None, report=None):
         if year and hasattr(tag, 'setYear'):
             tag.setYear(int(year))
         if _kind(info) and hasattr(tag, 'setMediaType'):
-            tag.setMediaType({'tvshow': 'tvshow', 'movie': 'movie', 'episode': 'episode', 'season': 'season'}.get(_kind(info), 'video'))
-    except Exception as error:
-        if report:report({'event':'card_metadata_binding_failed','stage':'native_video_tag',
-            'media_kind':_kind(info),'exception':exception_details(error),'result':'failure'})
+            tag.setMediaType({'tvshow': 'tvshow', 'movie': 'movie', 'episode': 'episode', 'season': 'season'}.get(_kind(info), _kind(info)))
+    except Exception:
+        pass
     return item
 
 
@@ -479,16 +478,12 @@ def _clear_note(profile, request_id=None):
         pass
 
 
-def play_row(row, profile, epoch=None):
+def play_row(row, profile):
     _clear_note(profile)
     note_playback(profile, row.get('title') or 'Smooth Prime', _detail_meta(row))
     address=row.get('url') or ''
     if not address.startswith('plugin://'+ADDON_ID+'/'):
         raise ValueError('Playback must use this add-on selected-title action')
-    if epoch is not None:
-        from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
-        parts=urlsplit(address);query=dict(parse_qsl(parts.query));query['account_epoch']=epoch
-        address=urlunsplit((parts.scheme,parts.netloc,parts.path,urlencode(query),parts.fragment))
     xbmc.executebuiltin('RunScript(%s,%s)'%(ADDON_ID,dumps(address)))
 
 
@@ -581,7 +576,6 @@ class AuroraHome(xbmcgui.WindowXML):
         self.next_path = None
         self.pending_path = None
         self.prefetch_at = 0
-        self._page_retry_at, self._page_retry_count = 0, 0
         self.busy = False
         self.result = None
         self.worker = None
@@ -592,7 +586,6 @@ class AuroraHome(xbmcgui.WindowXML):
         self._restore = None
         self.detail_jobs = Queue()
         self.detail_worker = None
-        self.play_jobs, self.play_worker = Queue(), None
         self.genre_worker = None
         self.genre_jobs = Queue()
         self.preloaded_catalogs = Queue(maxsize=4)
@@ -604,8 +597,6 @@ class AuroraHome(xbmcgui.WindowXML):
         self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={}
         self.bridge = None
         self.bridge_lock = Lock()
-        self.metadata_bridge, self.metadata_lock = None, Lock()
-        self.known_continuations = {}
         self.detail_cache = {}
         self._play_token = 0
         self._allow_enrich = True
@@ -618,7 +609,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self._painted_details = set()
         self._navigation_started = monotonic()
         self.description_cache = None
-        self.description_attempts = {}
+        self.description_attempts = set()
         self._description_window = None
         self.series_context = None
         self.return_worker = None
@@ -692,13 +683,11 @@ class AuroraHome(xbmcgui.WindowXML):
                 'tiles':len(self._genre_rows),'result':'success'})
             self._reactivation_ready.set()
             return
-        if self.path == '__watching__' and self.playback_origin and self.playback_origin.get('path') == self.path and not _playing(xbmc.Player()):
+        if self.playback_origin and self.playback_origin.get('path') == '__watching__' and not _playing(xbmc.Player()):
             self._refresh_progress_return(self.playback_origin)
         with self.lock:
             selected = self._resume_selection
             origin = self.playback_origin
-            if origin and (origin.get('path'),origin.get('query')) != (self.path,self.query):
-                origin = None
             if selected is None and origin:
                 selected = next((i for i, row in enumerate(self.rows)
                     if row.get('url') == origin['url'] or origin.get('identity')
@@ -708,7 +697,7 @@ class AuroraHome(xbmcgui.WindowXML):
             selected = max(0, min(selected, max(0, len(self.rows)-1)))
             if len(self.items) != len(self.rows):
                 self.items = [_item(row, self.title_cache.get((row.get('title') or '').upper(), ''),
-                                    self.image_cache,self.performance) for row in self.rows]
+                                    self.image_cache) for row in self.rows]
             # The native control count establishes its binding separately from
             # WindowXML's Python-side list. Rebind only when that binding is lost.
             native_label=xbmc.getInfoLabel('Container(200).NumItems')
@@ -785,7 +774,6 @@ class AuroraHome(xbmcgui.WindowXML):
         self.return_worker = Thread(target=self._return_loop, name='PrimeReturn', daemon=True)
         self.worker = Thread(target=self._work, name='PrimeCatalog', daemon=True)
         self.detail_worker = Thread(target=self._detail_loop, name='PrimeDetails', daemon=True)
-        self.play_worker = Thread(target=self._play_loop, name='PrimeTitleActions', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
         self.genre_worker = Thread(target=self._genre_loop,name='PrimeGenres',daemon=True)
         self._show_genres(301,focus_grid=False)
@@ -798,7 +786,6 @@ class AuroraHome(xbmcgui.WindowXML):
             'native_binding_retained_when_confirmed':True,'result':'success'})
         self.worker.start()
         self.detail_worker.start()
-        self.play_worker.start()
         self.visual_worker.start()
         self.genre_worker.start()
         self.return_worker.start()
@@ -833,7 +820,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self.items, self.row_keys = [], set()
             self.title_cache.clear()
             self.known_details.clear()
-            self.known_continuations.clear()
             self.description_attempts.clear()
             self.description_cache = None
             self.detail_cache.clear()
@@ -845,12 +831,11 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Nav', '')
         self._season_properties()
         self.setProperty('Section', '')
-        self.setProperty('SectionNotice','');self.setProperty('Busy','')
         self.update_account_button()
         self._set_hero_status('SIGN IN', 'SIGN IN TO PRIME VIDEO TO BROWSE AND WATCH.')
         self.setFocusId(306)
 
-    def _set_hero_status(self, title, tag, art=''):
+    def _set_hero_status(self, title, tag):
         if title:
             self.setProperty('ShowSplash', '')
         self.setProperty('HeroKicker', '')
@@ -858,7 +843,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroMeta', '')
         self.setProperty('HeroTag', tag)
         self.setProperty('HeroSynopsis', tag)
-        self.setProperty('HeroFanart', art)
+        self.setProperty('HeroFanart', '')
         baked={'IN PROGRESS':'status-progress.png','PURCHASES':'status-purchases.png',
             'SEARCH':'status-search.png','SEARCH PRIME VIDEO':'status-search.png'}.get(title.upper())
         plate=str(Path(self.g.PLUGIN_PATH)/'resources/skins/Default/media'/baked) if baked else self.title_cache.get(title.upper(),'')
@@ -872,7 +857,6 @@ class AuroraHome(xbmcgui.WindowXML):
         self._pending_progress_return = self._progress_return_request = None
         self._resume_selection = None
         self.stop.set()
-        self.setProperty('SectionNotice','');self.setProperty('Busy','')
         self._unregister_return()
         self.playback_origin = None
         self.setProperty('AccountLabel', status)
@@ -888,13 +872,12 @@ class AuroraHome(xbmcgui.WindowXML):
             self.title_cache.clear()
             self.known_details.clear()
         self.clearList()
-        for worker in (self.worker, self.detail_worker, self.play_worker, self.visual_worker, self.return_worker, self.genre_worker):
+        for worker in (self.worker, self.detail_worker, self.visual_worker, self.return_worker, self.genre_worker):
             if worker is not None and worker is not current_thread():
                 while worker.is_alive():
                     worker.join(0.1)
         self.worker = None
         self.detail_worker = None
-        self.play_worker = None
         self.genre_worker = None
         self.genre_jobs = Queue()
         self.preloaded_catalogs = Queue(maxsize=4)
@@ -908,11 +891,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.visual_worker = None
         self.return_worker = None
         self.bridge = None
-        self.metadata_bridge = None
-        self.known_continuations.clear()
         self.jobs = Queue()
         self.detail_jobs = Queue()
-        self.play_jobs = Queue()
         self.detail_cache = {}
         self._painted_details.clear()
         self.title_cache.clear()
@@ -1024,8 +1004,7 @@ class AuroraHome(xbmcgui.WindowXML):
                     'selected_index':self._selected_index(),'active_dialog_id':xbmcgui.getCurrentWindowDialogId(),
                     'elapsed_ms':round((monotonic()-started)*1000),
                     'result':'pending_fresh_list' if fresh and self._pending_progress_return else 'success'})
-                if self.playback_origin is origin:self.playback_origin=None
-                self._resume_selection=None
+                self.playback_origin=None;self._resume_selection=None
             except Exception as error:
                 self.performance({'event':'playback_card_return_failed','request_id':request.get('request_id'),
                     'exception':exception_details(error),'elapsed_ms':round((monotonic()-started)*1000),'result':'failure'})
@@ -1042,20 +1021,15 @@ class AuroraHome(xbmcgui.WindowXML):
                     'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at,
                     'selected': selected, 'series': deepcopy(self.series_context)}}
 
-    def _start_playback(self, row, origin=None,resume_mode='ask', request_token=None, generation=None):
+    def _start_playback(self, row, origin=None,resume_mode='ask'):
         """Keep the launching card and original browse context until return."""
-        with self.lock:
-            if self.stop.is_set() or (request_token is not None and (request_token!=self._play_token or generation!=self.generation)):
-                return
-            self._play_token+=1
-            self.setProperty('Busy','')
-            origin = origin or self._capture_playback_origin()
+        origin = origin or self._capture_playback_origin()
         if resume_mode=='start':
             from urllib.parse import urlsplit,urlunsplit,parse_qsl,urlencode
             parts=urlsplit(row['url']);query=dict(parse_qsl(parts.query));query['resume']='start'
             row=dict(row,url=urlunsplit((parts.scheme,parts.netloc,parts.path,urlencode(query),parts.fragment)))
         self.playback_origin = origin
-        play_row(row, self.g.DATA_PATH, self.account_generation)
+        play_row(row, self.g.DATA_PATH)
         note = _read_note(self.g.DATA_PATH) or {}
         if self.playback_origin is not None:
             self.playback_origin['request_id'] = note.get('request_id')
@@ -1075,12 +1049,14 @@ class AuroraHome(xbmcgui.WindowXML):
             self.views[(self.path, self.query)] = {'rows': list(self.rows), 'items': list(self.items),
                 'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at, 'selected': self._selected_index(),
                 'series': deepcopy(self.series_context)}
+            if self.series_context:
+                self.views[(self.series_context['root_path'], None)] = self.views[(self.path, self.query)]
             if len(self.views) > 12:
                 oldest = next((key for key in self.views if key[0] not in _SECTION_PATHS), None)
                 if oldest is not None:
                     self.views.pop(oldest)
 
-    def navigate(self, path, remember=True, query=None, selection=None, heading=None, series=None, save_current=True, intro_art=''):
+    def navigate(self, path, remember=True, query=None, selection=0, heading=None, series=None, save_current=True):
         if self.stop.is_set():return
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
@@ -1094,6 +1070,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if save_current:
                 self._save_view()
             refreshing_progress=path=='__watching__' and self.path=='__watching__' and bool(self.rows)
+            isolated_section=path in ('__watching__','__prime_purchases__','search')
             visible_cards = len(self.rows)
             if remember and ((path, query) != (self.path, self.query) or series_changed):
                 previous_nav = _PRIMARY_SECTIONS.get(self.path, (self.nav, ''))[0]
@@ -1109,9 +1086,8 @@ class AuroraHome(xbmcgui.WindowXML):
             self.next_path = None
             self.pending_path = None
             self.prefetch_at = 0
-            self._page_retry_at,self._page_retry_count=0,0
             self.busy = True
-            self._restore = selection
+            self._restore = selection or None
             token = self.generation
             self._progress_refresh_generation=token if refreshing_progress else None
             self._navigation_started = monotonic()
@@ -1123,7 +1099,6 @@ class AuroraHome(xbmcgui.WindowXML):
                           'cached_view': bool(cached), 'retained_visible_cards': visible_cards,
                           'progress_chrome': False})
         self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
-        self.setProperty('SectionNotice','')
         self._section_label()
         self._season_properties()
         if not refreshing_progress:
@@ -1147,12 +1122,12 @@ class AuroraHome(xbmcgui.WindowXML):
                 'cache_reuse':False,'result':'success'})
         else:
             self._pending_progress_return=None
-        if not cached and not refreshing_progress:
+        if isolated_section and not refreshing_progress:
             self.clearList()
             self._replace_rail=False
-            from .browse_status import browse_intro
-            intro=browse_intro(self.nav,path,self.heading,query,self.series_context)
-            self._set_hero_status(intro['title'],intro['message'],intro_art)
+            from .browse_status import section_intro
+            intro=section_intro('search' if path=='search' else self.nav)
+            self._set_hero_status(intro['title'],intro['message'])
             self.performance({'event':'section_intro_shown','stage':'section_transition',
                 'section':'search' if path=='search' else self.nav,'generation':token,
                 'previous_section_cards_removed':True,'native_cards':self.getListSize(),
@@ -1166,17 +1141,17 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.next_path, self.prefetch_at = cached['next'], cached['prefetch_at']
                 self.busy = False
                 self.addItems(self.items)
-                self.setCurrentListPosition(cached['selected'] if selection is None else selection)
-                self._restore=None
+                self.setCurrentListPosition(selection or cached['selected'])
             if self.items:
                 self.setProperty('ShowSplash', '')
             self.performance({'event': 'navigation_restored', 'source': 'view_memory', 'cards': len(self.rows),
                               'generation': token,
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
             return
-        # Only a refresh of the same live list retains its own cards.
-        self._replace_rail = False
+        # Leave the visible cards/hero intact until the replacement is ready.
+        self._replace_rail = not refreshing_progress and not isolated_section
         if not refreshing_progress:self.setProperty('ProgressRefreshing','')
+        if not refreshing_progress and not isolated_section:self._set_hero_status('', '')
         # Drop queued obsolete work. In-flight public requests continue only to
         # warm their cache; the worker stops waiting when generation changes.
         while True:
@@ -1221,11 +1196,8 @@ class AuroraHome(xbmcgui.WindowXML):
             with self.lock:
                 if token==self.generation and not self.stop.is_set():
                     if not self.rows:
-                        if isinstance(error,CatalogSigninRequired):self._set_hero_status('Sign in','Use Sign out, then sign in again to view your Amazon account.')
+                        if isinstance(error,CatalogSigninRequired):self._set_hero_status('Sign in','Sign in again to view your Amazon account.')
                         else:self._display_category_state(unavailable=True)
-                    else:self.setProperty('SectionNotice',
-                        'Your Amazon session needs verification. Use Sign out, then sign in again.' if isinstance(error,CatalogSigninRequired) else
-                        'Your In Progress list could not be refreshed. Select In Progress to try again.')
                     self._progress_refresh_generation=None
                     if path=='__watching__':self._pending_progress_return=None
                     self.setProperty('ProgressRefreshing','')
@@ -1330,7 +1302,7 @@ class AuroraHome(xbmcgui.WindowXML):
             except OSError as error:
                 self.performance({'event': 'artwork_tracking_failed', 'exception': exception_details(error), 'result': 'failure'})
         additions = [_item(row, self.title_cache.get((row.get('title') or '').upper(), ''),
-                           self.image_cache,self.performance) for row in staged]
+                           self.image_cache) for row in staged]
         with self.lock:
             if self.stop.is_set() or token != self.generation:
                 return
@@ -1347,8 +1319,6 @@ class AuroraHome(xbmcgui.WindowXML):
                 if row.get('identity') and row.get('detail_url'):
                     self.known_details[row['identity']] = {'title': row['title'], 'lazyLoadURL': row['detail_url']}
             self.next_path = packet.get('next')
-            self._page_retry_at,self._page_retry_count=0,0
-            self.setProperty('SectionNotice','')
             count = len(self.rows)
             restore = self._restore
         if additions and restore is not None and restore < count:
@@ -1388,7 +1358,7 @@ class AuroraHome(xbmcgui.WindowXML):
             inserted=removed=moved=0;fresh_artwork=set()
             for index,row in enumerate(rows):
                 key=row.get('url')
-                item=_item(row,self.title_cache.get((row.get('title') or '').upper(),''),self.image_cache,self.performance)
+                item=_item(row,self.title_cache.get((row.get('title') or '').upper(),''),self.image_cache)
                 fresh_artwork.update(self._note_artwork(row.get('info') or {}))
                 if row.get('identity') and row.get('detail_url'):
                     self.known_details[row['identity']]={'title':row['title'],'lazyLoadURL':row['detail_url']}
@@ -1433,7 +1403,6 @@ class AuroraHome(xbmcgui.WindowXML):
             # Restore early main-catalog loading without opening every genre.
             bridge = CatalogGateway(self.g)
             self.bridge = bridge
-            self.metadata_bridge = CatalogGateway(self.g)
             self.loader = StorefrontLoader(self.g,ready=self._catalog_preload_ready)
             self.image_cache = ImageCache(self.g, self.loader.epoch)
             self.description_cache = DescriptionCache(self.g, self.loader.epoch, self.performance)
@@ -1472,7 +1441,6 @@ class AuroraHome(xbmcgui.WindowXML):
             if token != self.generation:
                 continue
             page_start = len(self.rows)
-            continuation = path.endswith('/nextPage')
             started = monotonic()
             future = packet = None
             try:
@@ -1505,7 +1473,6 @@ class AuroraHome(xbmcgui.WindowXML):
                     with self.bridge_lock:
                         if token != self.generation or self.stop.is_set():
                             continue
-                        self._sync_detail_routes(bridge)
                         bridge.browse_progressive(
                             path, lambda packet: self._publish(token, packet),
                             lambda: token == self.generation and not self.stop.is_set(), query=query)
@@ -1520,25 +1487,11 @@ class AuroraHome(xbmcgui.WindowXML):
                             self.clearList()
                             self._replace_rail = False
                             self._display_category_state()
-            except Exception as error:
+            except BaseException as error:
                 record(self.g, 'catalog_request_failed', error)
                 xbmc.log('[Prime Scene] Catalog operation failed: ' + type(error).__name__, xbmc.LOGERROR)
                 with self.lock:
                     if token == self.generation and not self.stop.is_set():
-                        auth_required=isinstance(error,CatalogSigninRequired)
-                        if continuation and self.rows:
-                            self._page_retry_count+=1
-                            self.next_path=None if auth_required else path
-                            delay=min(60,5*2**min(self._page_retry_count-1,4))
-                            self._page_retry_at=monotonic()+delay
-                            self.setProperty('SectionNotice',
-                                'Your Amazon session needs verification. Use Sign out, then sign in again.' if auth_required else
-                                'More titles could not be retrieved. Retrying shortly.')
-                            self.performance({'event':'catalog_page_retry_scheduled','stage':'continuation',
-                                'generation':token,'attempt':self._page_retry_count,'retry_seconds':None if auth_required else delay,
-                                'continuation_retained':not auth_required,'cards_retained':len(self.rows),
-                                'elapsed_ms':round((monotonic()-started)*1000),
-                                'exception':exception_details(error),'result':'authentication_required' if auth_required else 'retry_pending'})
                         if path == '__watching__':
                             self._pending_progress_return = None
                             self._progress_refresh_generation = None
@@ -1547,7 +1500,7 @@ class AuroraHome(xbmcgui.WindowXML):
                             self.clearList()
                             self._replace_rail = False
                             if isinstance(error,CatalogSigninRequired):
-                                self._set_hero_status('Sign in','Use Sign out, then sign in again to view this category.')
+                                self._set_hero_status('Sign in','Open the account menu and sign in again to view this category.')
                             else:self._display_category_state(unavailable=True)
                         else:
                             self.performance({'event':'catalog_failure_content_retained','stage':'category_message',
@@ -1564,8 +1517,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _prefetch(self):
         with self.lock:
-            if (self.genre_owner is not None or self.busy or not self.next_path or self.stop.is_set()
-                    or monotonic()<self._page_retry_at or xbmc.getCondVisibility('Window.IsVisible(fullscreenvideo)')):
+            if self.genre_owner is not None or self.busy or not self.next_path or self.stop.is_set():
                 return
             if self._selected_index() >= self.prefetch_at:
                 self.performance({'event':'lookahead_page_requested','generation':self.generation,
@@ -1597,8 +1549,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _season_properties(self):
         context = self.series_context or {}
         self.setProperty('SeasonLabel', clean(context.get('season_label') or ''))
-        self.setProperty('SeasonSwitchable', 'true' if context.get('view')=='episodes'
-            and context.get('season_label') and len(context.get('seasons') or []) > 1 else '')
+        self.setProperty('SeasonSwitchable', 'true' if len(context.get('seasons') or []) > 1 else '')
 
     def _open_series(self, row):
         path = _browse_path(self.g.pluginid, row.get('url'))
@@ -1612,23 +1563,16 @@ class AuroraHome(xbmcgui.WindowXML):
                    'opened_kind': _kind(row.get('info')), 'seasons': [],
                    'watching_only': bool(row.get('watching_only')),
                    'view':'episodes' if row.get('season_choice') else 'seasons'}
-        if row.get('season_choice') and self.series_context:
-            context=deepcopy(self.series_context)
-            context.update(view='episodes',requested_path=path,
-                requested_season=(row.get('info') or {}).get('season'),season_label=row.get('title') or '')
         if context['watching_only'] or (self.views.get((path,None),{}).get('series') or {}).get('watching_only'):
             self.views.pop((path,None),None)
         if _kind(row.get('info')) == 'season':
             context['requested_season'] = (row.get('info') or {}).get('season')
         self.performance({'event': 'title_click', 'action': 'browse_episodes',
                           'media_kind': _kind(row.get('info')), 'result': 'success'})
-        self.navigate(path, heading=context['title'], series=context,
-            intro_art=_fit_art((row.get('info') or {}).get('fanart') or _rail_art(row.get('info') or {}),_HERO_ART))
+        self.navigate(path, heading=context['title'], series=context)
 
     def _episode_listing(self, path, token):
-        with self.lock:
-            if token!=self.generation or self.stop.is_set() or not self.series_context:return None
-            context = deepcopy(self.series_context)
+        context = deepcopy(self.series_context)
         continuation = self.bridge.continuations.get(path) if self.bridge else None
         packet = (self._read_tv_detail(path, token) if context.get('watching_only') or continuation and continuation[1] == 'tv_detail'
                   else self._fetch_detail(path))
@@ -1657,9 +1601,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 info['mediatype']='season'
                 rows.append(dict(season,info=info,video=False,season_choice=True,watching_only=context.get('watching_only',False)))
             context['seasons']=seasons;context['season_label']=''
-            with self.lock:
-                if token!=self.generation or self.stop.is_set():return None
-                self.series_context=context;self._season_properties()
+            self.series_context=context;self._season_properties()
             self.performance({'event':'series_seasons_published','stage':'season_listing','season_count':len(rows),
                 'automatic_episode_selection':False,'result':'success'})
             return dict(packet,rows=rows,next=None)
@@ -1725,9 +1667,7 @@ class AuroraHome(xbmcgui.WindowXML):
                     if next_path and next_path != path:
                         context['requested_path'] = next_path
                         context['requested_season'] = (next_season.get('info') or {}).get('season')
-                        with self.lock:
-                            if token!=self.generation or self.stop.is_set():return None
-                            self.series_context = context
+                        self.series_context = context
                         return self._episode_listing(next_path,token)
         if episodes:
             episodes.sort(key=_episode_order)
@@ -1741,8 +1681,7 @@ class AuroraHome(xbmcgui.WindowXML):
                           'generation': token, 'season_count': len(seasons), 'episode_count': len(episodes),
                           'row_count': len(packet.get('rows') or []),
                           'selected_kind': _kind(packet.get('info')), 'result': 'success' if episodes else 'unclassified'})
-        with self.lock:
-            if token != self.generation or self.stop.is_set():return None
+        if token == self.generation:
             self.series_context = context
             self._season_properties()
         return packet
@@ -1751,8 +1690,9 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.bridge is None or self.stop.is_set() or token != self.generation:
             return None
         with self.bridge_lock:
-            if self.stop.is_set() or token!=self.generation:return None
-            self._sync_detail_routes(self.bridge)
+            with self.lock:
+                for key,value in self.known_details.items():
+                    self.bridge.details.setdefault(key,value)
             packet = self.bridge.read_tv(path, lambda: not self.stop.is_set() and token == self.generation)
         if packet is not None:
             self._remember(path, None, 'browse', packet)
@@ -1760,7 +1700,6 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _choose_season(self):
         context = deepcopy(self.series_context)
-        generation=self.generation
         seasons = (context or {}).get('seasons') or []
         if len(seasons) < 2:
             return
@@ -1768,7 +1707,6 @@ class AuroraHome(xbmcgui.WindowXML):
         selected = self.g.dialog.select('Choose season', labels)
         if selected is None or selected < 0 or selected >= len(seasons):
             return
-        if self.stop.is_set() or generation!=self.generation:return
         row = seasons[selected]
         path = _browse_path(self.g.pluginid, row['url'])
         if not path:
@@ -1776,7 +1714,6 @@ class AuroraHome(xbmcgui.WindowXML):
         context['requested_path'] = path
         context['requested_season'] = (row.get('info') or {}).get('season')
         context['season_label'] = labels[selected]
-        context['view'] = 'episodes'
         # A season change stays within this show's page. Back returns to the
         # catalog, keeping the original show's selected position.
         self.navigate(path, remember=False, heading=context['title'], series=context)
@@ -1785,8 +1722,6 @@ class AuroraHome(xbmcgui.WindowXML):
     def _visual_loop(self):
         """Keep expensive title drawing and image downloads away from input/binding."""
         while not self.stop.is_set():
-            if xbmc.getCondVisibility('Window.IsVisible(fullscreenvideo)'):
-                self.stop.wait(0.2);continue
             self._report_display_text()
             try:self._prepare_catalog_preload()
             except Exception as error:self.performance({'event':'catalog_visual_preload_failed','stage':'preload_artwork',
@@ -1902,33 +1837,20 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _detail_loop(self):
         while not self.stop.is_set():
-            started=monotonic()
             try:
                 job = self.detail_jobs.get(timeout=0.05)
             except Empty:
-                try:
-                    if self._allow_enrich and not self.stop.is_set() and not xbmc.getCondVisibility('Window.IsVisible(fullscreenvideo)'):
-                        self._queue_enrich()
-                except Exception as error:
-                    self._enriched_focus=None
-                    self.performance({'event':'metadata_worker_failed','stage':'read_ahead','generation':self.generation,
-                        'elapsed_ms':round((monotonic()-started)*1000),'exception':exception_details(error),'result':'failure'})
-                    self.stop.wait(0.5)
+                if self._allow_enrich and not self.stop.is_set():
+                    self._queue_enrich()
                 continue
             if self.stop.is_set() or not job:
                 return
-            try:
-                if job[0] == 'enrich' and job[2] == self.generation and _detail_path(self.g.pluginid, self._selected_row()) == job[1]:
+            kind = job[0]
+            if kind == 'enrich':
+                if job[2] == self.generation and _detail_path(self.g.pluginid, self._selected_row()) == job[1]:
                     self._enrich(job[1])
-            except Exception as error:
-                self.performance({'event':'metadata_worker_failed','stage':'queued_metadata','generation':self.generation,
-                    'elapsed_ms':round((monotonic()-started)*1000),'exception':exception_details(error),'result':'failure'})
-
-    def _play_loop(self):
-        while not self.stop.is_set():
-            try:job=self.play_jobs.get(timeout=0.1)
-            except Empty:continue
-            self._play_resolved(*job)
+            elif kind == 'play':
+                self._play_resolved(*job[1:])
 
     def _queue_enrich(self):
         """Read the focused title and next ten descriptions before selection."""
@@ -1966,11 +1888,11 @@ class AuroraHome(xbmcgui.WindowXML):
                 if (generation, path) not in self._painted_details:
                     self._paint_cached(path)
                 continue
-            if monotonic()-self.description_attempts.get(path,float('-inf'))<30:
+            if path in self.description_attempts:
                 continue
             if not self.detail_jobs.empty():
                 return
-            self.description_attempts[path]=monotonic()
+            self.description_attempts.add(path)
             saved = self.description_cache.load(path) if self.description_cache is not None else None
             if saved:
                 if cached is None:
@@ -2019,7 +1941,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._painted_details.add(signature)
             self._enriched_focus = signature
             return
-        if cached and cached.get('how') == 'error' and monotonic()-cached.get('failed_at',0)<30:return
+        if cached and cached.get('how') == 'error':
+            return
         self._enriched_focus = signature
         if self.detail_jobs.empty():
             self._enrich(path)
@@ -2031,23 +1954,17 @@ class AuroraHome(xbmcgui.WindowXML):
         if cached and cached.get('how') != 'error' and (not description or (cached.get('info') or {}).get('plot')):
             self._paint_cached(path)
             return
-        packet = self._fetch_detail(path,background=True)
+        packet = self._fetch_detail(path)
         if packet == 'wait' or self.stop.is_set():
             return
         if packet is None:
-            self.detail_cache[path] = {'playable': None, 'how': 'error', 'info': {}, 'failed_at':monotonic()}
-            self._enriched_focus=None
+            self.detail_cache[path] = {'playable': None, 'how': 'error', 'info': {}}
             return
         playable, how = choose_playback(packet.get('rows'), _kind(packet.get('info')), packet.get('selected_id'))
         self._remember(path, playable, how if playable is not None else 'metadata', packet)
 
-    def _sync_detail_routes(self,bridge):
-        with self.lock:
-            for key,value in self.known_details.items():bridge.details.setdefault(key,value)
-            for key,value in self.known_continuations.items():bridge.continuations.setdefault(key,value)
-
-    def _fetch_detail(self, path, background=False):
-        bridge = self.metadata_bridge if background else self.bridge
+    def _fetch_detail(self, path):
+        bridge = self.bridge
         if bridge is None or self.stop.is_set():
             return 'wait'
         cached = self.detail_cache.get(path) or {}
@@ -2064,25 +1981,22 @@ class AuroraHome(xbmcgui.WindowXML):
                         packet[key] = part[key]
 
         try:
-            with self.metadata_lock if background else self.bridge_lock:
+            with self.bridge_lock:
                 if self.stop.is_set():
                     return 'wait'
-                self._sync_detail_routes(bridge)
+                with self.lock:
+                    for key, value in self.known_details.items():
+                        bridge.details.setdefault(key, value)
                 bridge.browse_progressive(path, publish, lambda: not self.stop.is_set())
         except Exception as error:
             self.performance({'event':'title_lookup_failed','stage':'native_title_read','exception':exception_details(error),'result':'failure'})
-            if isinstance(error,CatalogSigninRequired):raise
             return None
         if self.account_generation is not None:
             from .account_state import current_account
             if not current_account(self.g.DATA_PATH, self.account_generation):
                 return None
-        with self.lock:
-            if self.stop.is_set():return None
-            self.known_continuations.update(bridge.continuations)
-            for key,value in bridge.details.items():self.known_details.setdefault(key,value)
-            record = self.detail_cache.setdefault(path, {'playable': None, 'how': 'metadata', 'info': {}})
-            record['packet'] = deepcopy(packet)
+        record = self.detail_cache.setdefault(path, {'playable': None, 'how': 'metadata', 'info': {}})
+        record['packet'] = deepcopy(packet)
         return packet
 
     def _resolve_playable(self, path, depth=0):
@@ -2145,7 +2059,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 else:
                     continue
             painted = {'title': row.get('title'), 'info': current}
-            refreshed=_item(painted,image_cache=self.image_cache,report=self.performance)
+            refreshed=_item(painted,image_cache=self.image_cache)
             item.setProperty('CardMeta',refreshed.getProperty('CardMeta'))
             item.setProperty('ViewingLabel',refreshed.getProperty('ViewingLabel'))
             item.setProperty('Meta', _meta(painted))
@@ -2167,14 +2081,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 item.setArt(art)
 
     def _play_resolved(self, token, generation, path, title, origin=None,resume_mode='ask'):
-        started=monotonic()
         try:
-            if token!=self._play_token or generation!=self.generation or self.stop.is_set():
-                self.performance({'event':'title_action_cancelled','stage':'before_detail_resolution',
-                    'generation':generation,'request_id':token,'reason':'selection_or_session_changed','result':'cancelled'})
-                return
-            self.performance({'event':'title_action_started','stage':'detail_resolution',
-                'generation':generation,'request_id':token,'result':'started'})
             cached = self.detail_cache.get(path)
             if cached is None or cached.get('how') in ('error', 'wait', 'metadata'):
                 playable, how, packet = self._resolve_playable(path)
@@ -2196,14 +2103,10 @@ class AuroraHome(xbmcgui.WindowXML):
             if how == 'browse' or _tv_packet((cached or {}).get('packet')):
                 self._open_series({'title': title, 'url': self.g.pluginid + 'pv/browse/' + path,
                                    'info': (cached or {}).get('info') or {}})
-                self.performance({'event':'title_action_finished','stage':'detail_resolution','generation':generation,
-                    'request_id':token,'elapsed_ms':round((monotonic()-started)*1000),'result':'seasons_opened'})
                 return
             if playable is not None:
                 xbmc.log('[Prime Scene] Playing %s (%s) without a detail page' % (path, how), xbmc.LOGINFO)
-                self._start_playback(playable, origin,resume_mode=resume_mode,request_token=token,generation=generation)
-                self.performance({'event':'title_action_finished','stage':'detail_resolution','generation':generation,
-                    'request_id':token,'elapsed_ms':round((monotonic()-started)*1000),'result':'playback_dispatched'})
+                self._start_playback(playable, origin,resume_mode=resume_mode)
                 return
             if how == 'picker':
                 self.navigate(path, heading=title or 'Smooth Prime')
@@ -2212,13 +2115,6 @@ class AuroraHome(xbmcgui.WindowXML):
                        if _kind((cached or {}).get('info')) in ('movie', 'episode') else
                        'The title details could not be loaded. Open Diagnostics for the report.')
             self.g.dialog.ok('Smooth Prime', message)
-        except Exception as error:
-            self.performance({'event':'title_action_failed','stage':'detail_resolution','generation':generation,
-                'request_id':token,'elapsed_ms':round((monotonic()-started)*1000),
-                'exception':exception_details(error),'result':'failure'})
-            if token==self._play_token and generation==self.generation and not self.stop.is_set():
-                self.g.dialog.ok('Smooth Prime','Your Amazon session needs verification. Use Sign out, then sign in again.'
-                    if isinstance(error,CatalogSigninRequired) else 'This title could not be opened. Open Diagnostics for the complete report.')
         finally:
             if token == self._play_token:
                 self.setProperty('Busy', '')
@@ -2234,7 +2130,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self._focus_first_card()
 
     def _show_search(self):
-        if self.path=='search' and self.query is None and self.genre_owner is None:return
+        if self.path=='search' and self.genre_owner is None:return
         if self.account_name is not None and not self.account_name():return
         self._save_view();self._hide_genres(restore=False)
         with self.lock:
@@ -2245,7 +2141,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self._progress_refresh_generation=None;self._pending_progress_return=None
             self._focus_first_generation=None
         self.clearList();self._replace_rail=False
-        self.setProperty('SectionNotice','')
         self.setProperty('Nav','');self.setProperty('Section','')
         self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
         self._season_properties()
@@ -2270,12 +2165,11 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _show_genres(self,owner,focus_grid=True):
         if self.account_name is not None and not self.account_name():return
-        if owner==303 and self._service_future is False:
-            self._service_future=None
         if self.genre_owner==owner and self.getProperty('GenrePanel'):
             if focus_grid:self.setFocusId(410)
             return
         section={301:'movies',302:'tv',303:'extras'}[owner]
+        if owner==303 and self._service_future is False:self._service_future=None
         with self.lock:
             self._save_view()
             self.generation+=1
@@ -2287,8 +2181,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self.path='__extras__' if owner==303 else '__genres__/'+section
             self.nav=section;self.genre_owner=owner;self.heading=''
         self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
-        self.clearList();self._replace_rail=False
-        self.setProperty('SectionNotice','');self._set_hero_status('','')
         self.setProperty('ShowSplash','');self.setProperty('Section','');self._season_properties()
         self.setProperty('Nav',section);self.setProperty('GenreMessage','')
         if section!='extras' and section not in self.genre_cache:
@@ -2352,7 +2244,7 @@ class AuroraHome(xbmcgui.WindowXML):
             path='__genre__/'+section+'/'+quote_plus(row['address'])
             if self.loader is not None:self.loader.register_genre(path)
         if path.startswith('__service__/') and self.loader is not None:self.loader.register_genre(path)
-        self.nav=section;self.history.clear();self.navigate(path,remember=False,heading=row['title'],intro_art=row.get('artwork') or '')
+        self.nav=section;self.history.clear();self.navigate(path,remember=False,heading=row['title'])
         self._focus_first_card()
         self.performance({'event':'browse_tile_selected','section':section,'provider_route':True,
             'prime_only':section in ('movies','tv'),'result':'success'})
@@ -2485,24 +2377,32 @@ class AuroraHome(xbmcgui.WindowXML):
                     self.show_signed_out()
         elif control_id == 200:
             row = self._selected_row()
-            if row:self._activate_row(row,self._capture_playback_origin())
-
-    def _activate_row(self,row,origin,resume_mode='ask'):
-        origin=dict(origin,url=row.get('url'),identity=row.get('identity'))
-        path=_detail_path(self.g.pluginid,row)
-        cached=self.detail_cache.get(path) if path else None
-        if _tv_container(row) or cached and (cached.get('how')=='browse' or _tv_packet(cached.get('packet'))):
-            self._open_series(row);return
-        target=playback_row(row) or (cached or {}).get('playable')
-        if target is not None:
-            self.performance({'event':'title_click','action':'play','media_kind':_kind(target.get('info')),'result':'success'})
-            self._start_playback(target,origin,resume_mode=resume_mode);return
-        if not path:
-            self.g.dialog.ok('Smooth Prime','This title has no available action. Open Diagnostics for the report.');return
-        with self.lock:
-            self._play_token+=1;token=self._play_token
-            self.setProperty('Busy','1')
-            self.play_jobs.put((token,self.generation,path,row.get('title') or 'Smooth Prime',origin,resume_mode))
+            if not row:
+                return
+            path = _detail_path(self.g.pluginid, row)
+            cached = self.detail_cache.get(path) if path else None
+            if _tv_container(row) or cached and (cached.get('how') == 'browse' or _tv_packet(cached.get('packet'))):
+                self._open_series(row)
+                return
+            target = playback_row(row)
+            if target is None and path:
+                if cached and cached.get('playable') is not None:
+                    target = cached['playable']
+            if target is not None:
+                self.performance({'event': 'title_click', 'action': 'play',
+                                  'media_kind': _kind(target.get('info')), 'result': 'success'})
+                self._start_playback(target)
+                return
+            if not path:
+                self.g.dialog.ok('Smooth Prime', 'This menu item is unavailable here. Open Settings for account options.')
+                return
+            # The rail card has no ASIN. Resolve it away from this click and
+            # hand the result to PlayVideo. The listing stays where it is.
+            self._play_token += 1
+            token = self._play_token
+            self.setProperty('Busy', '1')
+            self.detail_jobs.put(('play', token, self.generation, path, row.get('title') or 'Smooth Prime',
+                                  self._capture_playback_origin()))
 
     def onAction(self, action):
         # Left and right belong to the list. The hero reads Container(200),
@@ -2530,9 +2430,6 @@ class AuroraHome(xbmcgui.WindowXML):
             self.performance({'event':'back_to_genre_grid','stage':'back_navigation','section':self.nav,'result':'success'})
         elif self.path=='search' and self.query is not None:
             self.path='search_results';self._show_search();self.setFocusId(304)
-        elif self.genre_owner is None and (self.path.startswith('__service__/') or self.path=='__prime_sports__'):
-            self._show_genres(303,focus_grid=True)
-            self.performance({'event':'back_to_service_grid','stage':'back_navigation','result':'success'})
         else:
             self.stop.set()
             self._unregister_return()
@@ -2542,23 +2439,29 @@ class AuroraHome(xbmcgui.WindowXML):
     def _card_actions(self,info_only=False):
         row=self._selected_row()
         if not row:return
-        origin=self._capture_playback_origin();generation=self.generation
         title=clean(row.get('title') or 'Title information');series=_tv_container(row)
         selected=2 if info_only else self.g.dialog.contextmenu(
             ['Browse seasons','More information'] if series else ['Play / resume','Play from beginning','More information'])
         if selected<0:
             self.performance({'event':'card_action','stage':'context_menu','result':'cancelled'});return
-        if self.stop.is_set() or generation!=self.generation:
-            self.performance({'event':'card_action','stage':'context_menu','reason':'view_changed','result':'cancelled'});return
         if info_only or selected==(1 if series else 2):
             info=dict(row.get('info') or {});saved=self.detail_cache.get(_detail_path(self.g.pluginid,row)) or {}
             info.update(saved.get('info') or {})
             self.g.dialog.textviewer(title,_meta(dict(row,info=info))+'\n\n'+_plain(info.get('plot') or 'No description is available for this title.'))
             action='information'
         elif series:self._open_series(row);action='seasons'
-        elif selected==0:self._activate_row(row,origin);action='play'
+        elif selected==0:self.onClick(200);action='play'
         else:
-            self._activate_row(row,origin,resume_mode='start')
+            target=playback_row(row)
+            saved=self.detail_cache.get(_detail_path(self.g.pluginid,row)) or {}
+            target=target or saved.get('playable')
+            if target is None:
+                path=_detail_path(self.g.pluginid,row)
+                if not path:
+                    self.performance({'event':'card_action_failed','stage':'context_menu','reason':'missing_selected_title_route','result':'failure'});return
+                self._play_token+=1
+                self.detail_jobs.put(('play',self._play_token,self.generation,path,title,self._capture_playback_origin(),'start'))
+            else:self._start_playback(target,resume_mode='start')
             action='start_over'
         self.performance({'event':'card_action','stage':'context_menu','action':action,'media_kind':_kind(row.get('info')),'result':'success'})
 
@@ -2673,7 +2576,6 @@ def open_interface(globals_instance, settings_instance, account_name=None,
         window.account_monitor.window = None
         window._unregister_return()
         for worker in (window.worker, getattr(window, 'detail_worker', None),
-                       getattr(window, 'play_worker', None),
                        getattr(window, 'visual_worker', None), window.return_worker, window.genre_worker):
             if worker is not None:
                 while worker.is_alive():

@@ -1,15 +1,12 @@
 """Read only explicitly labelled Amazon Continue Watching collections."""
 import re
 from time import monotonic
-from .public_catalog import CatalogPage, PublicCatalogError, PublicSigninRequired, _json_content, _protocol_shape
+from .public_catalog import CatalogPage, PublicCatalogError, _json_content, _protocol_shape
 from .provider_documents import read_documents
 
 
 def read_home(data, content_type, address, observer=None):
     documents,extraction,_=read_documents(data,content_type)
-    if extraction.get('sign_in_form_present') or extraction.get('verification_form_present'):
-        if observer:observer(dict(extraction,event='home_authentication_required',stage='home_document_extract',result='authentication_required'))
-        raise PublicSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
     scan_started=monotonic()
     stack=list(documents); collections=[]; visited=0
     while stack:

@@ -1,0 +1,4 @@
+0.2.43
+- Restore the complete0.2.33 application package at the user's request.
+- Restore its original source, artwork and regional menu data exactly.
+- Use release0.2.43 so Kodi can install the0.2.33 rollback as a normal update. Restart Kodi after updating.

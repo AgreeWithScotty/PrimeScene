@@ -10,12 +10,11 @@ from .public_catalog import PublicCatalogError,STOREFRONT_HOSTS,ORIGIN,detail_id
 from .prime_diagnostics import DiagnosticLog,exception_details
 from .http_transport import HttpTransport
 from .collection_paging import identity as continuation_identity
-from . import collection_paging
 from .detail_catalog import parse_detail,search_request
 
 STOREFRONT_PAGES={'__watching__':'watching','__prime_home__':'movies','__prime_movies__':'movies',
     '__prime_tv__':'tv','__prime_sports__':'sports','__prime_channels__':'channels','__prime_purchases__':'purchases'}
-from .public_catalog import PublicSigninRequired as CatalogSigninRequired
+class CatalogSigninRequired(PublicCatalogError):pass
 
 def _card_info(card):
     """Listing fields the storefront actually returned. Missing fields stay absent."""
@@ -121,12 +120,7 @@ class CatalogGateway:
             landing=client.request(ORIGIN+'/storefront',stage='search_form_discovery')
             address,data=search_request(landing.data.decode('utf-8',errors='replace'),landing.address,phrase)
             response=client.request(address,data=data,headers={'Content-Type':'application/x-www-form-urlencoded'},stage='search_fetch')
-            text=response.data.decode('utf-8',errors='replace');content_type=response.headers.get_content_type()
-            result,structure=_read_page(text,content_type,response.address)
-            observe(dict(structure,event='search_response_parsed',stage='search_parse',result='success'))
-            if structure.get('sign_in_form_present') or structure.get('verification_form_present'):
-                raise CatalogSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
-            next_request=collection_paging.discover(text,content_type,response.address,observe)
+            result,structure=_read_page(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address)
         rows=[]
         for card in result.cards:
             identifier=detail_id(card.detail_url)
@@ -135,7 +129,7 @@ class CatalogGateway:
             rows.append({'title':card.title,'identity':identifier,'detail_url':card.detail_url,'video':False,
                 'url':self.g.pluginid+'pv/browse/__storefront__/'+quote_plus(identifier),'info':_card_info(card)})
         observe(dict(structure,event='search_parsed',stage='search_parse',cards=len(rows),result='success'))
-        return {'rows':rows,'next':self._continuation('search',next_request or result.next_url,(response.address,))}
+        return {'rows':rows,'next':self._continuation('search',result.next_url,(response.address,))}
 
     def browse_progressive(self,path,publish,active,query=None):
         if not self._active(active):return
@@ -159,20 +153,12 @@ class CatalogGateway:
             _,page,address,previous=saved
             if page=='tv_detail':packet=self.detail(path,active)
             elif page=='search':
-                # Follow only provider-declared links or validated Grid tokens.
+                # Search continuations are exact provider links, with the normal
+                # card parser and no guess at its pagination token protocol.
                 observe=self._observe(active)
                 with self.session(active,observe) as client:
-                    if isinstance(address,dict):
-                        target,data,headers=collection_paging.request_arguments(address)
-                        response=client.request(target,data=data,headers=headers,stage='search_next_page')
-                    else:response=client.request(address,stage='search_next_page')
-                    text=response.data.decode('utf-8',errors='replace');content_type=response.headers.get_content_type()
-                    result,structure=_read_page(text,content_type,response.address)
-                    observe(dict(structure,event='search_response_parsed',stage='search_parse',result='success'))
-                    if structure.get('sign_in_form_present') or structure.get('verification_form_present'):
-                        raise CatalogSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
-                    next_request=(collection_paging.advance(address,text,content_type,observe) if isinstance(address,dict) else
-                        collection_paging.discover(text,content_type,response.address,observe))
+                    response=client.request(address,stage='search_next_page')
+                    result,structure=_read_page(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address)
                 rows=[]
                 for card in result.cards:
                     identifier=detail_id(card.detail_url)
@@ -180,8 +166,7 @@ class CatalogGateway:
                         self.details[identifier]={'title':card.title,'lazyLoadURL':card.detail_url}
                         rows.append({'title':card.title,'identity':identifier,'detail_url':card.detail_url,'video':False,
                             'url':self.g.pluginid+'pv/browse/__storefront__/'+quote_plus(identifier),'info':_card_info(card)})
-                following=next_request if isinstance(address,dict) else next_request or result.next_url
-                packet={'rows':rows,'next':self._continuation('search',following,previous+(continuation_identity(address),))}
+                packet={'rows':rows,'next':self._continuation('search',result.next_url,previous+(address,))}
                 observe(dict(structure,event='search_page_parsed',result='success'))
             else:packet=self.public_packet(page,active,address,previous)
         elif path.startswith('__storefront__/'):packet=self.detail(path,active)
@@ -235,7 +220,7 @@ class CatalogGateway:
                 if not prime_signin.has_authentication_cookie(jar):
                     observe({'event': 'catalog_session_missing', 'section': page,
                              'result': 'failure', 'cookie_objects': len(list(jar))})
-                    raise CatalogSigninRequired('Use Sign out, then sign in again to reconnect the website session.')
+                    raise CatalogSigninRequired('Use the account button and choose Sign in again to reconnect the website session.')
                 opener = prime_signin.catalog_opener(
                     jar, observer=observe, headers=session_store.session_headers(self.g.DATA_PATH))
                 try:

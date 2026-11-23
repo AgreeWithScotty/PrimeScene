@@ -24,7 +24,7 @@ class ImageCache:
         self.g, self.epoch = g, epoch
         self.folder = Path(g.DATA_PATH) / 'artwork-ahead'
         self.stop, self.lock = Event(), Lock()
-        self.pending, self.failed = set(), {}
+        self.pending, self.failed = set(), set()
         self.futures={};self.priority_signature=None
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimeArtwork')
         self.report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'),
@@ -60,7 +60,7 @@ class ImageCache:
             if path is None or path.exists():
                 continue
             with self.lock:
-                if (self.stop.is_set() or url in self.pending or monotonic()-self.failed.get(url,float('-inf'))<30
+                if (self.stop.is_set() or url in self.pending or url in self.failed
                         or len(self.pending) >= 18):
                     continue
                 self.pending.add(url)
@@ -96,9 +96,8 @@ class ImageCache:
                          'result': 'success' if stored else 'cancelled'})
         except Exception as error:
             with self.lock:
-                self.failed[url]=monotonic()
-            self.report({'event': 'artwork_ahead_failed', 'status': status or getattr(error,'code',None),
-                         'retry_after_seconds':30,
+                self.failed.add(url)
+            self.report({'event': 'artwork_ahead_failed', 'status': status,
                          'stage': 'image_download', 'address': route(url),
                          'elapsed_ms': round((monotonic() - started) * 1000),
                          'exception': exception_details(error), 'result': 'failure'})

@@ -114,10 +114,6 @@ def _remember_card(cards, key, card):
 class PublicCatalogError(RuntimeError):
     pass
 
-class PublicSigninRequired(PublicCatalogError):
-    """The provider returned an actual password/verification form."""
-    pass
-
 
 def safe_url(value, host, base_url=ORIGIN):
     if not isinstance(value, str) or not value or '\\' in value or any(
@@ -754,8 +750,6 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             _emit(observer, dict(details, event='library_response_parsed', stage=stage,
                 status=status, address=route(final_url), bytes=len(raw),
                 elapsed_ms=round((perf_counter() - started) * 1000)))
-            if details.get('library_authentication_required'):
-                raise PublicSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
             if library_link and _library_depth < 3:
                 _emit(observer, {'event': 'library_navigation_followed', 'stage': 'library_discovery',
                     'from': route(final_url), 'to': route(library_link), 'hop': _library_depth + 1,
@@ -773,8 +767,6 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
         _emit(observer, dict(details, event='catalog_page_parsed', stage=stage, bytes=len(raw),
                              status=status, address=route(final_url),
                              elapsed_ms=round((perf_counter() - started) * 1000)))
-        if details.get('sign_in_form_present') or details.get('verification_form_present'):
-            raise PublicSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
         if not result.cards and result.next_url is None and result.next_request is None and not result.library_confirmed and not result.empty_confirmed and not collection:
             raise PublicCatalogError('No title cards or page continuation were found in the catalog response.')
         _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'success',
