@@ -1,0 +1,43 @@
+{
+  "version": "0.2.41",
+  "sha256": "f5ed17d06ac954607308f1fc91cf4334c65921286bb13eca0f47a7e7f43ca4ae",
+  "bytes": 3957475,
+  "files": 118,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/SECURITY.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/default.py",
+    "plugin.video.primeinterface/gui.py",
+    "plugin.video.primeinterface/resources/lib/account_state.py",
+    "plugin.video.primeinterface/resources/lib/accounts.py",
+    "plugin.video.primeinterface/resources/lib/prime_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/prime_login.py",
+    "plugin.video.primeinterface/resources/lib/private_storage.py",
+    "plugin.video.primeinterface/resources/lib/profile_bootstrap.py",
+    "plugin.video.primeinterface/resources/lib/service_host.py"
+  ],
+  "removed_files": [
+    "plugin.video.primeinterface/resources/lib/credential_runtime.py",
+    "plugin.video.primeinterface/resources/lib/credential_service.py",
+    "plugin.video.primeinterface/resources/lib/native_vault.py",
+    "plugin.video.primeinterface/resources/lib/vault_errors.py"
+  ],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "rollback_verification": {
+    "requested_baseline": "0.2.35",
+    "previous_release": "0.2.40",
+    "baseline_files": 118,
+    "removed_files": [
+      "resources/lib/credential_runtime.py",
+      "resources/lib/credential_service.py",
+      "resources/lib/native_vault.py",
+      "resources/lib/vault_errors.py"
+    ],
+    "runtime_bytes_equal": true,
+    "historical_archives_overwritten": false,
+    "provider_or_kodi_tests_run": false
+  }
+}

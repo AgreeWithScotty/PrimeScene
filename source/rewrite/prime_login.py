@@ -200,11 +200,7 @@ def LogIn(retToken=False):
         observe({'event': 'signin_complete', 'authorization_mode': mode,
                  'device_registered': authorization is not None, 'cookie_count': len(result),
                  'server_verification_confirmed': bool(identity.get('verified') or authorization is not None), 'result': 'success'})
-        from .private_storage import storage_status
-        persistent=storage_status(profile)['persistent_credentials']
-        observe({'event':'signin_storage_confirmed','stage':'credential_storage',**storage_status(profile),'result':'success'})
-        g.dialog.notification(TITLE, 'Signed in and verified by Amazon.' if persistent else
-            'Signed in and verified. Remembered until Kodi closes.', sound=False)
+        g.dialog.notification(TITLE, 'Signed in and verified by Amazon.', sound=False)
         if retToken and authorization is not None:
             result.clear()
             return {'Authorization': 'Bearer ' + account['token']['access']}
@@ -224,8 +220,6 @@ def LogIn(retToken=False):
             observe({'event': 'http_error', 'status': error.status, 'stage': error.stage})
         message = str(error) if isinstance(error, SignInError) else (
             'Amazon sign-in could not finish (' + type(error).__name__ + '). Your saved account was kept. Please retry.')
-        from .vault_errors import VaultError
-        if isinstance(error,VaultError):message='Secure credential storage could not finish. Unlock your system keyring if it is locked, then retry. Use Finish sign out if cleanup is pending. Diagnostics contains the failed storage stage.'
         g.dialog.ok(TITLE, message)
         return False
     finally:

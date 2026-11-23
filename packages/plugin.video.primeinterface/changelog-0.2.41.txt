@@ -1,0 +1,4 @@
+0.2.41
+- Restore the complete0.2.35 application package at the user's request.
+- Remove the platform-vault components introduced in0.2.36 and restore the original0.2.35 source and security policy.
+- Use release0.2.41 so Kodi installs the0.2.35 rollback as a normal update. Restart Kodi after updating.

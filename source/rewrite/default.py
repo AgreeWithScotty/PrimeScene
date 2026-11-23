@@ -78,10 +78,6 @@ def main():
             dispatch(sys.argv)
     except Exception as error:
         report({'event': 'launch_failed', 'exception': exception_details(error)})
-        from resources.lib.vault_errors import VaultError
-        if isinstance(error,VaultError):
-            xbmcgui.Dialog().ok('Smooth Prime','Secure credential storage is unavailable. Unlock your system keyring if it is locked, then reopen Smooth Prime. Diagnostics contains the failed storage stage.')
-            return
         raise
     else:
         report({'event': 'launch_finished', 'launch_kind': kind})

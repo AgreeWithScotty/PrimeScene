@@ -103,7 +103,6 @@ class DiagnosticLog:
                 'proxy-authorization','cookie','set-cookie','code_verifier','client_secret',
                 'customerid','customer_id','actorid','actor_id','deviceid','device_id','account_name',
                 'email','license','widevine2challenge','widevine2license'}
-            sensitive.update(('capability','vault_capability','vault_value'))
             return {str(k):'[redacted]' if str(k).lower() in sensitive and not isinstance(v,bool)
                 else self.redact(v,depth+1) for k,v in islice(value.items(),200)}
         if isinstance(value, (list, tuple)):

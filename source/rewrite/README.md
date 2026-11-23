@@ -1,3 +1,3 @@
-# Smooth Prime0.2.40 — complete0.2.36 restoration
+# Smooth Prime0.2.41 — complete0.2.35 restoration
 
-The complete0.2.36 snapshot is restored, including all original runtime files, artwork and menu data. Only release version/news/changelog/README identify0.2.40 so Kodi installs the rollback normally. Every other file equals the verified original0.2.36 archive byte for byte. Restart Kodi after updating. Historical releases remain unchanged.
+Restores the complete0.2.35 package and security policy, removing all four platform-vault modules introduced in0.2.36. Every other file matches the verified original0.2.35 ZIP byte for byte, except version/news/changelog/README metadata for Kodi updating. Restart Kodi after installing. Historical archives remain unchanged.

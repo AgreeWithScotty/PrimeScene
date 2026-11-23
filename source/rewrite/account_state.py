@@ -13,8 +13,7 @@ import xml.etree.ElementTree as ET
 ADDON_ID = 'plugin.video.primeinterface'
 STATE_FILE = 'account-state.db'
 NEUTRAL_FILES = {STATE_FILE, STATE_FILE + '-journal', STATE_FILE + '-wal', STATE_FILE + '-shm',
-                 'signin-lock.db', 'signin-lock.db-journal','credential-vault.json',
-                 'observer-service.lock.db','observer-service.lock.db-journal'}
+                 'signin-lock.db', 'signin-lock.db-journal'}
 
 
 @contextmanager
@@ -63,9 +62,7 @@ def is_signed_out(profile):
 
 def needs_cleanup(profile):
     with state_db(profile) as db:
-        pending=bool(db.execute('SELECT pending FROM cleanup WHERE id=1').fetchone()[0])
-    from .private_storage import pending_cleanup
-    return pending or pending_cleanup(profile)
+        return bool(db.execute('SELECT pending FROM cleanup WHERE id=1').fetchone()[0])
 
 
 def current_account(profile, expected, allow_signed_out=False):
@@ -135,14 +132,6 @@ def clear_profile(profile, observer=None):
     if root.name != ADDON_ID or root == root.parent:
         raise ValueError('The Smooth Prime profile path is invalid')
     failures = []
-    from .private_storage import purge_credentials
-    try:purge_credentials(root,observer)
-    except Exception as error:
-        failures.append('credential_vault')
-        if observer is not None:
-            from .prime_diagnostics import exception_details
-            observer({'event':'credential_vault_purge_failed','stage':'vault_cleanup',
-                'exception':exception_details(error),'result':'failure'})
     for child in list(root.iterdir()):
         if child.name not in NEUTRAL_FILES:
             try:
@@ -158,8 +147,6 @@ def clear_profile(profile, observer=None):
                               'category': category, 'exception': exception_details(error), 'result': 'failure'})
     (root / 'log').mkdir(exist_ok=True)
     if failures:
-        if 'credential_vault' in failures:
-            raise RuntimeError('Signed out, but secure vault cleanup could not finish. Unlock your system keyring if it is locked, then use Finish sign out. Diagnostics records the failed stage.')
         raise RuntimeError('Signed out, but some local account files are still in use. Close Smooth Prime and retry cleanup.')
 
 
