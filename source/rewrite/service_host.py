@@ -1,5 +1,7 @@
 """Native playback observer and account invalidation boundary."""
 from secrets import token_hex
+from pathlib import Path
+import sqlite3
 import xbmc
 import xbmcgui
 from .app_runtime import AppRuntime
@@ -14,14 +16,20 @@ class AccountMonitor(xbmc.Monitor):
             refresh_service_session(self.g,self)
 
 def run():
-    from .profile_bootstrap import prepare_profile
-    prepare_profile()
-    g=AppRuntime();monitor=AccountMonitor(g);registry=xbmcgui.Window(10000)
+    g=AppRuntime();registry=xbmcgui.Window(10000)
+    lock=sqlite3.connect(str(Path(g.DATA_PATH)/'observer-service.lock.db'),timeout=0)
+    try:lock.execute('BEGIN EXCLUSIVE')
+    except sqlite3.OperationalError:lock.close();return
     token=token_hex(8);property_name='smoothprime.observer_service'
-    if registry.getProperty(property_name):return
     registry.setProperty(property_name,token)
     report=DiagnosticLog(g.DATA_PATH,g.addon.getAddonInfo('version'),operation='service')
+    vault=None
     try:
+        from .credential_runtime import start_service,stop_service
+        vault=start_service(g,report)
+        from .profile_bootstrap import prepare_profile
+        prepare_profile()
+        monitor=AccountMonitor(g)
         refresh_service_session(g,monitor)
         report({'event':'service_started','stage':'observer','result':'success'})
         from .aurora import watch_playback
@@ -31,4 +39,9 @@ def run():
     finally:
         if registry.getProperty(property_name)==token:registry.clearProperty(property_name)
         clear_runtime(g)
+        try:
+            if vault is not None:stop_service(vault)
+        except Exception as error:report({'event':'credential_service_stop_failed','stage':'vault_shutdown',
+            'exception':exception_details(error),'result':'failure'})
+        finally:lock.close()
         report({'event':'service_stopped','stage':'observer','result':'success'})

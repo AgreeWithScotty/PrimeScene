@@ -1,16 +1,20 @@
-"""Atomic private files; Windows credentials use current-user DPAPI.
-
-No application encryption key is saved or bundled. POSIX credentials rely on
-owner-only permissions; this module does not claim encryption on those systems.
-"""
+"""Atomic credentials: Windows DPAPI, native vault references or session-only RAM."""
+import base64
 import ctypes
+import hashlib
+import hmac
 from io import StringIO
+import json
 import os
 from pathlib import Path
+from secrets import token_hex
 import stat
 import tempfile
+from .vault_errors import VaultError,VaultMissing,VaultCleanupRequired,VaultUnavailable
 
 MAGIC=b'SMOOTH-PRIME-DPAPI-1\n'
+REFERENCE=b'SMOOTH-PRIME-VAULT-1\n'
+REGISTRY='credential-vault.json'
 MAX_SECRET=2*1024*1024
 
 
@@ -55,8 +59,40 @@ def private_directory(path):
 def write_secret(path,content):
     path=Path(path)
     if not isinstance(content,bytes) or len(content)>MAX_SECRET:raise ValueError('Invalid private file size')
-    encoded=MAGIC+_dpapi(content,True) if os.name=='nt' else content
-    write_private(path,encoded)
+    if os.name=='nt':write_private(path,MAGIC+_dpapi(content,True));return
+    from .credential_service import kodi_request,kodi_discovery
+    _vault_write(path,content,kodi_request,kodi_discovery()['instance'])
+
+
+def _vault_write(path,content,call,instance):
+    """Portable reference/journal path, also exercised against the real worker."""
+    path=Path(path)
+    if not isinstance(content,bytes) or len(content)>MAX_SECRET:raise ValueError('Invalid private file size')
+    root,slot=_credential_path(path);scope=_scope(root)
+    previous=None
+    if path.exists():
+        with path.open('rb') as source:old=source.read(MAX_SECRET+65537)
+        if old.startswith(REFERENCE):previous=_reference(old,scope,slot)
+        elif old.startswith(MAGIC):raise VaultUnavailable('windows_session_requires_new_signin')
+    selected=previous or call({'action':'choose','namespace':scope})
+    ref=previous or {'backend':selected['backend'],'entry':token_hex(16),'scope':scope,'slot':slot,
+        'instance':selected['instance'] if selected['backend']=='session' else ''}
+    if ref['backend']=='session' and ref['instance']!=instance:
+        raise VaultMissing('session_credentials_expired')
+    index=_index(root);key=ref['entry'];index[key]=dict(ref,pending=True)
+    _save_index(root,index)
+    try:
+        result=call({'action':'put','namespace':scope,'backend':ref['backend'],'entry':key,
+            'value':base64.b64encode(content).decode('ascii')})
+        if not hmac.compare_digest(result['sha256'],hashlib.sha256(content).hexdigest()):
+            raise VaultUnavailable('vault_write_verification_failed')
+        if ref['backend']=='session' and result['instance']!=ref['instance']:raise VaultMissing('session_credentials_expired')
+        write_private(path,REFERENCE+json.dumps(ref,separators=(',',':')).encode('ascii'))
+        index[key]=dict(ref,pending=False);_save_index(root,index)
+    except Exception:
+        # An existing value may still be valid. Keep its journal/reference so
+        # sign-out can retry deletion; never turn it into an untracked OS item.
+        raise
 
 
 def write_private(path,encoded):
@@ -77,16 +113,134 @@ def read_secret(path,limit=MAX_SECRET):
     path=Path(path);_regular(path)
     with path.open('rb') as source:raw=source.read(limit+65537)
     if len(raw)>limit+65536:raise ValueError('Private storage exceeds its size limit')
-    if raw.startswith(MAGIC):
-        if os.name!='nt':raise ValueError('This saved Windows session must be signed in again on this platform')
+    if raw.startswith(REFERENCE):
+        if os.name=='nt':raise VaultMissing('platform_session_requires_new_signin')
+        from .credential_service import kodi_request,kodi_discovery
+        content=_vault_read(path,raw,kodi_request,kodi_discovery()['instance'])
+    elif raw.startswith(MAGIC):
+        if os.name!='nt':raise VaultMissing('windows_session_requires_new_signin')
         content=_dpapi(raw[len(MAGIC):],False)
     else:
         if len(raw)>limit:raise ValueError('Private storage exceeds its size limit')
         content=raw
-        if os.name=='nt':write_secret(path,content)
+        # A legacy plaintext value is returned only after protected replacement
+        # and a verified store operation. It is never an operational fallback.
+        write_secret(path,content)
     if len(content)>limit:raise ValueError('Decoded private storage exceeds its size limit')
     if os.name!='nt':os.chmod(path,0o600)
     return content
+
+
+def _vault_read(path,raw,call,instance):
+    root,slot=_credential_path(path);scope=_scope(root);ref=_reference(raw,scope,slot)
+    index=_index(root)
+    if ref['entry'] not in index:
+        index[ref['entry']]=dict(ref,pending=False);_save_index(root,index)
+    if index[ref['entry']]['pending']:raise VaultCleanupRequired('vault_cleanup_incomplete')
+    if ref['backend']=='session' and ref['instance']!=instance:raise VaultMissing('session_credentials_expired')
+    result=call({'action':'get','namespace':scope,'backend':ref['backend'],'entry':ref['entry']})
+    return base64.b64decode(result['value'],validate=True)
+
+
+def _credential_path(path):
+    path=Path(path)
+    if path.name=='accounts.lst' and path.parent.name=='config':return path.parent.parent,'account'
+    if path.name=='prime-video-session.cookies':return path.parent,'cookies'
+    raise VaultUnavailable('unsupported_credential_path')
+
+
+def _scope(root):return hashlib.sha256(os.path.normcase(str(Path(root).resolve())).encode('utf-8')).hexdigest()
+
+
+def _reference(raw,scope,slot):
+    if len(raw)>4096:raise VaultUnavailable('vault_reference_invalid')
+    try:ref=json.loads(raw[len(REFERENCE):])
+    except ValueError as error:raise VaultUnavailable('vault_reference_invalid') from error
+    import re
+    if (not isinstance(ref,dict) or set(ref)!={'backend','entry','scope','slot','instance'}
+        or ref['backend'] not in ('session','macos_keychain','linux_secret_service')
+        or not isinstance(ref['entry'],str) or not re.fullmatch('[a-f0-9]{32}',ref['entry'])
+        or not isinstance(ref['scope'],str) or not re.fullmatch('[a-f0-9]{64}',ref['scope']) or ref['slot']!=slot
+        or (ref['backend']=='session' and not re.fullmatch('[a-f0-9]{32}',str(ref['instance'])))
+        or (ref['backend']!='session' and ref['instance']!='')):
+        raise VaultUnavailable('vault_reference_invalid')
+    if ref['scope']!=scope:raise VaultMissing('credential_profile_changed')
+    return ref
+
+
+def _index(root):
+    path=Path(root)/REGISTRY
+    if not path.exists():return {}
+    _regular(path)
+    with path.open('rb') as source:raw=source.read(32769)
+    if len(raw)>32768:raise VaultUnavailable('vault_journal_limit')
+    try:index=json.loads(raw)
+    except ValueError as error:raise VaultUnavailable('vault_journal_invalid') from error
+    if not isinstance(index,dict) or len(index)>64:raise VaultUnavailable('vault_journal_limit')
+    for key,item in index.items():
+        if not isinstance(item,dict) or set(item)!={'backend','entry','scope','slot','instance','pending'}:
+            raise VaultUnavailable('vault_journal_invalid')
+        _reference(REFERENCE+json.dumps({k:v for k,v in item.items() if k!='pending'}).encode(),item['scope'],item['slot'])
+        if key!=item['entry'] or item['slot'] not in ('account','cookies') or type(item['pending']) is not bool:
+            raise VaultUnavailable('vault_journal_invalid')
+    return index
+
+
+def _save_index(root,index):
+    if len(index)>64:raise VaultUnavailable('vault_journal_limit')
+    write_private(Path(root)/REGISTRY,json.dumps(index,separators=(',',':')).encode('ascii'))
+
+
+def pending_cleanup(root):return any(item['pending'] for item in _index(root).values())
+
+
+def storage_status(root):
+    if os.name=='nt':return {'backends':['windows_current_user_dpapi'],'persistent_credentials':True}
+    names=sorted({item['backend'] for item in _index(root).values()})
+    return {'backends':names,'persistent_credentials':bool(names) and 'session' not in names}
+
+
+def legacy_credentials_remaining(root):
+    count=0
+    for relative in ('config/accounts.lst','prime-video-session.cookies'):
+        path=Path(root)/relative
+        if path.is_file():
+            with path.open('rb') as source:prefix=source.read(64)
+            count+=not prefix.startswith((MAGIC,REFERENCE))
+    return count
+
+
+def purge_credentials(root,observer=None):
+    """Keep failed deletions in a neutral retry journal until verified removed."""
+    if not _index(root):return
+    if os.name=='nt':
+        # Imported non-Windows references cannot refer to a Windows DPAPI item.
+        (Path(root)/REGISTRY).unlink(missing_ok=True)
+        if observer:observer({'event':'foreign_vault_references_discarded','stage':'vault_cleanup','result':'success'})
+        return
+    from .credential_service import kodi_request,kodi_discovery
+    _purge_vault(root,kodi_request,kodi_discovery()['instance'],observer)
+
+
+def _purge_vault(root,call,instance,observer=None):
+    index=_index(root);failures=[]
+    for key,item in list(index.items()):
+        try:
+            if item['backend']!='session' or item['instance']==instance:
+                call({'action':'delete','namespace':item['scope'],'backend':item['backend'],'entry':key})
+            index.pop(key);_save_index(root,index)
+            if observer:observer({'event':'credential_vault_item_deleted','stage':'vault_cleanup',
+                'backend':item['backend'],'result':'success'})
+        except Exception as error:
+            item['pending']=True;failures.append(item['backend'])
+            if observer:
+                from .prime_diagnostics import exception_details
+                observer({'event':'credential_vault_delete_failed','stage':'vault_cleanup','backend':item['backend'],
+                    'exception':exception_details(error),'result':'failure'})
+    _save_index(root,index)
+    if failures:raise VaultCleanupRequired('vault_cleanup_incomplete')
+    call({'action':'clear','namespace':_scope(root)})
+    (Path(root)/REGISTRY).unlink(missing_ok=True)
 
 
 def load_cookie_text(jar,path):

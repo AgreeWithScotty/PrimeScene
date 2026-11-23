@@ -44,7 +44,11 @@ def _read(path, epoch):
     try:
         if filename.stat().st_size > 512*1024:
             raise ValueError('Account metadata exceeds its size limit')
-        data = json.loads(read_secret(filename,512*1024).decode('utf-8'))
+        values=[]
+        # Legacy migration and vault journal writes share the account transaction
+        # so an old reader cannot recreate files after sign-out's purge.
+        if not persist_if_current(path,epoch,lambda:values.append(read_secret(filename,512*1024))):return []
+        data = json.loads(values[0].decode('utf-8'))
     except FileNotFoundError:
         return []
     if not isinstance(data, list) or len(data) > 10:

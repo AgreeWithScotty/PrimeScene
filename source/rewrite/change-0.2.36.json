@@ -1,0 +1,153 @@
+{
+  "version": "0.2.36",
+  "sha256": "b611420fd6e0b0d48f00ebaba47caf5d8aff0c817736797276b579f5285b68f3",
+  "bytes": 3971781,
+  "files": 122,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/SECURITY.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/default.py",
+    "plugin.video.primeinterface/gui.py",
+    "plugin.video.primeinterface/resources/lib/account_state.py",
+    "plugin.video.primeinterface/resources/lib/accounts.py",
+    "plugin.video.primeinterface/resources/lib/credential_runtime.py",
+    "plugin.video.primeinterface/resources/lib/credential_service.py",
+    "plugin.video.primeinterface/resources/lib/native_vault.py",
+    "plugin.video.primeinterface/resources/lib/prime_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/prime_login.py",
+    "plugin.video.primeinterface/resources/lib/private_storage.py",
+    "plugin.video.primeinterface/resources/lib/profile_bootstrap.py",
+    "plugin.video.primeinterface/resources/lib/service_host.py",
+    "plugin.video.primeinterface/resources/lib/vault_errors.py"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "source_checks": {
+    "python_files_parsed": 58,
+    "xml_files_parsed": 4,
+    "relative_import_edges_resolved": 219,
+    "native_control_ids_unique": true,
+    "single_row_genre_grid_top_menu_unchanged": true,
+    "unchanged_asset_files": 45,
+    "unchanged_modules": [
+      "account_auth.py",
+      "account_region.py",
+      "account_runtime.py",
+      "actions.py",
+      "app_runtime.py",
+      "artwork_cache.py",
+      "aurora.py",
+      "auth_transport.py",
+      "browse_status.py",
+      "browse_tiles.py",
+      "card_presentation.py",
+      "catalog_access.py",
+      "catalog_gateway.py",
+      "collection_paging.py",
+      "description_cache.py",
+      "detail_catalog.py",
+      "display_text.py",
+      "font_coverage.py",
+      "genre_catalog.py",
+      "home_catalog.py",
+      "http_transport.py",
+      "interface_diagnostics.py",
+      "media_proxy.py",
+      "media_resources.py",
+      "navigation.py",
+      "playback_engine.py",
+      "playback_progress.py",
+      "prime_device.py",
+      "prime_signin.py",
+      "progress_cache.py",
+      "provider_documents.py",
+      "public_catalog.py",
+      "purchases_catalog.py",
+      "service_catalog.py",
+      "session_store.py",
+      "title_art.py",
+      "title_glyphs.py",
+      "tv_catalog.py",
+      "watch_home.py",
+      "web_identity.py",
+      "__init__.py"
+    ],
+    "preserved_methods": [
+      "_refresh_progress_return",
+      "_select_progress_return",
+      "_focus_first_card",
+      "_genre_loop",
+      "_populate_genres",
+      "_prepare_catalog_preload",
+      "_catalog_preload_ready"
+    ],
+    "actual_saved_response_checks": [
+      {
+        "saved_response": "fantasy-movies.html",
+        "sha256": "0ccd1888abfe962d346050dd38e78200319e4a1abd17ea40bbd1dceb63d04b5a",
+        "initial_cards": 20,
+        "actual_page2_cards": 40,
+        "provider_declared_more": false,
+        "validated_continuation": false,
+        "protocol_events": 3
+      },
+      {
+        "saved_response": "fantasy-tv.html",
+        "sha256": "dfbaa13c14a8e039a897213969f77e2849e6d02ce8822c4db20f64e1d1531fce",
+        "initial_cards": 20,
+        "actual_page2_cards": 40,
+        "provider_declared_more": false,
+        "validated_continuation": false,
+        "protocol_events": 3
+      },
+      {
+        "saved_response": "public-tv-0.html",
+        "declared_seasons": 1,
+        "episode_rows": 6
+      },
+      {
+        "saved_response": "public-tv-1.html",
+        "declared_seasons": 5,
+        "episode_rows": 22
+      },
+      {
+        "saved_response": "public-tv-2.html",
+        "declared_seasons": 1,
+        "episode_rows": 8
+      },
+      {
+        "saved_response": "anonymous-prime.html",
+        "not_falsely_classified_as_empty_purchases": true,
+        "actual_signin_form": false
+      },
+      {
+        "saved_response": "fantasy.html",
+        "not_falsely_classified_as_empty_purchases": true,
+        "actual_signin_form": false
+      }
+    ],
+    "mocked_provider_or_kodi_tests": false,
+    "authenticated_account_or_playback_success_claimed": false,
+    "kodi_runtime_observed": false
+  },
+  "actual_vault_boundaries": {
+    "actual_session_vault_roundtrip": true,
+    "legacy_plaintext_replaced_by_secret_free_reference": true,
+    "cookie_and_account_records_shared_across_clients": true,
+    "old_memory_buffer_zeroed": true,
+    "wrong_capability_rejected": true,
+    "oversized_frame_rejected": true,
+    "rogue_server_receives_no_credentials": true,
+    "service_restart_does_not_restore_old_session": true,
+    "verified_delete_and_late_write_rejection": true,
+    "unreachable_delete_keeps_pending_journal": true,
+    "secrets_and_capabilities_absent_from_events": true,
+    "actual_native_macos_keychain_exercised": false,
+    "actual_native_linux_secret_service_exercised": false,
+    "android_keystore_bridge_available": false,
+    "kodi_or_provider_success_simulated": false
+  }
+}

@@ -1,0 +1,10 @@
+0.2.36
+- Replace non-Windows plaintext credential writes with scoped native-vault references or Kodi-lifetime memory storage.
+- Add current macOS SecItem Keychain and Linux libsecret/Secret Service adapters with native write/read verification.
+- Use session-only sign-in when no usable OS vault is available, including Android without a verified Keystore bridge.
+- Keep session credentials available across application and playback invocations without saving their payload or capability to disk.
+- Mutually authenticate the local credential service before sending secrets, with authenticated bounded JSON frames and no pickle.
+- Journal native entries before creation and verify their deletion on sign-out; retain failed cleanup for retry and block new sign-in.
+- Serialize migration with account invalidation and purge expired/imported sessions before another account signs in.
+- Record the actual storage backend, failed native stage and remaining legacy plaintext count without exposing credentials.
+- Preserve Windows DPAPI, the existing single-row presentation, catalogue pagination and provider playback choices.
