@@ -1,0 +1,95 @@
+{
+  "version": "0.2.46",
+  "sha256": "5b7459d040f4c02a39bfd41ce80844e115ea7069ebd345640bb56b35a322c18a",
+  "bytes": 3951373,
+  "files": 116,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/description_cache.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "actual_image_dimensions": [
+    {
+      "kind": "cover-720",
+      "status": 200,
+      "width": 720,
+      "height": 540,
+      "bytes": 80300,
+      "asset_fingerprint": "f8e47e869521450b",
+      "elapsed_ms": 375
+    },
+    {
+      "kind": "hero-1280",
+      "status": 200,
+      "width": 1280,
+      "height": 720,
+      "bytes": 60760,
+      "asset_fingerprint": "ecf2aa478a9fa8ad",
+      "elapsed_ms": 516
+    },
+    {
+      "kind": "hero-1920",
+      "status": 200,
+      "width": 1920,
+      "height": 1080,
+      "bytes": 112300,
+      "asset_fingerprint": "ecf2aa478a9fa8ad",
+      "elapsed_ms": 203
+    }
+  ],
+  "saved_provider_and_patch_scope": {
+    "compared_to": "0.2.45",
+    "changed_runtime_files": [
+      "resources/lib/aurora.py",
+      "resources/lib/description_cache.py",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml"
+    ],
+    "provider_records": [
+      {
+        "source": "public-tv-0.html",
+        "image_roles": [
+          "covershot",
+          "heroshot",
+          "packshot",
+          "titleshot"
+        ],
+        "selected_record_heroshot_retained": true,
+        "cover_is_different_asset": true
+      },
+      {
+        "source": "public-tv-1.html",
+        "image_roles": [
+          "covershot",
+          "heroshot",
+          "packshot",
+          "titleshot"
+        ],
+        "selected_record_heroshot_retained": true,
+        "cover_is_different_asset": true
+      },
+      {
+        "source": "public-tv-2.html",
+        "image_roles": [
+          "covershot",
+          "heroshot",
+          "packshot",
+          "titlelogo",
+          "titleshot"
+        ],
+        "selected_record_heroshot_retained": true,
+        "cover_is_different_asset": true
+      }
+    ],
+    "python_38_syntax_and_xml_well_formed": true,
+    "unchanged_runtime_and_assets": 110,
+    "kodi_ui_outcome_observed": false,
+    "mocked_provider_or_kodi_tests": false,
+    "scope": "Saved real provider metadata, source/package bytes and actual CDN image dimensions only."
+  }
+}

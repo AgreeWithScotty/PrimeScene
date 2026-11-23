@@ -1,0 +1,5 @@
+0.2.46
+- Use Amazon's separate title backdrop at 1920 pixels instead of enlarging the 720-pixel card thumbnail.
+- Retrieve missing backdrops for the selected title and next two titles even when their descriptions are already populated.
+- Retain genuine backdrops with account-scoped description metadata and update artwork in place without rebinding the card rail.
+- Log backdrop selection, source, requested resolution, cache availability and metadata outcomes.

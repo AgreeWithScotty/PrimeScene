@@ -52,9 +52,10 @@ _AMAZON_IMAGE = compile_re(
     r'(?:\._[^./]+_)?(\.(?:jpe?g|png|webp))$',
     IGNORECASE)
 _CARD_ART = 720
-_HERO_ART = 1280
+_HERO_ART = 1920
 _DESCRIPTION_AHEAD = 10
 _DESCRIPTION_BEHIND = 2
+_BACKDROP_AHEAD = 2
 
 
 def _http(value):
@@ -244,7 +245,7 @@ def _detail_path(pluginid, row):
 
 def _needs_detail(row):
     info = (row or {}).get('info') or {}
-    return not (_plain(info.get('plot') or '') and _meta(row))
+    return not (_plain(info.get('plot') or '') and _meta(row) and info.get('fanart'))
 
 
 def _richer(rows):
@@ -292,6 +293,11 @@ def _fit_art(url, width):
         return url
     sized = '%s._SX%d_.%s' % (match.group(1), int(width), match.group(2).lstrip('.'))
     return sized + ('?' + query if query else '')
+
+
+def _hero_art(info):
+    """Keep the backdrop independent of the small image used by the card."""
+    return _fit_art(info.get('fanart') or _rail_art(info), _HERO_ART)
 
 
 def _play_url(url):
@@ -377,6 +383,7 @@ def _item(row, title_art='', image_cache=None, report=None):
     thumb = _fit_art(_rail_art(info), _CARD_ART)
     poster = _fit_art(info.get('poster') or info.get('thumb'), _CARD_ART)
     fanart = _fit_art(info.get('fanart'), _HERO_ART)
+    hero = _hero_art(info)
     art = {}
     if thumb:
         art['thumb'] = thumb
@@ -386,6 +393,8 @@ def _item(row, title_art='', image_cache=None, report=None):
         art['icon'] = poster
     if fanart:
         art['fanart'] = fanart
+    if hero:
+        art['hero'] = hero
     if image_cache is not None:
         art = {key: image_cache.local(value) for key, value in art.items()}
     if art:
@@ -408,6 +417,7 @@ def _item(row, title_art='', image_cache=None, report=None):
     item.setProperty('Rating', clean(_rating_label(info)))
     item.setProperty('Genre', clean(_genre_label(info)))
     item.setProperty('MediaType', _kind(info))
+    item.setProperty('HeroSource', 'provider_heroshot' if info.get('fanart') else 'cover_preview')
     item.setProperty('Id', str(row.get('url') or ''))
     item.setProperty('Identity', str(row.get('identity') or ''))
     if title_art:
@@ -1170,8 +1180,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 selected=self._selected_index()
                 art=(self.rows[selected].get('info') or {}) if selected<len(self.rows) else {}
                 current=self.items[selected] if selected<len(self.items) else None
-                frozen=(current.getArt('fanart') or current.getArt('landscape') or current.getArt('thumb')) if current is not None else ''
-                self.setProperty('ProgressRefreshArt',frozen or _fit_art(art.get('fanart') or art.get('landscape') or art.get('thumb') or '',_HERO_ART))
+                frozen=(current.getArt('hero') or current.getArt('fanart')) if current is not None else ''
+                self.setProperty('ProgressRefreshArt',frozen or _hero_art(art))
                 self.setProperty('ProgressRefreshing','1')
             self.performance({'event':'progress_view_discarded','generation':token,'previous_cards':visible_cards,
                 'cache_reuse':False,'result':'success'})
@@ -1660,7 +1670,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.performance({'event': 'title_click', 'action': 'browse_episodes',
                           'media_kind': _kind(row.get('info')), 'result': 'success'})
         self.navigate(path, heading=context['title'], series=context,
-            intro_art=_fit_art((row.get('info') or {}).get('fanart') or _rail_art(row.get('info') or {}),_HERO_ART))
+            intro_art=_hero_art(row.get('info') or {}))
 
     def _episode_listing(self, path, token):
         with self.lock:
@@ -1849,7 +1859,7 @@ class AuroraHome(xbmcgui.WindowXML):
                     info = row.get('info') or {}
                     urls.append(_fit_art(_rail_art(info), _CARD_ART))
                     if offset < 3:
-                        urls.append(_fit_art(info.get('fanart'), _HERO_ART))
+                        urls.append(_hero_art(info))
                 if self.image_cache is not None:
                     self.image_cache.warm([url for url in urls if url],priority=True)
                 for offset, (position, row, item) in enumerate(nearby):
@@ -1880,11 +1890,22 @@ class AuroraHome(xbmcgui.WindowXML):
                     if local and local != thumb and item.getProperty('LocalThumb') != local:
                         item.setArt({'thumb': local, 'landscape': local})
                         item.setProperty('LocalThumb', local)
-                    hero = _fit_art(info.get('fanart'), _HERO_ART)
+                    hero = _hero_art(info)
                     local = self.image_cache.local(hero)
                     if local and local != hero and item.getProperty('LocalHero') != local:
-                        item.setArt({'fanart': local})
+                        art={'hero':local}
+                        if info.get('fanart'):art['fanart']=local
+                        item.setArt(art)
                         item.setProperty('LocalHero', local)
+                    if offset==0:
+                        signature=(token,position,hero,local)
+                        if signature!=getattr(self,'_reported_background_signature',None):
+                            self._reported_background_signature=signature
+                            self.performance({'event':'background_artwork_selected','stage':'hero_binding',
+                                'generation':token,'index':position,'requested_width':_HERO_ART,
+                                'source':'provider_heroshot' if info.get('fanart') else 'cover_preview',
+                                'address':route(hero) if hero else None,'local_cache_used':bool(local and local!=hero),
+                                'result':'success' if hero else 'unavailable'})
             except Exception as error:
                 self.performance({'event': 'visual_work_failed', 'exception': exception_details(error), 'result': 'failure'})
                 self.stop.wait(0.5)
@@ -1905,7 +1926,7 @@ class AuroraHome(xbmcgui.WindowXML):
         for index,row in enumerate(rows):
             info=row.get('info') or {};fresh.update(self._note_artwork(info))
             urls.append(_fit_art(_rail_art(info),_CARD_ART))
-            if index<2:urls.append(_fit_art(info.get('fanart'),_HERO_ART))
+            if index<2:urls.append(_hero_art(info))
         if fresh:
             from .account_state import persist_if_current
             def track():
@@ -1991,23 +2012,23 @@ class AuroraHome(xbmcgui.WindowXML):
             self._description_window = window
             self.performance({'event': 'description_window_started', 'stage': 'read_ahead',
                               'generation': generation, 'selected_index': selected,
-                              'candidate_count': len(candidates), 'ahead': _DESCRIPTION_AHEAD})
+                              'candidate_count': len(candidates), 'ahead': _DESCRIPTION_AHEAD,
+                              'backdrop_ahead':_BACKDROP_AHEAD})
         for index, row in candidates:
             if self.stop.is_set() or generation != self.generation:
                 return
             path = _detail_path(self.g.pluginid, row)
-            if not path or _plain((row.get('info') or {}).get('plot') or ''):
-                continue
+            if not path:continue
+            row_info=row.get('info') or {}
+            nearby=(index<=_BACKDROP_AHEAD if self.genre_owner in (301,302)
+                else selected<=index<=selected+_BACKDROP_AHEAD)
             cached = self.detail_cache.get(path)
-            if cached and _plain((cached.get('info') or {}).get('plot') or ''):
-                if (generation, path) not in self._painted_details:
-                    self._paint_cached(path)
+            known=(cached or {}).get('info') or {}
+            want_plot=not _plain(row_info.get('plot') or known.get('plot') or '')
+            want_art=nearby and not (row_info.get('fanart') or known.get('fanart')) and (cached or {}).get('packet') is None
+            if not want_plot and not want_art:
+                if cached and (generation,path) not in self._painted_details:self._paint_cached(path)
                 continue
-            if monotonic()-self.description_attempts.get(path,float('-inf'))<30:
-                continue
-            if not self.detail_jobs.empty():
-                return
-            self.description_attempts[path]=monotonic()
             saved = self.description_cache.load(path) if self.description_cache is not None else None
             if saved:
                 if cached is None:
@@ -2016,18 +2037,28 @@ class AuroraHome(xbmcgui.WindowXML):
                 else:
                     cached.setdefault('info', {}).update(saved)
                 self._paint_cached(path)
-                continue
+                known=cached.get('info') or {}
+                want_plot=not _plain(row_info.get('plot') or known.get('plot') or '')
+                want_art=nearby and not (row_info.get('fanart') or known.get('fanart')) and cached.get('packet') is None
+                if not want_plot and not want_art:continue
+            if monotonic()-self.description_attempts.get(path,float('-inf'))<30:continue
+            if not self.detail_jobs.empty():return
+            self.description_attempts[path]=monotonic()
             started = monotonic()
             self.performance({'event': 'description_prefetch_started', 'stage': 'detail_metadata',
-                              'generation': generation, 'index': index, 'offset': index - selected})
+                              'generation': generation, 'index': index, 'offset': index - selected,
+                              'description_requested':want_plot,'backdrop_requested':want_art})
             try:
-                self._enrich(path, description=True)
+                self._enrich(path, description=want_plot,artwork=want_art)
                 info = (self.detail_cache.get(path) or {}).get('info') or {}
                 available = bool(_plain(info.get('plot') or ''))
+                backdrop = bool(info.get('fanart'))
+                fulfilled = (not want_plot or available) and (not want_art or backdrop)
                 self.performance({'event': 'description_prefetch_completed', 'stage': 'detail_metadata',
                     'generation': generation, 'index': index, 'description_present': available,
+                    'backdrop_present':backdrop,'backdrop_requested':want_art,
                     'elapsed_ms': round((monotonic() - started) * 1000),
-                    'result': 'cancelled' if self.stop.is_set() else 'success' if available else 'unavailable'})
+                    'result': 'cancelled' if self.stop.is_set() or generation != self.generation else 'success' if fulfilled else 'unavailable'})
             except Exception as error:
                 self.performance({'event': 'description_prefetch_failed', 'stage': 'detail_metadata',
                     'generation': generation, 'index': index,
@@ -2050,7 +2081,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if monotonic() - self._focus_since < 0.45 or signature == self._enriched_focus:
             return
         cached = self.detail_cache.get(path)
-        if cached and cached.get('how') != 'error':
+        if cached and cached.get('how') != 'error' and ((cached.get('info') or {}).get('fanart') or cached.get('packet') is not None):
             if signature not in self._painted_details:
                 self._paint_cached(path)
                 self._painted_details.add(signature)
@@ -2059,13 +2090,14 @@ class AuroraHome(xbmcgui.WindowXML):
         if cached and cached.get('how') == 'error' and monotonic()-cached.get('failed_at',0)<30:return
         self._enriched_focus = signature
         if self.detail_jobs.empty():
-            self._enrich(path)
+            self._enrich(path,artwork=not bool((row.get('info') or {}).get('fanart')))
 
-    def _enrich(self, path, description=False):
+    def _enrich(self, path, description=False,artwork=False):
         if self.stop.is_set():
             return
         cached = self.detail_cache.get(path)
-        if cached and cached.get('how') != 'error' and (not description or (cached.get('info') or {}).get('plot')):
+        if (cached and cached.get('how') != 'error' and (not description or (cached.get('info') or {}).get('plot'))
+                and (not artwork or (cached.get('info') or {}).get('fanart') or cached.get('packet') is not None)):
             self._paint_cached(path)
             return
         packet = self._fetch_detail(path,background=True)
@@ -2193,11 +2225,14 @@ class AuroraHome(xbmcgui.WindowXML):
             item.setProperty('Rating', _rating_label(current))
             item.setProperty('Genre', _genre_label(current))
             item.setProperty('MediaType', _kind(current))
+            item.setProperty('HeroSource',refreshed.getProperty('HeroSource'))
             art = {}
             fanart = _fit_art(current.get('fanart'), _HERO_ART)
+            hero=_hero_art(current)
             thumb = _fit_art(_rail_art(current), _CARD_ART)
             if fanart:
-                art['fanart'] = fanart
+                art['fanart'] = self.image_cache.local(fanart) if self.image_cache else fanart
+            if hero:art['hero']=self.image_cache.local(hero) if self.image_cache else hero
             if thumb:
                 art['thumb'] = thumb
             if art and hasattr(item, 'setArt'):
