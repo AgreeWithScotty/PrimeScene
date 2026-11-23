@@ -1,3 +1,3 @@
-# Smooth Prime 0.2.39 rollback
+# Smooth Prime0.2.40 — complete0.2.36 restoration
 
-Restores the complete 0.2.37 runtime and security policy, reversing the application/security changes in0.2.38. Every retained runtime file equals the original0.2.37 ZIP byte for byte; only release metadata/docs differ. The TLS-policy module added in0.2.38 is removed. The existing interface and0.2.37 unused-file cleanup remain. Restart Kodi after installing so loaded services use the restored code. Historical archives remain immutable.
+The complete0.2.36 snapshot is restored, including all original runtime files, artwork and menu data. Only release version/news/changelog/README identify0.2.40 so Kodi installs the rollback normally. Every other file equals the verified original0.2.36 archive byte for byte. Restart Kodi after updating. Historical releases remain unchanged.

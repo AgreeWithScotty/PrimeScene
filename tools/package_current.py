@@ -16,7 +16,18 @@ assert hashlib.sha256(base.read_bytes()).hexdigest()==expected
 with zipfile.ZipFile(base) as z:before={n:z.read(n) for n in z.namelist() if not n.endswith('/')}
 files={prefix+p.relative_to(root).as_posix():p.read_bytes() for p in root.rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix!='.pyc'}
 asset_audit=inspect_assets(root)
-assert not asset_audit['unused_files'],('Unreferenced package assets/data',asset_audit['unused_files'])
+if spec.get('restore_from'):
+    # Explicit historical rollback: preserve the complete verified snapshot,
+    # including its old unused assets. Never exempt arbitrary new files.
+    restore=spec['restore_from'];assert re.fullmatch(r'\d+\.\d+\.\d+',restore)
+    snapshot=project/'releases'/restore;historical=snapshot/(root.name+'-'+restore+'.zip')
+    assert hashlib.sha256(historical.read_bytes()).hexdigest()==json.loads((snapshot/'release.json').read_text())['sha256']
+    with zipfile.ZipFile(historical) as z:restored={n:z.read(n) for n in z.namelist() if not n.endswith('/')}
+    assert set(files)==set(restored),'Historical rollback must restore the complete package'
+    metadata={prefix+n for n in ('addon.xml','README.md','changelog.txt')}
+    assert all(data==restored[n] for n,data in files.items() if n not in metadata),'Historical runtime must match exactly'
+else:
+    assert not asset_audit['unused_files'],('Unreferenced package assets/data',asset_audit['unused_files'])
 assert not asset_audit['missing_references'],('Missing package assets',asset_audit['missing_references'])
 notes=version+'\n'+'\n'.join('- '+line for line in spec['changes'])+'\n'
 manifest=E.fromstring(files[prefix+'addon.xml']);assert manifest.get('version') in ((previous,version) if replace_unpublished else (previous,));manifest.set('version',version)

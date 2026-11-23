@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.39" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.40" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.39[CR]- Roll back the complete 0.2.38 application/security changes to the exact 0.2.37 runtime.[CR]- Restore the previous login, credential service, network transport, file handling and diagnostics.[CR]- Remove the added TLS-policy module; retain the existing interface and the 0.2.37 unused-file cleanup.[CR]- Use a higher release number so Kodi receives the rollback as a normal update. Restart Kodi after updating.</news>
+    <news>0.2.40[CR]- Restore the complete0.2.36 application package at the user's request.[CR]- Restore its original source, artwork and regional menu data exactly.[CR]- Use release0.2.40 so Kodi can install the0.2.36 rollback as a normal update. Restart Kodi after updating.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

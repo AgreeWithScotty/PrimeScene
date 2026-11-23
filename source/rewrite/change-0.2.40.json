@@ -1,0 +1,42 @@
+{
+  "version": "0.2.40",
+  "sha256": "fe0ae393dc1d9afddafcba768a35ac4e280eb101fb935d5fb011c4a007c522b7",
+  "bytes": 3971092,
+  "files": 122,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/fanart.jpg",
+    "plugin.video.primeinterface/fanart.png",
+    "plugin.video.primeinterface/resources/menu/A1F83G8C2ARO7P.json",
+    "plugin.video.primeinterface/resources/menu/A1PA6795UKMFR9.json",
+    "plugin.video.primeinterface/resources/menu/A1VC38T7YXB528.json",
+    "plugin.video.primeinterface/resources/menu/ATVPDKIKX0DER.json",
+    "plugin.video.primeinterface/resources/skins/Default/media/button-focus.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/button-idle.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/focus-pill.png"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "rollback_verification": {
+    "requested_baseline": "0.2.36",
+    "previous_release": "0.2.39",
+    "baseline_files": 122,
+    "restored_files": [
+      "fanart.jpg",
+      "fanart.png",
+      "resources/menu/A1F83G8C2ARO7P.json",
+      "resources/menu/A1PA6795UKMFR9.json",
+      "resources/menu/A1VC38T7YXB528.json",
+      "resources/menu/ATVPDKIKX0DER.json",
+      "resources/skins/Default/media/button-focus.png",
+      "resources/skins/Default/media/button-idle.png",
+      "resources/skins/Default/media/focus-pill.png"
+    ],
+    "runtime_bytes_equal": true,
+    "historical_archives_overwritten": false,
+    "provider_or_kodi_tests_run": false
+  }
+}
