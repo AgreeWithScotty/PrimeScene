@@ -1,0 +1,5 @@
+0.2.39
+- Roll back the complete 0.2.38 application/security changes to the exact 0.2.37 runtime.
+- Restore the previous login, credential service, network transport, file handling and diagnostics.
+- Remove the added TLS-policy module; retain the existing interface and the 0.2.37 unused-file cleanup.
+- Use a higher release number so Kodi receives the rollback as a normal update. Restart Kodi after updating.

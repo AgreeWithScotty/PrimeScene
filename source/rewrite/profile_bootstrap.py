@@ -28,21 +28,12 @@ def prepare_profile():
             **storage_status(root),
             'result':'success'})
     try:persist_if_current(root,epoch,protect_saved)
-    except VaultMissing as error:
+    except VaultMissing:
         # A prior memory session has ended (or an OS item was removed). Purge
         # its complete account state before showing a new sign-in screen.
         from .account_state import sign_out
-        security({'event':'credential_session_expired','stage':'profile_protection','reason':error.reason,
-            'legacy_plaintext_files_remaining':legacy_credentials_remaining(root),'result':'expired'})
+        security({'event':'credential_session_expired','stage':'profile_protection','result':'expired'})
         sign_out(g)
-        # Sign-out removes the former profile report. Preserve a complete,
-        # accessible account-neutral explanation in the newly clean profile.
-        previous_attempt=security.attempt
-        security=DiagnosticLog(root,g.addon.getAddonInfo('version'),operation='credential_storage')
-        security({'event':'credential_session_reset','stage':'profile_protection','reason':error.reason,
-            'exception':exception_details(error),'previous_attempt':previous_attempt,
-            'legacy_plaintext_files_remaining':legacy_credentials_remaining(root),
-            'account_cleanup_completed':True,'result':'new_signin_required'})
         epoch=account_epoch(root)
     except Exception as error:
         security({'event':'credential_storage_failed','stage':'profile_protection',

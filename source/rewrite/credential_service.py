@@ -1,23 +1,18 @@
 """Kodi-lifetime vault worker and memory-only fallback.
 
-An owner-only filesystem socket performs mutual HMAC authentication before any
-credential is sent. No credential TCP listener or network fallback exists.
-Frames are bounded/authenticated JSON bytes, never pickle. Discovery and the
-capability stay in Kodi memory, never in a profile file or report.
+One fixed TCP connection performs mutual HMAC authentication before credentials
+are sent. Frames are bounded/authenticated JSON bytes, never pickle. Discovery
+and the capability stay in Kodi memory, never in a profile file or report.
 """
 import base64
 import hashlib
 import hmac
 import json
-import os
-from pathlib import Path
 import re
 from secrets import token_bytes,token_hex
 import socket
 import socketserver
 import struct
-import stat
-import tempfile
 from threading import BoundedSemaphore,RLock,Thread
 from time import monotonic
 from .vault_errors import VaultError,VaultUnavailable,VaultMissing
@@ -56,16 +51,11 @@ def _read_frame(connection,key,context):
     return value
 
 
-class _Server(socketserver.ThreadingMixIn,socketserver.UnixStreamServer if hasattr(socketserver,'UnixStreamServer') else socketserver.BaseServer):
+class _Server(socketserver.ThreadingTCPServer):
     daemon_threads=True;allow_reuse_address=False
     def __init__(self,owner):
         self.owner=owner;self.slots=BoundedSemaphore(6)
-        # The fallback base class only keeps this module importable on Windows,
-        # where native DPAPI is used and this worker is never started. Refuse
-        # construction if private filesystem IPC is unavailable; never bind TCP.
-        if os.name=='nt' or not hasattr(socket,'AF_UNIX'):
-            raise VaultUnavailable('private_credential_transport_unavailable')
-        super().__init__(owner.endpoint,_Handler)
+        super().__init__(('127.0.0.1',0),_Handler)
     def process_request(self,request,address):
         if not self.slots.acquire(False):self.shutdown_request(request);return
         request.settimeout(8)
@@ -82,8 +72,8 @@ class _Handler(socketserver.BaseRequestHandler):
     def handle(self):
         owner=self.server.owner;started=monotonic();request_id=token_hex(8);action='authenticate';backend=None
         try:
-            nonce=token_bytes(32);self.request.sendall(b'SPV2'+nonce)
-            answer=_receive(self.request,64);peer=answer[:32];context=b'SPV2'+nonce+peer
+            nonce=token_bytes(32);self.request.sendall(b'SPV1'+nonce)
+            answer=_receive(self.request,64);peer=answer[:32];context=b'SPV1'+nonce+peer
             if not hmac.compare_digest(answer[32:],_mac(owner.key,b'client:',context)):
                 raise VaultUnavailable('vault_peer_authentication_failed')
             self.request.sendall(_mac(owner.key,b'server:',context))
@@ -116,33 +106,12 @@ _BACKENDS={'session','macos_keychain','linux_secret_service'}
 
 
 class CredentialService:
-    def __init__(self,report,directory=None):
+    def __init__(self,report):
         self.report=report;self.key=token_bytes(32);self.instance=token_hex(16)
         self.lock=RLock();self.native=None;self.native_reason=None;self.choices={};self.records={};self.retired=set();self.closed=False
-        if os.name=='nt' or not hasattr(socket,'AF_UNIX'):
-            raise VaultUnavailable('private_credential_transport_unavailable')
-        self.directory=Path(tempfile.mkdtemp(prefix='sp-vault-',dir=directory))
-        self.endpoint=str(self.directory/'ipc')
-        try:
-            os.chmod(self.directory,0o700)
-            if len(os.fsencode(self.endpoint))>103:raise VaultUnavailable('private_credential_socket_path_too_long')
-            _private_endpoint(self.endpoint,exists=False)
-            self.server=_Server(self)
-            os.chmod(self.endpoint,0o600)
-            _private_endpoint(self.endpoint)
-            self.thread=Thread(target=self.server.serve_forever,name='PrimeVault',daemon=True)
-            self.thread.start()
-        except Exception:
-            if hasattr(self,'server'):self.server.server_close()
-            self._remove_endpoint()
-            raise
-    def discovery(self):return {'socket':self.endpoint,'capability':self.key.hex(),'instance':self.instance}
-    def _remove_endpoint(self):
-        # This directory is freshly created by this service. No recursive delete
-        # or following a replaced symlink, and no endpoint paths in diagnostics.
-        endpoint=Path(self.endpoint)
-        if endpoint.exists() or endpoint.is_symlink():endpoint.unlink()
-        self.directory.rmdir()
+        self.server=_Server(self);self.thread=Thread(target=self.server.serve_forever,name='PrimeVault',daemon=True)
+        self.thread.start()
+    def discovery(self):return {'port':self.server.server_address[1],'capability':self.key.hex(),'instance':self.instance}
     def _native(self):
         if self.native is None:
             from .native_vault import native_backend
@@ -220,11 +189,6 @@ class CredentialService:
     def close(self):
         self.closed=True
         self.server.shutdown();self.server.server_close();self.thread.join(2)
-        try:self._remove_endpoint()
-        except OSError as error:
-            from .prime_diagnostics import exception_details
-            self.report({'event':'credential_socket_cleanup_failed','stage':'vault_shutdown',
-                'exception':exception_details(error),'result':'failure'})
         acquired=self.lock.acquire(timeout=2)
         if not acquired:
             self.report({'event':'credential_vault_shutdown_pending','stage':'vault_shutdown','reason':'native_worker_pending','result':'failure'})
@@ -243,41 +207,23 @@ class CredentialService:
             self.native=None;self.key=b''
 
 
-def _private_endpoint(address,exists=True):
-    if os.name=='nt' or not hasattr(socket,'AF_UNIX'):
-        raise VaultUnavailable('private_credential_transport_unavailable')
-    if not isinstance(address,str) or not address or '\0' in address or len(os.fsencode(address))>103:
-        raise VaultUnavailable('vault_discovery_invalid')
-    path=Path(address)
-    if not path.is_absolute() or path.name!='ipc' or not path.parent.name.startswith('sp-vault-'):
-        raise VaultUnavailable('vault_discovery_invalid')
-    parent=path.parent.lstat()
-    if (not stat.S_ISDIR(parent.st_mode) or parent.st_uid!=os.geteuid()
-        or stat.S_IMODE(parent.st_mode)!=0o700):raise VaultUnavailable('credential_socket_directory_not_private')
-    if exists:
-        info=path.lstat()
-        if (not stat.S_ISSOCK(info.st_mode) or info.st_uid!=os.geteuid()
-            or stat.S_IMODE(info.st_mode)!=0o600):raise VaultUnavailable('credential_socket_not_private')
-
-
 def request(discovery,value):
-    if (not isinstance(discovery,dict) or set(discovery)!={'socket','capability','instance'}
+    if (not isinstance(discovery,dict) or set(discovery)!={'port','capability','instance'}
+        or type(discovery['port']) is not int or not 0<discovery['port']<65536
         or not re.fullmatch('[a-f0-9]{64}',str(discovery['capability']))
         or not re.fullmatch('[a-f0-9]{32}',str(discovery['instance']))):
         raise VaultUnavailable('vault_discovery_invalid')
     key=bytes.fromhex(discovery['capability'])
     try:
-        _private_endpoint(discovery['socket'])
-        with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as connection:
-            connection.settimeout(8);connection.connect(discovery['socket'])
+        with socket.create_connection(('127.0.0.1',discovery['port']),timeout=8) as connection:
             greeting=_receive(connection,36)
-            if greeting[:4]!=b'SPV2':raise VaultUnavailable('vault_server_invalid')
+            if greeting[:4]!=b'SPV1':raise VaultUnavailable('vault_server_invalid')
             nonce=token_bytes(32);context=greeting+nonce
             connection.sendall(nonce+_mac(key,b'client:',context))
             if not hmac.compare_digest(_receive(connection,32),_mac(key,b'server:',context)):
                 raise VaultUnavailable('vault_server_authentication_failed')
             # This exact authenticated socket is retained. There is no automatic
-            # reconnect that could send credentials to a replacement endpoint.
+            # reconnect that could send credentials to a process reusing its port.
             _send_frame(connection,key,b'request:'+context,value)
             reply=_read_frame(connection,key,b'response:'+context)
         if not reply.get('ok'):

@@ -5,8 +5,7 @@ from pathlib import Path
 from threading import Event, Lock
 from time import monotonic
 from urllib.parse import urlsplit
-from urllib.request import HTTPRedirectHandler, Request
-from .tls_policy import secure_opener
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .account_state import current_account, persist_if_current
 from .prime_diagnostics import DiagnosticLog, exception_details, route
@@ -72,7 +71,7 @@ class ImageCache:
         try:
             if self.stop.is_set() or not current_account(self.g.DATA_PATH, self.epoch):
                 return
-            with secure_opener(_ImageRedirect()).open(Request(url, headers={'Accept': 'image/*'}), timeout=8) as response:
+            with build_opener(_ImageRedirect()).open(Request(url, headers={'Accept': 'image/*'}), timeout=8) as response:
                 status = response.getcode()
                 if response.headers.get_content_type() not in ('image/jpeg', 'image/png', 'image/webp'):
                     raise ValueError('Artwork response was not an image')

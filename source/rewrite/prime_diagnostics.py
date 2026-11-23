@@ -8,7 +8,6 @@ from pathlib import Path
 import re
 import secrets
 import sys
-import ssl
 from threading import RLock
 from time import monotonic
 import traceback
@@ -32,8 +31,7 @@ def route(url):
         return {'route': 'invalid-address'}
 
 
-def exception_details(error,_depth=0):
-    if _depth>6:return {'type':type(error).__name__,'exception_chain_truncated':True}
+def exception_details(error):
     result = {'type': type(error).__name__, 'frames': [
         {'file': Path(frame.filename).name, 'line': frame.lineno, 'function': frame.name}
         for frame in traceback.extract_tb(error.__traceback__)]}
@@ -47,15 +45,10 @@ def exception_details(error,_depth=0):
     reason = getattr(error, 'reason', None)
     if reason is not None:
         result['reason_type'] = type(reason).__name__
-        from .vault_errors import VaultError
-        if isinstance(error,VaultError) and isinstance(reason,str) and re.fullmatch('[a-z0-9_]{1,100}',reason):
-            result['reason']=reason
         if isinstance(getattr(reason, 'errno', None), int):
             result['reason_errno'] = reason.errno
-        if isinstance(reason,BaseException) and reason is not error and reason is not error.__cause__:
-            result['transport_reason']=exception_details(reason,_depth+1)
     if error.__cause__ is not None:
-        result['cause'] = exception_details(error.__cause__,_depth+1)
+        result['cause'] = exception_details(error.__cause__)
     return result
 
 
@@ -111,14 +104,7 @@ class DiagnosticLog:
                 'customerid','customer_id','actorid','actor_id','deviceid','device_id','account_name',
                 'email','license','widevine2challenge','widevine2license'}
             sensitive.update(('capability','vault_capability','vault_value'))
-            def private_key(key):
-                normalized=re.sub('[^a-z0-9]','',str(key).lower())
-                return (str(key).lower() in sensitive or
-                    any(word in normalized for word in ('password','passwd','passcode','otp','token','cookie','secret','authorization','credentialpayload'))
-                    or normalized in {'verificationcode','verificationpin','mfacode','username','customer','customerid','actorid','deviceid','deviceserial','serialnumber',
-                        'accountname','accountid','emailaddress','email','license','widevine2challenge','widevine2license',
-                        'capability','vaultvalue','sessionid','sessionkey','privatekey','encryptionkey'})
-            return {str(k):'[redacted]' if private_key(k) and not isinstance(v,bool)
+            return {str(k):'[redacted]' if str(k).lower() in sensitive and not isinstance(v,bool)
                 else self.redact(v,depth+1) for k,v in islice(value.items(),200)}
         if isinstance(value, (list, tuple)):
             return [self.redact(v,depth+1) for v in value[:200]]
@@ -129,7 +115,7 @@ class DiagnosticLog:
         value = re.sub(r'https?://[^\s<>"\']+', '[redacted-address]', value)
         value = re.sub(r'\b[^\s@]+@[^\s@]+\.[^\s@]+\b', '[redacted-email]', value)
         value = re.sub(r'(?i)\b(?:bearer|basic)\s+[a-z0-9+/_=.-]+','[redacted-authorization]',value)
-        value = re.sub(r'(?i)\b(?:password|passwd|passcode|otp|otpcode|verification[_-]?code|(?:access|refresh|id|session)[_-]?token|session[_-]?(?:id|key)|cookie|client[_-]?secret|private[_-]?key)\s*[:=][^\r\n]+',
+        value = re.sub(r'(?i)\b(?:password|otpcode|verification_code|access_token|refresh_token|cookie)\s*[:=][^\r\n]+',
             '[redacted-credential]',value)
         value = re.sub(r'\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b','[redacted-token]',value)
         return value[:2000]
@@ -145,23 +131,17 @@ class DiagnosticLog:
         with self.lock:
             self.sequence += 1
             if self.sequence == 1:
-                environment = {'python': sys.version.split()[0], 'platform': sys.platform,'tls_library':ssl.OPENSSL_VERSION}
+                environment = {'python': sys.version.split()[0], 'platform': sys.platform}
                 try:
                     import xbmc
                     environment['kodi'] = xbmc.getInfoLabel('System.BuildVersion')
                 except ImportError:
                     pass
                 event = dict(event, environment=environment)
-            base=dict(schema=2,operation=self.operation,attempt=self.attempt,sequence=self.sequence,
-                version=self.version,time=datetime.now(timezone.utc).isoformat(),
-                elapsed_ms=round((monotonic()-self.started)*1000))
-            try:
-                record=self.redact(dict(event,**base))
-                line=json.dumps(record,ensure_ascii=True)+'\n'
-            except Exception as error:
-                # Never fall back to str(event) or the original unredacted data.
-                line=json.dumps(dict(base,event='diagnostic_redaction_failed',stage='logging_guard',
-                    error_type=type(error).__name__,result='failure'))+'\n'
+            record = self.redact(dict(event, schema=2, operation=self.operation, attempt=self.attempt, sequence=self.sequence,
+                                      version=self.version, time=datetime.now(timezone.utc).isoformat(),
+                                      elapsed_ms=round((monotonic() - self.started) * 1000)))
+            line = json.dumps(record, ensure_ascii=True) + '\n'
             self.lines.append(line)
             try:
                 self.profile.mkdir(parents=True, exist_ok=True)

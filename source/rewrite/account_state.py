@@ -20,10 +20,7 @@ NEUTRAL_FILES = {STATE_FILE, STATE_FILE + '-journal', STATE_FILE + '-wal', STATE
 @contextmanager
 def state_db(profile):
     profile = Path(profile)
-    from .private_storage import private_directory,_regular
-    private_directory(profile)
-    target=profile/STATE_FILE
-    if target.exists() or target.is_symlink():_regular(target)
+    profile.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(str(profile / STATE_FILE), timeout=20)
     try:
         connection.execute('BEGIN IMMEDIATE')
@@ -42,8 +39,6 @@ def read_state(profile):
     """Read account guards without taking a writer lock on every UI/log event."""
     path = Path(profile) / STATE_FILE
     if path.exists():
-        from .private_storage import private_directory,_regular
-        private_directory(path.parent);_regular(path)
         connection = sqlite3.connect(str(path), timeout=2)
         try:
             value = connection.execute('SELECT epoch, signed_out FROM session WHERE id=1').fetchone()
@@ -100,17 +95,17 @@ def store_account(profile, expected, account, addon, cookie_session=None, sessio
         config = Path(profile) / 'config'
         config.mkdir(parents=True, exist_ok=True)
         target = config / 'accounts.lst'
-        from .private_storage import write_secret,write_private
+        from .private_storage import write_secret
         write_secret(target,json.dumps([account]).encode('utf-8'))
         if cookie_session is not None:
-            from .session_store import COOKIE_FILE, copy_cookie_session,public_session_headers
+            from .session_store import COOKIE_FILE, copy_cookie_session
             from .prime_signin import save_cookies
             save_cookies(copy_cookie_session(cookie_session), Path(profile) / COOKIE_FILE)
-            session_headers=public_session_headers(session_headers)
-            write_private(Path(profile)/'prime-video-session.headers.json',json.dumps(session_headers).encode('utf-8'))
-            agent = session_headers.get('User-Agent')
+            (Path(profile) / 'prime-video-session.headers.json').write_text(
+                json.dumps(session_headers or {}), encoding='utf-8')
+            agent = (session_headers or {}).get('User-Agent')
             if isinstance(agent, str) and agent:
-                write_private(config/'UserAgent',agent.encode('utf-8'))
+                (config / 'UserAgent').write_text(agent, encoding='utf-8')
         addon.setSetting('login_acc', account['name'])
         db.execute('UPDATE session SET epoch=?, signed_out=0 WHERE id=1', (next_epoch,))
     return next_epoch

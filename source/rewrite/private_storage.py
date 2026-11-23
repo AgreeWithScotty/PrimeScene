@@ -44,37 +44,16 @@ def _dpapi(content,protect):
 
 def _regular(path):
     info=path.lstat()
-    if (not stat.S_ISREG(info.st_mode) or getattr(info,'st_file_attributes',0)&1024
-        or info.st_nlink!=1 or os.name!='nt' and info.st_uid!=os.geteuid()):
+    if not stat.S_ISREG(info.st_mode) or getattr(info,'st_file_attributes',0)&1024:
         raise ValueError('Private storage requires a regular file')
-    return info
 
 
 def private_directory(path):
     path=Path(path);path.mkdir(parents=True,exist_ok=True)
     info=path.lstat()
-    if (not stat.S_ISDIR(info.st_mode) or getattr(info,'st_file_attributes',0)&1024
-        or os.name!='nt' and info.st_uid!=os.geteuid()):
+    if not stat.S_ISDIR(info.st_mode) or getattr(info,'st_file_attributes',0)&1024:
         raise ValueError('Private storage requires a real directory')
     if os.name!='nt':os.chmod(path,0o700)
-
-
-def _open_private(path):
-    """Read the checked file itself; never follow a substituted link/FIFO."""
-    path=Path(path);private_directory(path.parent);expected=_regular(path)
-    flags=os.O_RDONLY|getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_NONBLOCK',0)|getattr(os,'O_BINARY',0)
-    descriptor=os.open(str(path),flags)
-    try:
-        actual=os.fstat(descriptor)
-        if (not stat.S_ISREG(actual.st_mode) or actual.st_nlink!=1
-            or (actual.st_dev,actual.st_ino)!=(expected.st_dev,expected.st_ino)
-            or os.name!='nt' and actual.st_uid!=os.geteuid()):
-            raise ValueError('Private file changed while opening')
-        if os.name!='nt':os.fchmod(descriptor,0o600)
-        result=os.fdopen(descriptor,'rb');descriptor=None
-        return result
-    finally:
-        if descriptor is not None:os.close(descriptor)
 
 
 def write_secret(path,content):
@@ -92,7 +71,7 @@ def _vault_write(path,content,call,instance):
     root,slot=_credential_path(path);scope=_scope(root)
     previous=None
     if path.exists():
-        with _open_private(path) as source:old=source.read(MAX_SECRET+65537)
+        with path.open('rb') as source:old=source.read(MAX_SECRET+65537)
         if old.startswith(REFERENCE):previous=_reference(old,scope,slot)
         elif old.startswith(MAGIC):raise VaultUnavailable('windows_session_requires_new_signin')
     selected=previous or call({'action':'choose','namespace':scope})
@@ -131,10 +110,8 @@ def write_private(path,encoded):
 
 
 def read_secret(path,limit=MAX_SECRET):
-    path=Path(path)
-    with _open_private(path) as source:raw=source.read(limit+65537)
-    if len(raw)>limit and not raw.startswith((MAGIC,REFERENCE)):
-        _discard_unprotected(path,ValueError('Invalid legacy credential size'))
+    path=Path(path);_regular(path)
+    with path.open('rb') as source:raw=source.read(limit+65537)
     if len(raw)>limit+65536:raise ValueError('Private storage exceeds its size limit')
     if raw.startswith(REFERENCE):
         if os.name=='nt':raise VaultMissing('platform_session_requires_new_signin')
@@ -146,24 +123,12 @@ def read_secret(path,limit=MAX_SECRET):
     else:
         if len(raw)>limit:raise ValueError('Private storage exceeds its size limit')
         content=raw
-        # An unsuccessful upgrade must not leave a plaintext credential behind.
-        # Native deletion journals remain available for complete sign-out/retry.
-        try:write_secret(path,content)
-        except Exception as error:
-            _discard_unprotected(path,error)
+        # A legacy plaintext value is returned only after protected replacement
+        # and a verified store operation. It is never an operational fallback.
+        write_secret(path,content)
     if len(content)>limit:raise ValueError('Decoded private storage exceeds its size limit')
     if os.name!='nt':os.chmod(path,0o600)
     return content
-
-
-def _discard_unprotected(path,error):
-    try:
-        with _open_private(path) as source:prefix=source.read(max(len(MAGIC),len(REFERENCE)))
-        if not prefix.startswith((MAGIC,REFERENCE)):path.unlink()
-    except FileNotFoundError:pass
-    except Exception as cleanup:
-        raise VaultCleanupRequired('legacy_plaintext_cleanup_failed') from cleanup
-    raise VaultMissing('legacy_credential_protection_failed_new_signin') from error
 
 
 def _vault_read(path,raw,call,instance):
@@ -206,7 +171,8 @@ def _reference(raw,scope,slot):
 def _index(root):
     path=Path(root)/REGISTRY
     if not path.exists():return {}
-    with _open_private(path) as source:raw=source.read(32769)
+    _regular(path)
+    with path.open('rb') as source:raw=source.read(32769)
     if len(raw)>32768:raise VaultUnavailable('vault_journal_limit')
     try:index=json.loads(raw)
     except ValueError as error:raise VaultUnavailable('vault_journal_invalid') from error
@@ -239,7 +205,7 @@ def legacy_credentials_remaining(root):
     for relative in ('config/accounts.lst','prime-video-session.cookies'):
         path=Path(root)/relative
         if path.is_file():
-            with _open_private(path) as source:prefix=source.read(64)
+            with path.open('rb') as source:prefix=source.read(64)
             count+=not prefix.startswith((MAGIC,REFERENCE))
     return count
 
@@ -290,7 +256,7 @@ def append_report(path,line,limit=8*1024*1024):
     if path.exists():
         _regular(path)
         if path.stat().st_size>limit:
-            with _open_private(path) as source:
+            with path.open('rb') as source:
                 source.seek(max(0,path.stat().st_size-limit//2));tail=source.read(limit//2)
             tail=tail.partition(b'\n')[2]
             write_private(path,b'{"event":"diagnostic_history_trimmed","result":"retention_limit"}\n'+tail)

@@ -21,8 +21,6 @@ class AccountRuntime:
         self.addon = xbmcaddon.Addon(ID)
         self.dialog = xbmcgui.Dialog()
         self.DATA_PATH = xbmcvfs.translatePath(self.addon.getAddonInfo('profile'))
-        from .private_storage import private_directory
-        private_directory(self.DATA_PATH)
         self.PLUGIN_PATH = self.addon.getAddonInfo('path')
         self.dtid_android = DEVICE_TYPE
         self.headers_android = dict(DEVICE_HEADERS)
