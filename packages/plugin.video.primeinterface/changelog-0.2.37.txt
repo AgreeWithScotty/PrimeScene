@@ -1,0 +1,4 @@
+0.2.37
+- Remove two unused background images, three obsolete button textures and four unused regional menu data files.
+- Keep active artwork, fonts, UI, account security, catalog and playback code byte-identical.
+- Block future packages containing unreferenced artwork, fonts or JSON data, or missing local asset references.

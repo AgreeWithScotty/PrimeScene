@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.36" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.37" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.36[CR]- Replace non-Windows plaintext credential writes with scoped native-vault references or Kodi-lifetime memory storage.[CR]- Add current macOS SecItem Keychain and Linux libsecret/Secret Service adapters with native write/read verification.[CR]- Use session-only sign-in when no usable OS vault is available, including Android without a verified Keystore bridge.[CR]- Keep session credentials available across application and playback invocations without saving their payload or capability to disk.[CR]- Mutually authenticate the local credential service before sending secrets, with authenticated bounded JSON frames and no pickle.[CR]- Journal native entries before creation and verify their deletion on sign-out; retain failed cleanup for retry and block new sign-in.[CR]- Serialize migration with account invalidation and purge expired/imported sessions before another account signs in.[CR]- Record the actual storage backend, failed native stage and remaining legacy plaintext count without exposing credentials.[CR]- Preserve Windows DPAPI, the existing single-row presentation, catalogue pagination and provider playback choices.</news>
+    <news>0.2.37[CR]- Remove two unused background images, three obsolete button textures and four unused regional menu data files.[CR]- Keep active artwork, fonts, UI, account security, catalog and playback code byte-identical.[CR]- Block future packages containing unreferenced artwork, fonts or JSON data, or missing local asset references.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

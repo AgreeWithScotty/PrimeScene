@@ -1,0 +1,85 @@
+{
+  "version": "0.2.37",
+  "sha256": "27a5c68eb6e924e4700d7640758f0e8ff865a00f4c67ded53f8f5b5d68cb5bc7",
+  "bytes": 2149788,
+  "files": 113,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt"
+  ],
+  "removed_files": [
+    "plugin.video.primeinterface/fanart.jpg",
+    "plugin.video.primeinterface/fanart.png",
+    "plugin.video.primeinterface/resources/menu/A1F83G8C2ARO7P.json",
+    "plugin.video.primeinterface/resources/menu/A1PA6795UKMFR9.json",
+    "plugin.video.primeinterface/resources/menu/A1VC38T7YXB528.json",
+    "plugin.video.primeinterface/resources/menu/ATVPDKIKX0DER.json",
+    "plugin.video.primeinterface/resources/skins/Default/media/button-focus.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/button-idle.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/focus-pill.png"
+  ],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "source_checks": {
+    "removed_files": [
+      {
+        "path": "fanart.jpg",
+        "bytes": 12526,
+        "sha256": "b4379e9629b69616d2cd6525fdfd74297d04534dace2883f901f3177d0f1c720"
+      },
+      {
+        "path": "fanart.png",
+        "bytes": 1932140,
+        "sha256": "a18ec8fc3ffe788030719a0dc77d73c374b817c0f16ecc9286414eeee912823d"
+      },
+      {
+        "path": "resources/menu/A1F83G8C2ARO7P.json",
+        "bytes": 62846,
+        "sha256": "b2af82a861761ac5aeccc7b6b1d3b728b6aa7e4f5d552552d1623193528b31f9"
+      },
+      {
+        "path": "resources/menu/A1PA6795UKMFR9.json",
+        "bytes": 95879,
+        "sha256": "ca29d236d5bbc2ac4fb2a7b2b11e42c991cae01967e6d6d5b3242ac9e2b1385f"
+      },
+      {
+        "path": "resources/menu/A1VC38T7YXB528.json",
+        "bytes": 33210,
+        "sha256": "c63255e01627b89d41e2b657592f1cd718494ccbfa439475ffcb009c1ac68d33"
+      },
+      {
+        "path": "resources/menu/ATVPDKIKX0DER.json",
+        "bytes": 47693,
+        "sha256": "8f67b254fe4327b992572a463708eef5bb4a83bc88759b610b36a8c7dfdf80e9"
+      },
+      {
+        "path": "resources/skins/Default/media/button-focus.png",
+        "bytes": 264,
+        "sha256": "cf21da310dac5b776e31b8bb64a4276b2f425c2019329a1155d633e3d064d893"
+      },
+      {
+        "path": "resources/skins/Default/media/button-idle.png",
+        "bytes": 317,
+        "sha256": "f68717062d71f7602725775d4400bf167bb5538c0613d9c42b3b3989b6462a41"
+      },
+      {
+        "path": "resources/skins/Default/media/focus-pill.png",
+        "bytes": 290,
+        "sha256": "a5bd25e5cf3f578b8abd2895037601854c8aafcedc5abaafea94d73e815fdb6b"
+      }
+    ],
+    "uncompressed_bytes_removed": 2185165,
+    "retained_files_byte_identical_before_release_metadata": 113,
+    "all_python_files_unchanged": true,
+    "all_ui_xml_unchanged": true,
+    "asset_data_files_retained": 43,
+    "unreferenced_asset_data_files": [],
+    "missing_asset_references": [],
+    "python_files": 58,
+    "unreachable_python_files": [],
+    "historical_release_archives_modified": false,
+    "provider_or_kodi_tests_run": false,
+    "scope": "Actual bundled runtime Python/XML/JSON literals, dynamic genre map, manifest/font paths; no provider/Kodi simulation."
+  }
+}
