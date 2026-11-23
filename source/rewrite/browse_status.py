@@ -6,6 +6,20 @@ def section_intro(section):
     if section=='purchases':return {'title':'Purchases','message':'Your purchased movies and TV shows appear here. Visit Amazon to purchase media.'}
     return {'title':'Search Prime Video','message':"Select Search and enter a movie or TV show title. Search Amazon's full Prime Video catalogue, including Prime titles, rentals, purchases and add-on subscriptions."}
 
+def browse_intro(section,path,heading='',query=None,series=None):
+    """Own the destination before its first result; do not assert it is empty."""
+    if path in ('__watching__','__prime_purchases__','search'):
+        intro=section_intro('home' if path=='__watching__' else 'purchases' if path=='__prime_purchases__' else 'search')
+        if query is not None:intro={'title':'Search results','message':"Movies and TV shows matching your search across Amazon's full Prime Video catalogue."}
+        return intro
+    if series:
+        return {'title':clean(series.get('title') or heading),'message':
+            'Choose a season to browse its episodes.' if series.get('view')=='seasons' else
+            clean(series.get('season_label') or 'Episodes')}
+    return {'title':clean(heading or ('Movies' if section=='movies' else 'TV' if section=='tv' else 'Extras')),
+        'message':'Movies included with Prime.' if section=='movies' else 'TV shows included with Prime.' if section=='tv' else
+        'Explore this service on Prime Video. A separate subscription or purchase may be required.'}
+
 def category_status(section,path='',heading='',query=None,series=None,unavailable=False):
     heading=clean(heading or '');series=series or {}
     if series:

@@ -1,0 +1,32 @@
+{
+  "version": "0.2.44",
+  "sha256": "ea5d264e62e8cade9fd25ce6ded2cb4b1d998d5693306a889611161e49b8f331",
+  "bytes": 3948738,
+  "files": 116,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/actions.py",
+    "plugin.video.primeinterface/resources/lib/artwork_cache.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_status.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/home_catalog.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "rollback_verification": {
+    "requested_baseline": "0.2.34",
+    "previous_release": "0.2.43",
+    "baseline_files": 116,
+    "restored_files": [],
+    "runtime_bytes_equal": true,
+    "historical_archives_overwritten": false,
+    "provider_or_kodi_tests_run": false
+  }
+}

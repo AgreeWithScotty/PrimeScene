@@ -110,7 +110,8 @@ class StorefrontLoader:
                 self.report({'event':'catalog_preload_promoted','stage':'preload_queue',
                     'section':self.diagnostic_section(path),'result':'success'})
             entry = self.cache.get(path)
-            if path != '__watching__' and future is not None and not future.cancelled() and entry and time() - entry[0] < FRESH_SECONDS:
+            if (path != '__watching__' and future is not None and future.done() and not future.cancelled()
+                    and future.exception() is None and entry and time() - entry[0] < FRESH_SECONDS):
                 if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and entry[1].get('next'):self.request(entry[1]['next'],background=True)
                 return future
             if self.stop.is_set():
@@ -160,12 +161,17 @@ class StorefrontLoader:
             if root=='__service_directory__':
                 from .service_catalog import service_address
                 if any(not service_address(row.get('address')) for row in packet.get('tiles') or []):raise ValueError('Invalid cached service catalog route')
+            staged={}
             for alias, state in saved.get('continuations', {}).items():
                 if (not alias.startswith('__prime_page__/') or not alias.endswith('/nextPage')
-                        or len(state) != 4 or state[0] != self.epoch
+                        or not isinstance(state,(list,tuple)) or len(state) != 4 or state[0] != self.epoch
                         or not self._valid_continuation(state[2])):
                     raise ValueError('Invalid cached continuation')
-                bridge.continuations[alias] = (state[0], state[1], state[2], tuple(state[3]))
+                staged[alias]=(state[0],state[1],state[2],tuple(state[3]))
+            if packet.get('next') and packet['next'] not in staged:
+                raise ValueError('Cached next page has no validated continuation')
+            bridge.continuations.update(staged)
+            for alias in staged:
                 self.routes[alias] = root
             self.cache[root] = (saved['saved'], packet)
             self.report({'event': 'saved_catalog_loaded', 'section': self.diagnostic_section(root), 'cards': len(packet['rows']),

@@ -1,0 +1,4 @@
+0.2.44
+- Restore the complete0.2.34 application package at the user's request.
+- Restore its original source, artwork and regional menu data exactly.
+- Use release0.2.44 so Kodi can install the0.2.34 rollback as a normal update. Restart Kodi after updating.
