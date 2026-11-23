@@ -1,0 +1,5 @@
+0.2.47
+- Keep the main title together in the large first line instead of enlarging only its first word.
+- Place subtitles below in smaller type, keeping a colon on the main line and a separating dash with the subtitle.
+- Wrap long titles without separators at word boundaries with a smaller continuation; keep short titles on one large line.
+- Regenerate title artwork with the corrected layout and log the actual line sizes, split rule, cache outcome and render failures.

@@ -1871,7 +1871,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         from .account_state import persist_if_current
                         rendered = []
                         def draw():
-                            rendered.append(render_title(title, Path(self.g.DATA_PATH) / 'title-art'))
+                            rendered.append(render_title(title, Path(self.g.DATA_PATH) / 'title-art', self.performance))
                         if not persist_if_current(self.g.DATA_PATH, self.account_generation, draw):
                             break
                         plate = rendered[0]
@@ -1940,7 +1940,7 @@ class AuroraHome(xbmcgui.WindowXML):
             title=clean(rows[0].get('title') or '').upper()
             if title and title not in self.title_cache:
                 from .account_state import persist_if_current
-                def draw():self.title_cache[title]=render_title(title,Path(self.g.DATA_PATH)/'title-art')
+                def draw():self.title_cache[title]=render_title(title,Path(self.g.DATA_PATH)/'title-art',self.performance)
                 persist_if_current(self.g.DATA_PATH,self.account_generation,draw)
         self.performance({'event':'catalog_visual_preload_ready','stage':'preload_artwork',
             'section':StorefrontLoader.diagnostic_section(path),'cards':len(rows),

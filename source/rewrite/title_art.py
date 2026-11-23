@@ -10,15 +10,19 @@ so moving along a row does not run Python.
 from base64 import b64decode
 from hashlib import sha1
 from pathlib import Path
+from time import monotonic
 from zlib import decompress
 import json
+import re
 import struct
 import zlib
 
 try:
     from .title_glyphs import GLYPHS
+    from .prime_diagnostics import exception_details
 except ImportError:
     from title_glyphs import GLYPHS
+    from prime_diagnostics import exception_details
 
 _DIR = Path(__file__).resolve().parent
 _META = json.loads((_DIR / 'title_glyphs.json').read_text(encoding='utf-8'))
@@ -29,6 +33,10 @@ _CAP_H = _GLYPHS['A']['h']
 _LINE = int(round(_CAP_H * 0.92))
 _MAX_W = 1240
 _MAX_H = 268
+_LAYOUT_REVISION = 'hierarchy-v3'
+_BREAK = re.compile(r'(?<!\d):|:(?!\d)|\s+-\s+')
+_JOINERS = {'A', 'AN', 'THE', 'OF', 'AND', 'OR', 'TO', 'FOR', 'IN', 'ON',
+            'AT', 'WITH', 'FROM', 'BY', 'AS', 'BUT', 'VS', 'VS.'}
 _REPLACEMENTS = {
     '’': "'", '‘': "'", '‛': "'", '´': "'", '`': "'",
     '“': '"', '”': '"', '–': '-', '—': '-', '…': '...',
@@ -49,27 +57,47 @@ def _width(text):
     return sum(_glyph(char)['adv'] for char in text)
 
 
+def _title_parts(text):
+    title = normalize(text) or 'SMOOTH PRIME'
+    for boundary in _BREAK.finditer(title):
+        colon = boundary.group() == ':'
+        primary = title[:boundary.end() if colon else boundary.start()].strip()
+        continuation = title[boundary.end() if colon else boundary.start():].strip()
+        if primary and continuation:
+            return primary, continuation, 'colon' if colon else 'dash'
+    words = title.split()
+    split = 1
+    while split < len(words) and _width(' '.join(words[:split + 1])) <= _MAX_W - 3:
+        split += 1
+    # Keep short titles intact. Wrap longer ones without leaving an article or
+    # preposition dangling at the end of the large line.
+    if split == len(words):
+        return title, '', 'single_line'
+    while split > 1 and words[split - 1] in _JOINERS:
+        split -= 1
+    return ' '.join(words[:split]), ' '.join(words[split:]), 'word_wrap'
+
+
 def arrange(text):
-    words=normalize(text).split() or ['SMOOTH','PRIME']
-    first=words[0]
-    primary=min(1.,_MAX_W/float(max(1,_width(first))))
+    first, continuation, _rule = _title_parts(text)
+    primary=min(1.,(_MAX_W-3)/float(max(1,_width(first))))
     primary_height=max(1,round(_CAP_H*primary))
     boxes=[{'text':first,'scale':primary,'top':0,'height':primary_height}]
-    if len(words)==1:return boxes
+    if not continuation:return boxes
     gap=max(14,round(_CAP_H*.09));available=max(1,_MAX_H-primary_height-gap)
     secondary=min(primary*.5,available/float(_CAP_H))
     for _ in range(5):
         lines=[];line=''
-        for word in words[1:]:
+        for word in continuation.split():
             candidate=(line+' '+word).strip()
-            if line and _width(candidate)*secondary>_MAX_W:
+            if line and _width(candidate)*secondary>_MAX_W-3:
                 lines.append(line);line=word
             else:line=candidate
         if line:lines.append(line)
         total=len(lines)*_CAP_H*secondary+max(0,len(lines)-1)*8
         widest=max(_width(line)*secondary for line in lines)
-        if total<=available and widest<=_MAX_W:break
-        secondary*=min(available/max(1,total),_MAX_W/max(1,widest))*.98
+        if total<=available and widest<=_MAX_W-3:break
+        secondary*=min(available/max(1,total),(_MAX_W-3)/max(1,widest))*.98
     top=primary_height+gap
     for line in lines:
         height=max(1,round(_CAP_H*secondary))
@@ -148,17 +176,37 @@ def _png(width, height, rgba):
             + chunk(b'IEND', b''))
 
 
-def render_title(text, cache_dir):
+def render_title(text, cache_dir, report=None):
     """Write one cached PNG and return its path. Empty titles still get a plate."""
-    lines, _scale = layout(text)
-    key = sha1(('hierarchy-v2|'+'|'.join(lines)).encode('utf-8')).hexdigest()[:20]
-    folder = Path(cache_dir)
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / ('title-%s.png' % key)
-    if not path.is_file():
-        width, height, rgba = render_rgba(text)
-        path.write_bytes(_png(width, height, rgba))
-    return str(path)
+    started = monotonic()
+    details = {'layout_revision': _LAYOUT_REVISION}
+    try:
+        boxes = arrange(text)
+        key = sha1((_LAYOUT_REVISION + '|' + normalize(text)).encode('utf-8')).hexdigest()[:20]
+        details.update(title_key=key, break_rule=_title_parts(text)[2], line_count=len(boxes),
+                       line_word_counts=[len(box['text'].split()) for box in boxes],
+                       line_scales=[round(box['scale'], 4) for box in boxes],
+                       line_widths=[round(_width(box['text'])*box['scale']) for box in boxes],
+                       line_tops=[box['top'] for box in boxes],
+                       line_heights=[box['height'] for box in boxes],
+                       max_width=_MAX_W, max_height=_MAX_H)
+        folder = Path(cache_dir)
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / ('title-%s.png' % key)
+        cached = path.is_file()
+        if not cached:
+            width, height, rgba = render_rgba(text)
+            path.write_bytes(_png(width, height, rgba))
+        if report:
+            report(dict(details, event='title_layout_ready', stage='hero_title_render',
+                        cache_hit=cached, elapsed_ms=round((monotonic() - started) * 1000), result='success'))
+        return str(path)
+    except Exception as error:
+        if report:
+            report(dict(details, event='title_layout_failed', stage='hero_title_render',
+                        elapsed_ms=round((monotonic() - started) * 1000),
+                        exception=exception_details(error), result='failure'))
+        raise
 
 
 def plate_size(text):
