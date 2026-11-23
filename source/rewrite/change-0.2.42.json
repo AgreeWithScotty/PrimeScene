@@ -1,0 +1,41 @@
+{
+  "version": "0.2.42",
+  "sha256": "d7c9c9391bbdc526b03e0638ff282a982bbc53a1afb4429ed09600828cc06bf1",
+  "bytes": 3948933,
+  "files": 116,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/check_updates.py",
+    "plugin.video.primeinterface/resources/lib/account_state.py",
+    "plugin.video.primeinterface/resources/lib/accounts.py",
+    "plugin.video.primeinterface/resources/lib/http_transport.py",
+    "plugin.video.primeinterface/resources/lib/interface_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/media_proxy.py",
+    "plugin.video.primeinterface/resources/lib/prime_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/prime_signin.py",
+    "plugin.video.primeinterface/resources/lib/profile_bootstrap.py",
+    "plugin.video.primeinterface/resources/lib/service_host.py",
+    "plugin.video.primeinterface/view_diagnostics.py"
+  ],
+  "removed_files": [
+    "plugin.video.primeinterface/SECURITY.md",
+    "plugin.video.primeinterface/resources/lib/private_storage.py"
+  ],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "rollback_verification": {
+    "requested_baseline": "0.2.34",
+    "previous_release": "0.2.41",
+    "baseline_files": 116,
+    "removed_files": [
+      "SECURITY.md",
+      "resources/lib/private_storage.py"
+    ],
+    "runtime_bytes_equal": true,
+    "historical_archives_overwritten": false,
+    "provider_or_kodi_tests_run": false,
+    "saved_login_compatibility": "Original34 reader requires JSON/LWP, not later encrypted credential files. Use Kodi Configure > Account > Sign in to recreate the account."
+  }
+}

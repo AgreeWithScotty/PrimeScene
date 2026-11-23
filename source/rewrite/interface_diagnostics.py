@@ -5,7 +5,6 @@ from pathlib import Path
 from threading import Lock
 import xbmc
 from .prime_diagnostics import DiagnosticLog, exception_details
-from .private_storage import append_report
 
 _lock = Lock()
 _reports = {}
@@ -27,11 +26,12 @@ def record(globals_instance, phase, error=None):
         with _lock:
             path = Path(globals_instance.DATA_PATH) / 'interface-startup.jsonl'
             path.parent.mkdir(parents=True, exist_ok=True)
-            append_report(path,json.dumps(entry)+'\n',limit=1024*1024)
+            with path.open('a', encoding='utf-8') as stream:
+                stream.write(json.dumps(entry) + '\n')
             key = (str(path.parent), entry.get('version', 'unknown'))
             if key not in _reports:
                 _reports[key] = DiagnosticLog(path.parent, key[1], operation='interface')
             _reports[key](dict(entry, event=phase))
-    except (OSError, ValueError, AttributeError) as failure:
+    except (OSError, AttributeError) as failure:
         xbmc.log('[Prime Scene] interface_diagnostic_write_failed ' + type(failure).__name__,
                  getattr(xbmc, 'LOGERROR', 4))

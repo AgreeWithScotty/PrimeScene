@@ -1,0 +1,5 @@
+0.2.42
+- Restore the complete0.2.34 application package at the user's request.
+- Reverse the0.2.35 security changes and remove the later private-storage implementation.
+- Restart Kodi after installing. Recreate newer encrypted saved logins through Kodi Configure > Account > Sign in.
+- Release0.2.42 allows Kodi to install the0.2.34 rollback as a normal update.

@@ -1,8 +1,6 @@
 """Structured real-run diagnostics without authentication secrets."""
 from datetime import datetime, timezone
-from collections import deque
 import hashlib
-from itertools import islice
 import json
 from pathlib import Path
 import re
@@ -12,7 +10,6 @@ from threading import RLock
 from time import monotonic
 import traceback
 from urllib.parse import parse_qsl, quote, quote_plus, urlsplit
-from .private_storage import append_report,write_private
 
 ROUTE_WORDS = set(('ap signin cvf maplanding approval verify otp password mfa resend confirm '
                    'validateCaptcha auth-redirect settings storefront detail tv movie gp video '
@@ -61,7 +58,7 @@ class DiagnosticLog:
         self.sequence = 0
         self.values = set()
         self.lock = RLock()
-        self.lines = deque(maxlen=2048)
+        self.lines = []
 
     def replay_current(self, replace=False):
         """Restore this redacted attempt after replacing an account's profile."""
@@ -72,8 +69,8 @@ class DiagnosticLog:
                 for name in self._files():
                     path = self.profile / name
                     if replace or not path.exists():
-                        write_private(path,''.join(self.lines).encode('utf-8'))
-            except (OSError,ValueError) as error:
+                        path.write_text(''.join(self.lines), encoding='utf-8')
+            except OSError as error:
                 self._write_failure(error)
 
     def _files(self):
@@ -95,28 +92,17 @@ class DiagnosticLog:
             with self.lock:
                 self.values.update((value, quote(value, safe=''), quote_plus(value), json.dumps(value)[1:-1]))
 
-    def redact(self, value, depth=0):
-        if depth>12:return '[structure-limit]'
+    def redact(self, value):
         if isinstance(value, dict):
-            sensitive={'password','passwd','passcode','otp','otpcode','otppin','verificationcode',
-                'verification_code','access','refresh','access_token','refresh_token','authorization',
-                'proxy-authorization','cookie','set-cookie','code_verifier','client_secret',
-                'customerid','customer_id','actorid','actor_id','deviceid','device_id','account_name',
-                'email','license','widevine2challenge','widevine2license'}
-            return {str(k):'[redacted]' if str(k).lower() in sensitive and not isinstance(v,bool)
-                else self.redact(v,depth+1) for k,v in islice(value.items(),200)}
+            return {str(k): self.redact(v) for k, v in value.items()}
         if isinstance(value, (list, tuple)):
-            return [self.redact(v,depth+1) for v in value[:200]]
+            return [self.redact(v) for v in value]
         if not isinstance(value, str):
             return value
         for secret in sorted(self.values, key=len, reverse=True):
             value = value.replace(secret, '[redacted]')
         value = re.sub(r'https?://[^\s<>"\']+', '[redacted-address]', value)
         value = re.sub(r'\b[^\s@]+@[^\s@]+\.[^\s@]+\b', '[redacted-email]', value)
-        value = re.sub(r'(?i)\b(?:bearer|basic)\s+[a-z0-9+/_=.-]+','[redacted-authorization]',value)
-        value = re.sub(r'(?i)\b(?:password|otpcode|verification_code|access_token|refresh_token|cookie)\s*[:=][^\r\n]+',
-            '[redacted-credential]',value)
-        value = re.sub(r'\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b','[redacted-token]',value)
         return value[:2000]
 
     def __call__(self, event):
@@ -124,9 +110,7 @@ class DiagnosticLog:
             if not self.active():
                 return
         except Exception as error:
-            # A failed account guard must never release the original event.
-            event = {'event':'diagnostic_account_guard_failed','stage':'logging_guard',
-                'exception':exception_details(error),'result':'failure'}
+            event = dict(event, diagnostic_state_check_error=type(error).__name__)
         with self.lock:
             self.sequence += 1
             if self.sequence == 1:
@@ -145,7 +129,9 @@ class DiagnosticLog:
             try:
                 self.profile.mkdir(parents=True, exist_ok=True)
                 for name in self._files():
-                    append_report(self.profile/name,line)
-            except (OSError,ValueError) as error:
+                    with (self.profile / name).open('a', encoding='utf-8') as output:
+                        output.write(line)
+                        output.flush()
+            except OSError as error:
                 # A missing report must be visible rather than silently ignored.
                 self._write_failure(error, line)
