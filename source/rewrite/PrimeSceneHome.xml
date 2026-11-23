@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <window>
+    <previouswindow>10000</previouswindow>
     <defaultcontrol always="false">301</defaultcontrol>
     <views>200</views>
     <controls>

@@ -1,0 +1,245 @@
+{
+  "version": "0.2.48",
+  "sha256": "d29acbdf5379496202876335829b4a8d48ee62a8459a088be6d2ba26df3daaa5",
+  "bytes": 3954138,
+  "files": 117,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/default.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneLaunch.xml"
+  ],
+  "added_files": [
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneLaunch.xml"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": true,
+  "mocked_provider_or_kodi_tests": false,
+  "actual_native_kodi_run": {
+    "candidate_version": "0.2.48",
+    "lab_descriptor_version": "0.2.47",
+    "native_run": {
+      "kodi": "22.0-RC2 (21.90.902) Git:20261109-d686683a55d",
+      "before": [
+        {
+          "database": "Addons33.db",
+          "own_row": true,
+          "last_used": "2026-11-23 11:08:06"
+        }
+      ],
+      "transitions": [
+        {
+          "elapsed_ms": 0,
+          "window_id": 10000,
+          "dialog_id": 9999
+        },
+        {
+          "elapsed_ms": 68,
+          "window_id": 10025,
+          "dialog_id": 9999
+        },
+        {
+          "elapsed_ms": 174,
+          "window_id": 10025,
+          "dialog_id": 13000
+        },
+        {
+          "elapsed_ms": 362,
+          "window_id": 13001,
+          "dialog_id": 13000
+        },
+        {
+          "elapsed_ms": 382,
+          "window_id": 13001,
+          "dialog_id": 9999
+        }
+      ],
+      "enable_rpc": {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "result": "OK"
+      },
+      "after": [
+        {
+          "database": "Addons33.db",
+          "own_row": true,
+          "last_used": "2026-11-23 11:10:24"
+        }
+      ],
+      "application_window_reached": true,
+      "cover_retained_over_interface_activation": true,
+      "back_request_window": 13001,
+      "back_rpc": {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "result": "OK"
+      },
+      "after_back_window": 10000,
+      "result": "completed"
+    },
+    "launch_events": [
+      {
+        "event": "launch_started",
+        "launch_kind": "native_plugin_application",
+        "address": {
+          "host": "plugin.video.primeinterface",
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "resolver_handle": -1,
+        "current_window_id": 10025,
+        "native_directory_handle": 1,
+        "kodi": "22.0-RC2 (21.90.902) Git:20261109-d686683a55d",
+        "environment": {
+          "python": "3.14.10",
+          "platform": "win32",
+          "kodi": "22.0-RC2 (21.90.902) Git:20261109-d686683a55d"
+        },
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 1,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.626233+00:00",
+        "attempt_elapsed_ms": 0
+      },
+      {
+        "event": "launch_cover_opened",
+        "stage": "plugin_window_handoff",
+        "dialog_id": 13000,
+        "result": "success",
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 2,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.648019+00:00",
+        "attempt_elapsed_ms": 22
+      },
+      {
+        "event": "native_directory_released",
+        "stage": "plugin_window_handoff",
+        "current_window_id": 10025,
+        "interface_initialized": false,
+        "directory_success": true,
+        "second_script_launched": false,
+        "result": "success",
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 3,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.648702+00:00",
+        "attempt_elapsed_ms": 23
+      },
+      {
+        "event": "window_prepared",
+        "current_window_id": 10025,
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 4,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.733865+00:00",
+        "attempt_elapsed_ms": 108
+      },
+      {
+        "event": "launch_cover_closing",
+        "stage": "plugin_window_handoff",
+        "native_busy_closed": true,
+        "elapsed_ms": 31,
+        "close_animation_ms": 250,
+        "result": "success",
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 5,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.765200+00:00",
+        "attempt_elapsed_ms": 139
+      },
+      {
+        "event": "window_on_init",
+        "current_window_id": 13001,
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 6,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.837354+00:00",
+        "attempt_elapsed_ms": 211
+      },
+      {
+        "event": "launch_cover_closed",
+        "stage": "plugin_window_handoff",
+        "current_window_id": 13001,
+        "cover_closed": true,
+        "result": "success",
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 7,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.867522+00:00",
+        "attempt_elapsed_ms": 241
+      },
+      {
+        "event": "interface_ready",
+        "signed_in": false,
+        "current_window_id": 13001,
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 8,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:24.903476+00:00",
+        "attempt_elapsed_ms": 277
+      },
+      {
+        "event": "launch_finished",
+        "launch_kind": "native_plugin_application",
+        "schema": 2,
+        "operation": "launch",
+        "attempt": "901cf151abd72917",
+        "sequence": 9,
+        "version": "0.2.47",
+        "time": "2026-11-23T18:10:35.707745+00:00",
+        "attempt_elapsed_ms": 11082
+      }
+    ],
+    "native_last_used_write_ms": [
+      6
+    ],
+    "runtime_hashes_match_native_run": {
+      "default.py": "ee04db607fcf84933c4cb5da67bfbadec92d1756ff7c0002678133612df2e18a",
+      "resources/lib/aurora.py": "587507c7c0a0818250aeebe7320fd19263bf78bbdf3a9b42ce862133f2ba244f",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml": "aebc354de733d1dcf7be779243fa8bdce14a42cc94630c24d4be52bc9a2fd50c",
+      "resources/skins/Default/1080i/PrimeSceneLaunch.xml": "f5433aad63aba40de0d6acb803507dceafdf7216c4a8bdff240e39494da25bca"
+    },
+    "changed_runtime_files": [
+      "default.py",
+      "resources/lib/aurora.py",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml",
+      "resources/skins/Default/1080i/PrimeSceneLaunch.xml"
+    ],
+    "manifest_registration_changed": true,
+    "python_38_syntax_and_xml_well_formed": true,
+    "native_kodi_ui_lifecycle_observed": true,
+    "rendered_pixel_capture_observed": false,
+    "mocked_provider_or_kodi_tests": false,
+    "amazon_login_or_playback_exercised": false,
+    "scope": "Actual portable Kodi native metadata update, UI activation, overlay removal and Input.Back to Home; signed out.",
+    "lab_setup": "Fresh private portable profile; enabled through Kodi JSON-RPC. Unused external playback-helper requirement omitted from the isolated launch-only copy; actual release retains it. No Kodi API or app runtime stubbed, and no direct write to Kodi usage metadata.",
+    "maintainer_sources": [
+      "https://github.com/xbmc/xbmc/releases/tag/22.0rc2-Piers",
+      "https://github.com/xbmc/xbmc/blob/22.0rc2-Piers/xbmc/windows/GUIMediaWindow.cpp",
+      "https://github.com/xbmc/xbmc/blob/21.3-Omega/xbmc/windows/GUIMediaWindow.cpp",
+      "https://github.com/xbmc/xbmc/blob/22.0rc2-Piers/xbmc/addons/AddonManager.cpp",
+      "https://github.com/Sandmann79/xbmc/blob/master/plugin.video.amazon-test/addon.xml"
+    ]
+  }
+}
