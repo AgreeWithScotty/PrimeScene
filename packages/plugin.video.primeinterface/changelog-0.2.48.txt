@@ -1,0 +1,5 @@
+0.2.48
+- Restore Kodi's native video plug-in registration so actual launches update its last-used add-on ordering.
+- Open the dedicated interface in the same invocation, covering the native directory handoff with existing application artwork.
+- Release the native directory before opening the interface and explicitly remove the owned launch overlay when the window initializes.
+- Return directly to Kodi Home on exit, including the signed-out screen, and retain detailed native handoff diagnostics.

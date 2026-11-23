@@ -2607,7 +2607,7 @@ class AuroraHome(xbmcgui.WindowXML):
             path, query, heading, nav, selected, series = self.history.pop()
             self.nav = nav
             self.navigate(path, remember=False, query=query, heading=heading, selection=selected, series=series)
-        elif self.genre_owner is None and (self.path in ('__prime_movies__','__prime_tv__') or self.path.startswith('__genre__/')):
+        elif self.genre_owner is None and self.nav in ('movies','tv') and (self.path in ('__prime_movies__','__prime_tv__') or self.path.startswith('__genre__/')):
             self._show_genres(301 if self.nav=='movies' else 302,focus_grid=True)
             self.performance({'event':'back_to_genre_grid','stage':'back_navigation','section':self.nav,'result':'success'})
         elif self.path=='search' and self.query is not None:
@@ -2749,6 +2749,8 @@ def open_interface(globals_instance, settings_instance, account_name=None,
                         account_name=account_name, account_action=account_action,
                         offer_signin=offer_signin, launch_diagnostics=launch_diagnostics)
     try:
+        if launch_diagnostics is not None:
+            launch_diagnostics({'event': 'window_prepared', 'current_window_id': xbmcgui.getCurrentWindowId()})
         window.doModal()
     finally:
         window.stop.set()

@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.47" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.48" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
   </requires>
-  <extension point="xbmc.python.script" library="default.py">
+  <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>video</provides>
   </extension>
   <extension point="xbmc.service" library="service.py" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.47[CR]- Keep the main title together in the large first line instead of enlarging only its first word.[CR]- Place subtitles below in smaller type, keeping a colon on the main line and a separating dash with the subtitle.[CR]- Wrap long titles without separators at word boundaries with a smaller continuation; keep short titles on one large line.[CR]- Regenerate title artwork with the corrected layout and log the actual line sizes, split rule, cache outcome and render failures.</news>
+    <news>0.2.48[CR]- Restore Kodi's native video plug-in registration so actual launches update its last-used add-on ordering.[CR]- Open the dedicated interface in the same invocation, covering the native directory handoff with existing application artwork.[CR]- Release the native directory before opening the interface and explicitly remove the owned launch overlay when the window initializes.[CR]- Return directly to Kodi Home on exit, including the signed-out screen, and retain detailed native handoff diagnostics.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
