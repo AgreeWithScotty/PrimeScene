@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <window>
-    <defaultcontrol always="true">301</defaultcontrol>
+    <defaultcontrol always="false">301</defaultcontrol>
     <views>200</views>
     <controls>
         <control type="group" id="9000">

@@ -123,7 +123,7 @@ class DiagnosticLog:
                 event = dict(event, environment=environment)
             record = self.redact(dict(event, schema=2, operation=self.operation, attempt=self.attempt, sequence=self.sequence,
                                       version=self.version, time=datetime.now(timezone.utc).isoformat(),
-                                      elapsed_ms=round((monotonic() - self.started) * 1000)))
+                                      attempt_elapsed_ms=round((monotonic() - self.started) * 1000)))
             line = json.dumps(record, ensure_ascii=True) + '\n'
             self.lines.append(line)
             try:

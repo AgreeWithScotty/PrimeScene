@@ -723,10 +723,18 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             if not safe_url(final_url, STOREFRONT_HOSTS):
                 raise PublicCatalogError('Prime Video did not return to its storefront.')
             stage = 'read_response'
+            body_started=perf_counter()
             raw = response.read(MAX_PAGE_BYTES + 1)
+            body_read_ms=round((perf_counter()-body_started)*1000)
             if len(raw) > MAX_PAGE_BYTES:
                 raise PublicCatalogError('Prime Video returned more storefront data than expected.')
+            decode_started=perf_counter()
             data = raw.decode(response.headers.get_content_charset() or 'utf-8', errors='replace')
+            _emit(observer,{'event':'catalog_body_read','stage':stage,'status':status,
+                'address':route(final_url),'bytes':len(raw),'body_read_ms':body_read_ms,
+                'decode_ms':round((perf_counter()-decode_started)*1000),
+                'content_encoding':response.headers.get('Content-Encoding','identity'),
+                'elapsed_ms':round((perf_counter()-started)*1000),'result':'success'})
         stage = 'parse_response'
         if page in ('movies','tv') and continuation is not None and urlsplit(final_url).path.startswith(('/genre/','/kids')):
             from .genre_catalog import section_link

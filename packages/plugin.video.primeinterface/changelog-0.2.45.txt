@@ -1,0 +1,5 @@
+0.2.45
+- Prevent automatic native focus restoration from switching TV seasons or In Progress to Movies.
+- Retain the originating section and card after playback; refresh In Progress after restoring the window.
+- Answer local playback HEAD probes without provider requests; prepare the selected manifest before playing and retain the original title URL.
+- Preserve stage timings and report menu input, cancelled season reads, catalog body transfer and local HTTP methods.

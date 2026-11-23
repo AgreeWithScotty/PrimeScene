@@ -492,7 +492,7 @@ def play_row(row, profile, epoch=None):
     xbmc.executebuiltin('RunScript(%s,%s)'%(ADDON_ID,dumps(address)))
 
 
-def _request_playback_return(note, reason, report):
+def _request_playback_return(note, reason, report, progress_ready=False):
     """Signal the existing live window, never launch a replacement application."""
     request_id = (note or {}).get('request_id')
     try:
@@ -505,8 +505,13 @@ def _request_playback_return(note, reason, report):
         window = xbmcgui.Window(int(destination['window_id']))
         if window.getProperty('InterfaceSession') != destination['session']:
             raise RuntimeError('The return window is no longer the same interface')
-        window.setProperty(_RETURN_COMMAND, dumps({'request_id': request_id, 'reason': reason}))
+        previous=window.getProperty(_RETURN_COMMAND)
+        previous=loads(previous) if previous else {}
+        if previous.get('request_id')==request_id and previous.get('progress_ready') and not progress_ready:
+            return
+        window.setProperty(_RETURN_COMMAND, dumps({'request_id': request_id, 'reason': reason,'progress_ready':progress_ready}))
         report({'event': 'playback_return_requested', 'request_id': request_id, 'reason': reason,
+                'progress_ready':progress_ready,
                 'target_window_id': destination['window_id'],
                 'current_window_id': xbmcgui.getCurrentWindowId(), 'result': 'success'})
     except Exception as error:
@@ -626,6 +631,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.interface_session = None
         self._replace_rail = False
         self.playback_origin = None
+        self._returned_playback_request = None
         self._focus_first_generation = None
         self._focus_receipt = None
         self._reactivation_ready = Event()
@@ -692,8 +698,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 'tiles':len(self._genre_rows),'result':'success'})
             self._reactivation_ready.set()
             return
-        if self.path == '__watching__' and self.playback_origin and self.playback_origin.get('path') == self.path and not _playing(xbmc.Player()):
-            self._refresh_progress_return(self.playback_origin)
+        # The return worker refreshes progress after Kodi restores this window.
+        # WINDOW_INIT must only restore bindings, never start another navigation.
         with self.lock:
             selected = self._resume_selection
             origin = self.playback_origin
@@ -974,13 +980,15 @@ class AuroraHome(xbmcgui.WindowXML):
             try:
                 request=loads(command);pending=_read_note(self.g.DATA_PATH) or {}
                 origin=self.playback_origin
+                if origin is None and self._returned_playback_request==request.get('request_id'):
+                    continue
                 if (self.stop.is_set() or self.getProperty('InterfaceSession')!=self.interface_session
                     or pending.get('request_id') and pending['request_id']!=request.get('request_id')
                     or _playing(xbmc.Player()) or origin and origin.get('request_id') not in (None,request.get('request_id'))):
                     self.performance({'event':'playback_card_return_cancelled','request_id':request.get('request_id'),
                         'reason':'interface_invalidated_or_new_playback','result':'cancelled'});continue
                 self._play_token+=1;source='current_view';fresh=bool(origin and origin['path']=='__watching__')
-                if fresh:self._refresh_progress_return(origin);source='fresh_amazon_progress'
+                if fresh:source='fresh_amazon_progress'
                 elif origin:
                     self.nav=origin['nav']
                     found=any(row.get('url')==origin['url'] or origin['identity'] and row.get('identity')==origin['identity'] for row in self.rows)
@@ -1006,6 +1014,12 @@ class AuroraHome(xbmcgui.WindowXML):
                 if xbmcgui.getCurrentWindowId()!=self.window_id:raise RuntimeError('Kodi did not return to the catalog window')
                 if self.getCurrentContainerId()!=200 or self.getListSize()!=len(self.rows):
                     self._restore_controls('return_native_binding_missing')
+                if fresh and request.get('progress_ready'):
+                    self._refresh_progress_return(origin)
+                elif fresh:
+                    self.performance({'event':'progress_refresh_waiting_for_playback','stage':'watch_progress_settlement',
+                        'request_id':request.get('request_id'),'generation':self.generation,'cards_retained':len(self.rows),
+                        'result':'pending'})
                 selected=self._selected_index()
                 if origin and not fresh:
                     selected=next((i for i,row in enumerate(self.rows) if row.get('url')==origin['url']
@@ -1023,8 +1037,10 @@ class AuroraHome(xbmcgui.WindowXML):
                     'view_id':self.getCurrentContainerId(),'focused_control':self.getFocusId(),
                     'selected_index':self._selected_index(),'active_dialog_id':xbmcgui.getCurrentWindowDialogId(),
                     'elapsed_ms':round((monotonic()-started)*1000),
-                    'result':'pending_fresh_list' if fresh and self._pending_progress_return else 'success'})
-                if self.playback_origin is origin:self.playback_origin=None
+                    'result':'pending_progress_settlement' if fresh and not request.get('progress_ready') else
+                        'pending_fresh_list' if fresh and self._pending_progress_return else 'success'})
+                self._returned_playback_request=request.get('request_id')
+                if (not fresh or request.get('progress_ready')) and self.playback_origin is origin:self.playback_origin=None
                 self._resume_selection=None
             except Exception as error:
                 self.performance({'event':'playback_card_return_failed','request_id':request.get('request_id'),
@@ -1055,6 +1071,7 @@ class AuroraHome(xbmcgui.WindowXML):
             parts=urlsplit(row['url']);query=dict(parse_qsl(parts.query));query['resume']='start'
             row=dict(row,url=urlunsplit((parts.scheme,parts.netloc,parts.path,urlencode(query),parts.fragment)))
         self.playback_origin = origin
+        self._returned_playback_request = None
         play_row(row, self.g.DATA_PATH, self.account_generation)
         note = _read_note(self.g.DATA_PATH) or {}
         if self.playback_origin is not None:
@@ -1080,8 +1097,16 @@ class AuroraHome(xbmcgui.WindowXML):
                 if oldest is not None:
                     self.views.pop(oldest)
 
+    def _dismiss_pending_playback_refresh(self):
+        origin=self.playback_origin
+        if origin and self._returned_playback_request==origin.get('request_id'):
+            self.playback_origin=None
+            self.performance({'event':'progress_return_refresh_cancelled','stage':'watch_progress_settlement',
+                'request_id':origin.get('request_id'),'reason':'user_navigated_after_return','result':'cancelled'})
+
     def navigate(self, path, remember=True, query=None, selection=None, heading=None, series=None, save_current=True, intro_art=''):
         if self.stop.is_set():return
+        if (path,query)!=(self.path,self.query):self._dismiss_pending_playback_refresh()
         if self.account_name is not None and not self.account_name():
             self.show_signed_out()
             return
@@ -1124,6 +1149,11 @@ class AuroraHome(xbmcgui.WindowXML):
                           'progress_chrome': False})
         self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
         self.setProperty('SectionNotice','')
+        # Kodi cannot focus an empty list. Park on this section's selector
+        # before clearing it, then focus the new cards when they arrive.
+        if not refreshing_progress and self.getFocusId() in (200,410):
+            self._focus_first_generation=token
+            self.setFocusId(self._menu_control())
         self._section_label()
         self._season_properties()
         if not refreshing_progress:
@@ -1257,10 +1287,12 @@ class AuroraHome(xbmcgui.WindowXML):
                           'cards': len(self.rows), 'expected_index': 0, 'target_control': 200})
 
     def onFocus(self, control_id):
-        if control_id==304 and self.worker is not None and self.worker.is_alive():self._show_search()
-        if control_id in (309,301,302,303,308) and self.worker is not None and self.worker.is_alive():
-            self._focus_first_generation=None
-            self._activate_section(control_id)
+        # WINDOW_INIT and clearing/hiding a native container also produce focus
+        # callbacks. Only input actions may turn menu focus into navigation.
+        if control_id in (301,302,303,304,305,306,308,309):
+            self.performance({'event':'menu_focus_observed','stage':'native_focus',
+                'control_id':control_id,'generation':self.generation,'section':self.nav,
+                'navigation_dispatched':False,'result':'observed'})
         if control_id == 200 and self._focus_receipt == self.generation:
             self._focus_receipt = None
             self.performance({'event': 'category_focus_observed', 'generation': self.generation,
@@ -1501,6 +1533,11 @@ class AuroraHome(xbmcgui.WindowXML):
                     packet = self._episode_listing(path, token)
                     if packet is not None:
                         self._publish(token, packet)
+                    elif token!=self.generation or self.stop.is_set():
+                        self.performance({'event':'series_navigation_cancelled','stage':'season_listing',
+                            'generation':token,'current_generation':self.generation,
+                            'elapsed_ms':round((monotonic()-started)*1000),
+                            'reason':'view_or_session_changed','result':'cancelled'})
                 else:
                     with self.bridge_lock:
                         if token != self.generation or self.stop.is_set():
@@ -2236,6 +2273,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _show_search(self):
         if self.path=='search' and self.query is None and self.genre_owner is None:return
         if self.account_name is not None and not self.account_name():return
+        self._dismiss_pending_playback_refresh()
         self._save_view();self._hide_genres(restore=False)
         with self.lock:
             self.generation+=1;self.rows=[];self.items=[];self.row_keys=set()
@@ -2270,6 +2308,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _show_genres(self,owner,focus_grid=True):
         if self.account_name is not None and not self.account_name():return
+        self._dismiss_pending_playback_refresh()
         if owner==303 and self._service_future is False:
             self._service_future=None
         if self.genre_owner==owner and self.getProperty('GenrePanel'):
@@ -2509,6 +2548,14 @@ class AuroraHome(xbmcgui.WindowXML):
         # so updating it from here only delays the move.
         action_id = action.getId()
         focus=self.getFocusId()
+        if action_id in (1,2,3,4) and self.worker is not None and self.worker.is_alive():
+            if focus in (309,301,302,303,308):
+                self._focus_first_generation=None
+                self.performance({'event':'menu_input_navigation','stage':'user_input',
+                    'control_id':focus,'action_id':action_id,'generation':self.generation,
+                    'section':self.nav,'result':'started'})
+                self._activate_section(focus)
+            elif focus==304:self._show_search()
         if focus==200 and action_id in (11,117):
             self._card_actions(info_only=action_id==11)
             return

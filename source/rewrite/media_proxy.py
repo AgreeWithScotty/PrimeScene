@@ -80,6 +80,7 @@ class PlaybackProxy:
     def __init__(self,api,resources,report):
         self.api,self.resources,self.report=api,resources,report
         self.key=token_urlsafe(24);self.lock=RLock();self.refused=None
+        self.manifest_bytes=None
         self.client=HttpTransport(api.g.DATA_PATH,api.epoch,report,headers=api.headers)
         self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
         self.server.daemon_threads=True;self.server.owner=self
@@ -89,6 +90,14 @@ class PlaybackProxy:
         report({'event':'playback_proxy_started','stage':'local_transport','port':self.server.server_port,'result':'success'})
     def manifest(self):return self.address+'manifest.mpd'
     def license(self):return self.address+'license'
+    def prepare_manifest(self):
+        started=monotonic()
+        response=self.client.request(self.resources.manifest,stage='manifest_download')
+        data=dash_document(response.data,response.address,self.report)
+        with self.lock:self.manifest_bytes=data
+        self.report({'event':'local_manifest_prepared','stage':'local_transport','response_bytes':len(data),
+            'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
+        return data
     def subtitles(self):
         result=[]
         for index,item in enumerate(self.resources.subtitles):
@@ -96,11 +105,14 @@ class PlaybackProxy:
             result.append(self.address+'subtitles/%d/%s%s.srt'%(index,language,'.forced' if item.get('forced') else ''))
         return result
     def close(self):
+        started=monotonic()
         self.server.shutdown();self.server.server_close();self.thread.join(timeout=2)
         self.client.headers.clear();self.key=''
+        self.manifest_bytes=None
         self.resources.manifest='';self.resources.subtitles.clear();self.resources.transitions.clear()
         self.server.owner=None
-        self.report({'event':'playback_proxy_closed','stage':'local_transport','result':'success'})
+        self.report({'event':'playback_proxy_closed','stage':'local_transport',
+            'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -121,8 +133,22 @@ class Handler(BaseHTTPRequestHandler):
         try:
             path=urlsplit(self.path).path;prefix='/'+owner.key+'/'
             if not owner.key or not path.startswith(prefix):self.output(404,b'Not found','text/plain',head);return
-            if not owner.api.client.active():self.output(410,b'Session ended','text/plain',head);return
             kind=path[len(prefix):]
+            # Kodi probes the playing URL again during Stop. A HEAD request
+            # needs local headers only, even while provider teardown is running.
+            # It must never redownload a manifest or wait on account/provider I/O.
+            if head:
+                if kind=='manifest.mpd':
+                    data=owner.manifest_bytes or b'';content_type='application/dash+xml'
+                elif kind.startswith('subtitles/') and 0<=int(kind.split('/')[1])<len(owner.resources.subtitles):
+                    data=b'';content_type='application/x-subrip; charset=utf-8'
+                else:self.output(404,b'Not found','text/plain',True);return
+                self.output(200,data,content_type,True)
+                owner.report({'event':'local_media_response','stage':kind.split('/')[0],'method':'HEAD',
+                    'status':200,'response_bytes':0,'content_length':len(data),'upstream_requests':0,
+                    'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
+                return
+            if not owner.api.client.active():self.output(410,b'Session ended','text/plain',head);return
             if kind=='license' and self.command=='POST':
                 length=int(self.headers.get('Content-Length','0'))
                 if not 0<length<=1024*1024:raise ValueError('Invalid license request size')
@@ -133,21 +159,24 @@ class Handler(BaseHTTPRequestHandler):
                         owner.refused=True;raise
                 content_type='application/octet-stream'
             elif kind=='manifest.mpd' and self.command in ('GET','HEAD'):
-                response=owner.client.request(owner.resources.manifest,stage='manifest_download')
-                data=dash_document(response.data,response.address,owner.report);content_type='application/dash+xml'
+                data=owner.manifest_bytes
+                if data is None or owner.api.material=='LiveStreaming':data=owner.prepare_manifest()
+                content_type='application/dash+xml'
             elif kind.startswith('subtitles/') and self.command in ('GET','HEAD'):
                 index=int(kind.split('/')[1]);item=owner.resources.subtitles[index]
                 response=owner.client.request(item['url'],stage='subtitle_download')
                 data=ttml_to_srt(response.data);content_type='application/x-subrip; charset=utf-8'
             else:self.output(404,b'Not found','text/plain',head);return
             self.output(200,data,content_type,head)
-            owner.report({'event':'local_media_response','stage':kind.split('/')[0],'response_bytes':len(data),
+            owner.report({'event':'local_media_response','stage':kind.split('/')[0],'method':self.command,
+                'status':200,'response_bytes':len(data),
                 'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
         except (BrokenPipeError,ConnectionResetError) as error:
             owner.report({'event':'local_media_cancelled','stage':kind.split('/')[0],
                 'exception':exception_details(error),'result':'cancelled'})
         except Exception as error:
             owner.report({'event':'local_media_failed','stage':kind.split('/')[0],
-                'exception':exception_details(error),'elapsed_ms':round((monotonic()-started)*1000),'result':'failure'})
+                'method':self.command,'exception':exception_details(error),
+                'elapsed_ms':round((monotonic()-started)*1000),'result':'failure'})
             try:self.output(502,b'Playback request failed; see Smooth Prime Diagnostics.','text/plain',head)
             except (BrokenPipeError,ConnectionResetError):pass

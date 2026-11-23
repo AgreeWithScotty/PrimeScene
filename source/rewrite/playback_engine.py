@@ -29,7 +29,7 @@ class PlayerEvents(xbmc.Player):
     def __init__(self,path):
         super().__init__();self.path=path;self.started=Event();self.terminal=''
     def owned(self):
-        try:return self.getPlayingFile()==self.path
+        try:return self.isPlaying() and self.getPlayingFile()==self.path
         except RuntimeError:return False
     def onAVStarted(self):
         if self.owned():self.started.set()
@@ -75,9 +75,10 @@ class SkipPrompt(xbmcgui.WindowDialog):
         if action.getId() in (9,10,92):self.dismiss()
 
 
-def list_item(name,proxy,report,resume,preferences):
+def list_item(name,proxy,report,resume,preferences,origin_url):
     item=xbmcgui.ListItem(label=name,path=proxy.manifest(),offscreen=True)
     item.setMimeType('application/dash+xml');item.setContentLookup(False)
+    item.setProperty('original_listitem_url',origin_url)
     item.getVideoInfoTag().setTitle(name)
     item.setProperty('inputstream','inputstream.adaptive')
     headers=urlencode(proxy.api.headers)
@@ -127,7 +128,9 @@ def play(identifier,name,material='Feature',handle=-1,resume_mode='ask'):
             selected=g.dialog.contextmenu(['Resume from %d:%02d'%(previous['position']//60,previous['position']%60),'Play from beginning'])
             if selected<0:terminal='cancelled';return False
             if selected==0:resume=previous['position']
-        item=list_item(name,proxy,report,resume,preferences);player=PlayerEvents(proxy.manifest())
+        proxy.prepare_manifest()
+        origin_url=g.pluginid+'?'+urlencode({'mode':'PlayVideo','asin':identifier,'trailer':{'Feature':'0','Trailer':'1','LiveStreaming':'2'}[material]})
+        item=list_item(name,proxy,report,resume,preferences,origin_url);player=PlayerEvents(proxy.manifest())
         if handle>=0:xbmcplugin.setResolvedUrl(handle,True,item)
         else:player.play(proxy.manifest(),item)
         deadline=monotonic()+45;next_report=0;last_saved=0;first_report=True;skip_seen=set();prompt=SkipPrompt(player,report)
@@ -138,7 +141,8 @@ def play(identifier,name,material='Feature',handle=-1,resume_mode='ask'):
                 break
             if player.terminal:terminal=player.terminal;break
             if player.started.is_set():
-                if not player.owned():terminal='replaced';break
+                if not player.owned():
+                    terminal=player.terminal or ('replaced' if player.isPlaying() else 'stopped');break
                 try:position,duration=player.getTime(),player.getTotalTime()
                 except RuntimeError:
                     if g.monitor.waitForAbort(.1):break
@@ -188,4 +192,6 @@ def play(identifier,name,material='Feature',handle=-1,resume_mode='ask'):
             'position_seconds':round(position,2),'duration_seconds':round(duration,2),
             'elapsed_ms':round((monotonic()-started)*1000),
             'result':'cancelled' if terminal in ('cancelled','account_changed','shutdown','replaced') else 'failure' if terminal in ('error','start_timeout') else 'success'})
-        if player is None or not player.started.is_set():_request_playback_return(note,terminal,report)
+        # The observer can restore the card immediately. A fresh In Progress
+        # request must follow the final provider progress attempt, not race it.
+        _request_playback_return(note,terminal,report,progress_ready=True)

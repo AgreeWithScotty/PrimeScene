@@ -1,0 +1,30 @@
+{
+  "version": "0.2.45",
+  "sha256": "401d12c06492db6d7351d532a2385670ecc16593d2cf67e69c103e7aa207b642",
+  "bytes": 3950493,
+  "files": 116,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/media_proxy.py",
+    "plugin.video.primeinterface/resources/lib/playback_engine.py",
+    "plugin.video.primeinterface/resources/lib/prime_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "loopback_http_check": {
+    "actual_loopback_head_requests": 2,
+    "status": 200,
+    "body_bytes": 0,
+    "content_length_matches_prepared_manifest": true,
+    "invalid_key_status": 404,
+    "provider_or_account_client_accesses": 0,
+    "elapsed_ms": 516,
+    "scope": "Real HTTP protocol handler only; no Kodi, login or playback success claim."
+  }
+}
