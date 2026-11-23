@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='utf-8'?>
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.48" provider-name="AgreeWithScotty">
+  <requires>
+    <import addon="xbmc.python" version="3.0.1" />
+    <import addon="script.module.inputstreamhelper" version="0.8.6" />
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <platform>all</platform>
+    <reuselanguageinvoker>false</reuselanguageinvoker>
+    <license>GPL-3.0-only</license>
+    <source>https://github.com/AgreeWithScotty/PrimeScene</source>
+    <assets>
+      <icon>icon.png</icon>
+      <fanart>resources/skins/Default/media/splash.png</fanart>
+    </assets>
+    <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
+    <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
+    <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
+    <news>0.2.48[CR]- Restore Kodi's native video plug-in registration so actual launches update its last-used add-on ordering.[CR]- Open the dedicated interface in the same invocation, covering the native directory handoff with existing application artwork.[CR]- Release the native directory before opening the interface and explicitly remove the owned launch overlay when the window initializes.[CR]- Return directly to Kodi Home on exit, including the signed-out screen, and retain detailed native handoff diagnostics.</news>
+  </extension>
+</addon>
