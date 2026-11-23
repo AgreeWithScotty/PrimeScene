@@ -12,14 +12,16 @@ import time
 from time import monotonic
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.error import HTTPError
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, Request
 
 try:
     from .prime_signin import AMAZON_HOSTS, SignInError, SignInHTTPError, trusted_host
     from .prime_diagnostics import route
+    from .tls_policy import secure_opener
 except ImportError:
     from prime_signin import AMAZON_HOSTS, SignInError, SignInHTTPError, trusted_host
     from prime_diagnostics import route
+    from tls_policy import secure_opener
 
 
 class NoTokenRedirect(HTTPRedirectHandler):
@@ -149,7 +151,7 @@ class DeviceAuthorization:
                      'registration_fields': sorted(payload['registration_data']),
                      'requested_token_types': payload['requested_token_type']})
         try:
-            response = build_opener(NoTokenRedirect()).open(request, timeout=20)
+            response = secure_opener(NoTokenRedirect()).open(request, timeout=20)
         except HTTPError as error:
             status = error.code
             self.record({'event': 'device_authorization_http_error', 'status': status,

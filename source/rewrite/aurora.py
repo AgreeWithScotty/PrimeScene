@@ -28,6 +28,7 @@ from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
 from .description_cache import DescriptionCache
 from .card_presentation import viewing_label, duration_seconds
+from .public_catalog import safe_url,IMAGE_HOSTS
 from .prime_diagnostics import DiagnosticLog, exception_details, route
 
 _BACK = (9, 10, 92)
@@ -58,7 +59,7 @@ _DESCRIPTION_BEHIND = 2
 
 
 def _http(value):
-    return value if isinstance(value, str) and value.startswith(('https://', 'http://')) else ''
+    return value if isinstance(value,str) and safe_url(value,IMAGE_HOSTS) else ''
 
 
 def _progress(info):

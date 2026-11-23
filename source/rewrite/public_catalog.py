@@ -10,14 +10,16 @@ from time import perf_counter
 from secrets import token_hex
 from urllib.error import HTTPError
 from urllib.parse import urljoin, urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, Request
 
 try:
     from .prime_diagnostics import exception_details, route
     from .catalog_access import access_evidence, merge_evidence, prime_included
+    from .tls_policy import secure_opener
 except ImportError:
     from prime_diagnostics import exception_details, route
     from catalog_access import access_evidence, merge_evidence, prime_included
+    from tls_policy import secure_opener
 
 
 ORIGIN = 'https://www.primevideo.com'
@@ -708,7 +710,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
         request_headers={'Accept':'text/html, application/json;q=0.9',**extra_headers}
         if page == 'watching':request_headers.update({'Cache-Control':'no-cache, no-store','Pragma':'no-cache'})
         request = Request(address, data=request_data, headers=request_headers)
-        opener = opener if opener is not None else build_opener(StorefrontRedirect(observer))
+        opener = opener if opener is not None else secure_opener(StorefrontRedirect(observer))
         stage = 'fetch'
         with opener.open(request, timeout=15) as response:
             final_url = response.geturl()

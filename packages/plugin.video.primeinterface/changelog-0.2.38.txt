@@ -1,0 +1,9 @@
+0.2.38
+- Apply one HTTPS-only TLS policy across sign-in, authorization, catalog, artwork, media and update requests.
+- Require certificate/hostname verification and TLS 1.2 or newer; do not inherit environment proxies or write TLS debug traffic keys.
+- Remove the non-Windows credential TCP listener and use an owner-only private filesystem socket with mutual authentication.
+- Refuse credential operations when private IPC is unavailable, without a TCP fallback.
+- Discard invalid or unprotectable legacy plaintext credentials; block use and report cleanup failure if deletion is refused.
+- Reject linked, replaced, foreign-owned and non-regular private files, and restrict saved session headers to public browser preferences.
+- Normalize credential field-name variants in logs and preserve safe diagnostic failures and TLS certificate-verification details.
+- Keep the current presentation, navigation, genre artwork, pagination and provider playback choices. Restart Kodi after updating the credential service.

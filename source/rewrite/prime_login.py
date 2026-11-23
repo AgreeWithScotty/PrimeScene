@@ -224,8 +224,8 @@ def LogIn(retToken=False):
             observe({'event': 'http_error', 'status': error.status, 'stage': error.stage})
         message = str(error) if isinstance(error, SignInError) else (
             'Amazon sign-in could not finish (' + type(error).__name__ + '). Your saved account was kept. Please retry.')
-        from .vault_errors import VaultError
-        if isinstance(error,VaultError):message='Secure credential storage could not finish. Unlock your system keyring if it is locked, then retry. Use Finish sign out if cleanup is pending. Diagnostics contains the failed storage stage.'
+        from .vault_errors import VaultError,storage_message
+        if isinstance(error,VaultError):message=storage_message(error)
         g.dialog.ok(TITLE, message)
         return False
     finally:

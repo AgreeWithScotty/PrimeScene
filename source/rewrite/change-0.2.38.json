@@ -1,0 +1,150 @@
+{
+  "version": "0.2.38",
+  "sha256": "9d558c8eb931c37fa880b2b24c19352d0d883ea12e00c1c6c499273c6a463256",
+  "bytes": 2154853,
+  "files": 114,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/SECURITY.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/check_updates.py",
+    "plugin.video.primeinterface/default.py",
+    "plugin.video.primeinterface/gui.py",
+    "plugin.video.primeinterface/resources/lib/account_runtime.py",
+    "plugin.video.primeinterface/resources/lib/account_state.py",
+    "plugin.video.primeinterface/resources/lib/artwork_cache.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/auth_transport.py",
+    "plugin.video.primeinterface/resources/lib/credential_runtime.py",
+    "plugin.video.primeinterface/resources/lib/credential_service.py",
+    "plugin.video.primeinterface/resources/lib/http_transport.py",
+    "plugin.video.primeinterface/resources/lib/prime_device.py",
+    "plugin.video.primeinterface/resources/lib/prime_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/prime_login.py",
+    "plugin.video.primeinterface/resources/lib/prime_signin.py",
+    "plugin.video.primeinterface/resources/lib/private_storage.py",
+    "plugin.video.primeinterface/resources/lib/profile_bootstrap.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/session_store.py",
+    "plugin.video.primeinterface/resources/lib/tls_policy.py",
+    "plugin.video.primeinterface/resources/lib/vault_errors.py"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "source_checks": {
+    "python_files_parsed": 59,
+    "relative_import_edges_resolved": 232,
+    "xml_files_parsed": 4,
+    "changed_files": [
+      "SECURITY.md",
+      "check_updates.py",
+      "default.py",
+      "gui.py",
+      "resources/lib/account_runtime.py",
+      "resources/lib/account_state.py",
+      "resources/lib/artwork_cache.py",
+      "resources/lib/aurora.py",
+      "resources/lib/auth_transport.py",
+      "resources/lib/credential_runtime.py",
+      "resources/lib/credential_service.py",
+      "resources/lib/http_transport.py",
+      "resources/lib/prime_device.py",
+      "resources/lib/prime_diagnostics.py",
+      "resources/lib/prime_login.py",
+      "resources/lib/prime_signin.py",
+      "resources/lib/private_storage.py",
+      "resources/lib/profile_bootstrap.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/session_store.py",
+      "resources/lib/tls_policy.py",
+      "resources/lib/vault_errors.py"
+    ],
+    "removed_package_files": [],
+    "unchanged_art_and_font_files": 40,
+    "all_ui_xml_unchanged": true,
+    "aurora_navigation_and_playback_ast_unchanged": true,
+    "catalog_parser_declarations_unchanged": true,
+    "asset_reference_audit_passed": true,
+    "unreachable_python_files": [],
+    "actual_native_posix_ipc_or_vault_exercised": false,
+    "provider_or_kodi_success_simulated": false
+  },
+  "actual_security_boundaries": {
+    "private_files": {
+      "hardlink_rejected_without_modifying_target": true,
+      "actual_invalid_plaintext_file_discarded": true,
+      "actual_windows_delete_lock_fails_closed_then_dpapi_migrates": true
+    },
+    "saved_headers": {
+      "credential_headers_rejected": 3,
+      "newline_identity_rejected": true
+    },
+    "diagnostics": {
+      "additional_unregistered_secret_fields_removed": 10,
+      "unserializable_original_not_logged": true,
+      "safe_failure_report_written": true
+    },
+    "credential_ipc": {
+      "unsupported_private_socket_fails_before_binding": true,
+      "actual_posix_socket_exercised": false
+    },
+    "tls": {
+      "verified_public_https_succeeds": true,
+      "untrusted_local_tls_certificate_rejected": true,
+      "environment_proxy_not_used": true,
+      "tls_debug_key_file_not_created_during_real_handshakes": true,
+      "non_https_protocols_rejected": 3,
+      "certificate_verification_required": true,
+      "hostname_checking_required": true,
+      "tls_minimum": "TLSv1_2",
+      "public_test_fixture_sha256": "7b5b8ea34c11ccb76e0b10e8ab01252d7f835a4f3e7c8bfe93d1c43b0b133fda"
+    },
+    "scope": {
+      "host": "win32",
+      "native_macos_linux_vault_tested": false,
+      "amazon_login_or_playback_simulated": false,
+      "kodi_simulated": false
+    }
+  },
+  "existing_security_boundaries": {
+    "credential_storage": {
+      "real_dpapi_roundtrip_and_tamper_rejection": true,
+      "legacy_file_migration_verified": true,
+      "cookie_scope_flags_roundtrip": true,
+      "plaintext_temporary_files_created": false,
+      "posix_permissions_observed": false
+    },
+    "diagnostics": {
+      "unregistered_secret_canaries_removed": 8,
+      "status_and_request_correlation_preserved": true,
+      "actual_log_retention_bounded": true
+    },
+    "outbound_network": {
+      "unsafe_url_forms_rejected": 10,
+      "actual_local_dns_resolutions_rejected": 3,
+      "cross_origin_body_redirect_rejected": true,
+      "public_address_connection_pinning_present": true,
+      "amazon_request_performed": false
+    },
+    "local_http": {
+      "real_http_rejection_cases": 10,
+      "playback_key_absent_from_events": true,
+      "valid_native_request_shapes_accepted": 2,
+      "upstream_or_account_object_supplied": false,
+      "server_listen_address": "127.0.0.1"
+    },
+    "media_xml": {
+      "utf_encoded_dtd_entity_payloads_rejected": 3,
+      "excessive_depth_rejected": true,
+      "unsafe_manifest_scheme_cases_rejected": 2,
+      "basic_subtitle_conversion_preserved": true
+    },
+    "scope": {
+      "provider_login_or_playback_tested": false,
+      "kodi_ui_simulated": false,
+      "checks_establish": "local cryptography, actual filesystem/HTTP boundaries, input rejection and diagnostics only"
+    }
+  }
+}

@@ -10,15 +10,17 @@ from tempfile import NamedTemporaryFile
 from time import monotonic
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
-from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request
 from .web_identity import USER_AGENT
 
 try:
     from .public_catalog import ORIGIN, StorefrontRedirect
     from .prime_diagnostics import route
+    from .tls_policy import secure_opener
 except ImportError:
     from public_catalog import ORIGIN, StorefrontRedirect
     from prime_diagnostics import route
+    from tls_policy import secure_opener
 
 
 ACCOUNT = ORIGIN + '/settings/'
@@ -161,7 +163,7 @@ def security_image_host(url):
 def read_security_image(cookies, url, *, user_agent=None):
     if not security_image_host(url):
         raise SignInError('Amazon returned an unexpected security image address.')
-    opener = build_opener(SecurityImageRedirect(), HTTPCookieProcessor(cookies))
+    opener = secure_opener(SecurityImageRedirect(), HTTPCookieProcessor(cookies))
     request = Request(url, headers={'User-Agent': user_agent or HEADERS['User-Agent'], 'Accept': 'image/*'})
     extensions = {'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp'}
     with opener.open(request, timeout=12) as response:
@@ -437,7 +439,7 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
 def authenticate(cookies, prompt, *, observer=None, approve=None, choose=None, captcha=None, state=None,
                  entry_url=None, completion=None, headers=None, success=None):
     """Return true after Prime Video shows signed-in navigation. False means canceled."""
-    opener = build_opener(SignInRedirect(observer, capture_authorization=completion is not None), HTTPCookieProcessor(cookies))
+    opener = secure_opener(SignInRedirect(observer, capture_authorization=completion is not None), HTTPCookieProcessor(cookies))
     state = {} if state is None else state
 
     def read_page(target, **kwargs):
@@ -570,6 +572,6 @@ def save_cookies(jar, path):
 
 
 def catalog_opener(jar, *, observer=None, headers=None):
-    opener = build_opener(StorefrontRedirect(observer=observer), HTTPCookieProcessor(jar))
+    opener = secure_opener(StorefrontRedirect(observer=observer), HTTPCookieProcessor(jar))
     opener.addheaders = list(dict(HEADERS, **(headers or {})).items())
     return opener

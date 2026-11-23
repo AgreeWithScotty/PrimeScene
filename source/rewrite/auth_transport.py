@@ -8,7 +8,8 @@ import secrets
 from time import monotonic
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, Request
+from .tls_policy import secure_opener
 
 from .prime_diagnostics import exception_details, route
 from .prime_signin import SignInError, SignInHTTPError
@@ -79,7 +80,7 @@ def json_request(address, *, observer, stage, payload=None, headers=None):
     status = None
     try:
         try:
-            response = build_opener(_NoRedirect()).open(Request(address, data=body, headers=fields), timeout=20)
+            response = secure_opener(_NoRedirect()).open(Request(address, data=body, headers=fields), timeout=20)
         except HTTPError as response_error:
             response = response_error
         with response:

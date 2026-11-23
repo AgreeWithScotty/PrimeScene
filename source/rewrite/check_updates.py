@@ -1,7 +1,7 @@
 """Check Prime Scene's release and let Kodi handle repository installs."""
 import re
 import time
-from urllib.request import HTTPRedirectHandler,Request,build_opener
+from urllib.request import HTTPRedirectHandler,Request
 from secrets import token_hex
 import xml.etree.ElementTree as ET
 
@@ -10,6 +10,7 @@ import xbmcaddon
 import xbmcgui
 import xbmcvfs
 from resources.lib.prime_diagnostics import DiagnosticLog,exception_details,route
+from resources.lib.tls_policy import secure_opener
 
 
 ADDON_ID = 'plugin.video.primeinterface'
@@ -35,7 +36,7 @@ def published_version(report):
     request_id=token_hex(8);started=time.monotonic()
     request = Request(INDEX, headers={'Cache-Control': 'no-cache'})
     report({'event':'update_index_started','stage':'repository_metadata','request_id':request_id,'address':route(INDEX),'result':'started'})
-    with build_opener(RepositoryRedirect(report,request_id)).open(request, timeout=8) as response:
+    with secure_opener(RepositoryRedirect(report,request_id)).open(request, timeout=8) as response:
         data = response.read(128 * 1024 + 1)
         status=response.status
     if len(data) > 128 * 1024:

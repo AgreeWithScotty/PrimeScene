@@ -11,9 +11,10 @@ from time import monotonic
 import socket
 from urllib.error import HTTPError
 from urllib.parse import urlsplit
-from urllib.request import HTTPRedirectHandler,HTTPCookieProcessor,HTTPSHandler,ProxyHandler,Request,build_opener
+from urllib.request import HTTPRedirectHandler,HTTPCookieProcessor,HTTPSHandler,Request
 from .account_state import current_account
 from .prime_diagnostics import exception_details,route
+from .tls_policy import client_context,secure_opener
 
 
 class TransportFailure(RuntimeError):pass
@@ -49,6 +50,7 @@ class _PublicHTTPSConnection(HTTPSConnection):
 
 
 class _PublicHTTPSHandler(HTTPSHandler):
+    def __init__(self):super().__init__(context=client_context())
     def https_open(self,request):
         options={'context':self._context}
         if hasattr(self,'_check_hostname'):options['check_hostname']=self._check_hostname
@@ -156,10 +158,10 @@ class HttpTransport:
         if self.hosts is None:
             # Public media URLs are pinned directly; an environment proxy must
             # not bypass local-address rejection. TLS still verifies the host.
-            handlers.extend((ProxyHandler({}),_PublicHTTPSHandler()))
+            handlers.append(_PublicHTTPSHandler())
         if self.jar is not None:handlers.append(HTTPCookieProcessor(self.jar))
         try:
-            with build_opener(*handlers).open(request,timeout=20) as reply:
+            with secure_opener(*handlers).open(request,timeout=20) as reply:
                 status=reply.status;final=reply.geturl();raw=reply.read(limit+1)
                 if len(raw)>limit:raise TransportFailure('The provider response exceeds its size limit')
                 if reply.headers.get('Content-Encoding','').lower()=='gzip':

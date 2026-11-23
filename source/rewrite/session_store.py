@@ -64,6 +64,17 @@ def credential_cookies(profile):
     return None
 
 
+def public_session_headers(values):
+    """Only public browser preferences may enter a plaintext header file."""
+    result={}
+    if not isinstance(values,dict):return result
+    for key in ('User-Agent','Accept-Language'):
+        value=values.get(key)
+        if (isinstance(value,str) and value and len(value)<=4096
+            and all(32<=ord(character)<127 for character in value)):result[key]=value
+    return result
+
+
 def session_headers(profile):
     """Read only the non-secret headers used by the authenticated web session."""
     from . import account_state
@@ -78,12 +89,7 @@ def session_headers(profile):
         values = json.loads(path.read_text(encoding='utf-8'))
         if not isinstance(values, dict):
             raise ValueError('The website session header file is invalid')
-        for key in ('User-Agent', 'Accept-Language'):
-            value = values.get(key)
-            if (isinstance(value, str) and value
-                    and len(value) <= 4096
-                    and all(32 <= ord(character) < 127 for character in value)):
-                result[key] = value
+        result.update(public_session_headers(values))
 
     epoch = account_state.account_epoch(profile)
     account_state.persist_if_current(profile, epoch, read)
