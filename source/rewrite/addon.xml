@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.55" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.56" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.55[CR]- Unify exact verified Amazon website hosts across sign-in, cookies, security images and narrow catalog sign-on redirects.[CR]- Recognize23 Amazon-owned country domains and the documented regional account hosts without enabling wildcard trust.[CR]- Keep token/media APIs separately restricted and prevent catalog sign-on rules from applying to playback or token transports.[CR]- Resolve bare regional website names consistently with www names and reject undiscovered media endpoints before saving an unusable account.[CR]- Record scheme/port, policy decisions, regional inventory and complete security-image request/redirect/failure context without secret values.</news>
+    <news>0.2.56[CR]- Recognize the verified North American, European and Far East Prime Video hosts consistently across sign-in, catalog navigation, cookies and region discovery.[CR]- Follow Amazon's verified regional relay addresses while keeping credential forms restricted to sign-in hosts and retail catalog handoffs restricted to the existing SSO route.[CR]- Normalize regional website identities for account discovery without inventing regional token or media API names.[CR]- Keep catalog and TV episode responses restricted to actual Prime Video sites after redirects; include the complete regional policy inventory and redirect decisions in diagnostics.</news>
   </extension>
 </addon>

@@ -25,8 +25,9 @@ ORIGIN = 'https://www.primevideo.com'
 # The broad /movie and /tv feeds also market rentals, channels and free-with-ads.
 PAGES = {'watching': '/storefront', 'home': '/storefront', 'movies': '/storefront/subscription/prime',
          'tv': '/storefront/subscription/prime', 'sports': '/sports', 'channels': '/addons', 'purchases': '/mystuff'}
-from .regional_hosts import PRIME_WEB_HOSTS,storefront_sso,strip_redirect_headers,POLICY_REVISION
-STOREFRONT_HOSTS = PRIME_WEB_HOSTS
+from .regional_hosts import (PRIME_WEB_HOSTS,CATALOG_NAV_HOSTS,storefront_sso,storefront_relay,
+    strip_redirect_headers,POLICY_REVISION,https_host)
+STOREFRONT_HOSTS = CATALOG_NAV_HOSTS
 IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
 MAX_PAGE_BYTES = 8 * 1024 * 1024
 MAX_JSON_NODES = 100000
@@ -603,12 +604,13 @@ class StorefrontRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         newurl = urljoin(req.full_url, newurl)
         is_sso = storefront_sso(req.full_url,newurl,code,req.get_method(),req.data is not None)
-        allowed = bool(safe_url(newurl, STOREFRONT_HOSTS)) or is_sso
+        is_relay=storefront_relay(req.full_url,newurl,code,req.get_method(),req.data is not None)
+        allowed = bool(https_host(newurl,PRIME_WEB_HOSTS)) or is_sso or is_relay
         if code in (307,308) and req.data is not None and urlsplit(req.full_url).hostname!=urlsplit(newurl).hostname:
             allowed=False
         _emit(self.observer, {'event': 'catalog_redirect', 'stage':'storefront_redirect', 'status': code,
                               'from': route(req.full_url), 'to': route(newurl), 'allowed': allowed,
-                              'policy_revision':POLICY_REVISION,'regional_sso':is_sso,
+                              'policy_revision':POLICY_REVISION,'regional_sso':is_sso,'regional_relay':is_relay,
                               'method':req.get_method(),'result':'allowed' if allowed else 'blocked'})
         if not allowed:
             raise PublicCatalogError('Prime Video redirected outside its storefront. The session may need sign-in again.')
@@ -722,7 +724,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                              'server_date':response.headers.get('Date'),
                              'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid'),
                              'elapsed_ms': round((perf_counter() - started) * 1000)})
-            if not safe_url(final_url, STOREFRONT_HOSTS):
+            if not https_host(final_url,PRIME_WEB_HOSTS):
                 raise PublicCatalogError('Prime Video did not return to its storefront.')
             stage = 'read_response'
             body_started=perf_counter()

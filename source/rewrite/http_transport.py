@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler,HTTPCookieProcessor,Request,build_opener
 from .account_state import current_account
 from .prime_diagnostics import exception_details,route
-from .regional_hosts import (PRIME_WEB_HOSTS,storefront_sso,storefront_transport,
+from .regional_hosts import (PRIME_WEB_HOSTS,storefront_sso,storefront_relay,storefront_transport,
     strip_redirect_headers,POLICY_REVISION,https_host)
 
 
@@ -67,13 +67,14 @@ class Redirects(HTTPRedirectHandler):
         self.hops+=1
         catalog=storefront_transport(self.hosts)
         sso=catalog and storefront_sso(request.full_url,newurl,code,request.get_method(),request.data is not None)
-        regular=bool(https_host(newurl,self.hosts)) if catalog else https_address(newurl,self.hosts)
-        allowed=(regular or sso) and self.hops<=6
+        relay=catalog and storefront_relay(request.full_url,newurl,code,request.get_method(),request.data is not None)
+        regular=bool(https_host(newurl,set(self.hosts)&PRIME_WEB_HOSTS)) if catalog else https_address(newurl,self.hosts)
+        allowed=(regular or sso or relay) and self.hops<=6
         if catalog and code in (307,308) and request.data is not None and urlsplit(request.full_url).hostname!=urlsplit(newurl).hostname:
             allowed=False
         self.report({'event':'http_redirect','request_id':self.request_id,'stage':self.stage,'status':code,
             'from':route(request.full_url),'to':route(newurl),'hop':self.hops,'allowed':allowed,
-            'policy_revision':POLICY_REVISION,'regional_sso':bool(sso),
+            'policy_revision':POLICY_REVISION,'regional_sso':bool(sso),'regional_relay':bool(relay),
             'method':request.get_method(),'result':'allowed' if allowed else 'blocked'})
         if not allowed:raise TransportFailure('The provider returned an untrusted redirect')
         result=super().redirect_request(request,fp,code,msg,headers,newurl)
