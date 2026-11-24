@@ -10,11 +10,21 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 from .account_state import current_account, persist_if_current
 from .prime_diagnostics import DiagnosticLog, exception_details, route
 from .public_catalog import IMAGE_HOSTS, safe_url
+from .image_quality import pixel_dimensions,source_image
+from secrets import token_hex
+
+MAX_IMAGE_BYTES=32*1024*1024
 
 
 class _ImageRedirect(HTTPRedirectHandler):
+    def __init__(self,report,request_id):
+        self.report,self.request_id,self.hops=report,request_id,0
     def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if not safe_url(newurl, IMAGE_HOSTS):
+        self.hops+=1;allowed=bool(safe_url(newurl, IMAGE_HOSTS)) and self.hops<=6
+        self.report({'event':'artwork_redirect','request_id':self.request_id,'stage':'image_download',
+            'status':code,'method':req.get_method(),'source':route(req.full_url),'destination':route(newurl),
+            'hop':self.hops,'allowed':allowed,'result':'allowed' if allowed else 'blocked'})
+        if not allowed:
             raise ValueError('Artwork redirected outside the image service')
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
@@ -68,20 +78,27 @@ class ImageCache:
 
     def _download(self, url, path):
         started, status = monotonic(), None
+        request_id=token_hex(8);final=url
+        self.report({'event':'artwork_ahead_started','request_id':request_id,'stage':'image_download',
+            'address':route(url),'method':'GET','resolution_policy':'provider_original_master' if source_image(url)==url else 'card_delivery_variant'})
         try:
             if self.stop.is_set() or not current_account(self.g.DATA_PATH, self.epoch):
+                self.report({'event':'artwork_ahead_cancelled','request_id':request_id,'stage':'image_download','result':'cancelled'})
                 return
-            with build_opener(_ImageRedirect()).open(Request(url, headers={'Accept': 'image/*'}), timeout=8) as response:
+            with build_opener(_ImageRedirect(self.report,request_id)).open(Request(url, headers={'Accept': 'image/*'}), timeout=8) as response:
                 status = response.getcode()
+                final=response.geturl()
                 if response.headers.get_content_type() not in ('image/jpeg', 'image/png', 'image/webp'):
                     raise ValueError('Artwork response was not an image')
-                content = response.read(3 * 1024 * 1024 + 1)
-            if len(content) > 3 * 1024 * 1024:
+                content = response.read(MAX_IMAGE_BYTES + 1)
+            if len(content) > MAX_IMAGE_BYTES:
                 raise ValueError('Artwork exceeded its size limit')
             if not (content.startswith((b'\xff\xd8', b'\x89PNG\r\n\x1a\n'))
                     or content[:4] == b'RIFF' and content[8:12] == b'WEBP'):
                 raise ValueError('Artwork image data was invalid')
             if self.stop.is_set():
+                self.report({'event':'artwork_ahead_cancelled','request_id':request_id,'stage':'image_download',
+                    'elapsed_ms':round((monotonic()-started)*1000),'result':'cancelled'})
                 return
 
             def write():
@@ -90,14 +107,16 @@ class ImageCache:
                 temporary.write_bytes(content)
                 temporary.replace(path)
             stored = persist_if_current(self.g.DATA_PATH, self.epoch, write)
-            self.report({'event': 'artwork_ahead_completed', 'status': status, 'bytes': len(content),
+            self.report({'event': 'artwork_ahead_completed', 'request_id':request_id,'status': status, 'bytes': len(content),
+                         'pixel_dimensions':pixel_dimensions(content),'response_address':route(final),'size_limit_bytes':MAX_IMAGE_BYTES,
                          'stage': 'image_download', 'address': route(url),
                          'elapsed_ms': round((monotonic() - started) * 1000),
                          'result': 'success' if stored else 'cancelled'})
         except Exception as error:
             with self.lock:
                 self.failed[url]=monotonic()
-            self.report({'event': 'artwork_ahead_failed', 'status': status or getattr(error,'code',None),
+            self.report({'event': 'artwork_ahead_failed', 'request_id':request_id,'status': status or getattr(error,'code',None),
+                         'response_address':route(final),'size_limit_bytes':MAX_IMAGE_BYTES,
                          'retry_after_seconds':30,
                          'stage': 'image_download', 'address': route(url),
                          'elapsed_ms': round((monotonic() - started) * 1000),

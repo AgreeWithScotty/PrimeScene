@@ -2300,10 +2300,10 @@
                                 <animation effect="slide" start="0,0" end="-160,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + Integer.IsEqual(Container(410).CurrentItem,1)">Conditional</animation>
                             </control>
                             <control type="image">
-                                <left>420</left>
-                                <top>245</top>
-                                <width>760</width>
-                                <height>350</height>
+                                <left>80</left>
+                                <top>120</top>
+                                <width>1440</width>
+                                <height>600</height>
                                 <texture background="true">$INFO[ListItem.Property(PanelTitle)]</texture>
                                 <colordiffuse>FFFFFFFF</colordiffuse>
                                 <aspectratio align="center" aligny="center">keep</aspectratio>
