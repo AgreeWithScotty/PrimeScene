@@ -165,6 +165,7 @@ class StorefrontLoader:
                       'services' if root=='__service_directory__' else 'sports')
             if packet.get('catalog_policy') != policy:
                 return
+            if root in PERSONAL_ROOTS and packet.get('personal_schema')!=2:return
             if not isinstance(packet.get('rows'), list) or len(packet['rows']) > 2000:
                 raise ValueError('Invalid catalog cache rows')
             for row in packet['rows']:

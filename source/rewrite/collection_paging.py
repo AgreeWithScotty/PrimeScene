@@ -19,7 +19,7 @@ def identity(target):
 
 def valid_request(value):
     if not isinstance(value,dict) or value.get('kind')!='collection':return False
-    if value.get('scope') not in (None,'watching','watchlist'):return False
+    if value.get('scope') not in (None,'watching','watchlist','purchases'):return False
     address=safe_url(value.get('address'),STOREFRONT_HOSTS)
     if not address or not re.fullmatch(r'(?:/region/[a-z]{2,4})?/api/paginateCollection',urlsplit(address).path):return False
     if urlsplit(address).query or not safe_url(value.get('source'),STOREFRONT_HOSTS):return False
@@ -40,6 +40,25 @@ def discover(data,content_type,address,observe,scope=None):
         prep=(document.get('init') or {}).get('preparations') or {} if isinstance(document,dict) else {}
         body=prep.get('body') or {}
         containers=body.get('containers') or []
+        if scope in ('watchlist','purchases') and not containers:
+            # Personal collections may wrap their declared Grid/capability
+            # differently. Retain the exact provider objects and tokens.
+            stack=[document];grids=[];pages={};capabilities={};visited=0
+            while stack:
+                node=stack.pop();visited+=1
+                if visited>100000:raise PublicCatalogError('The personal pagination structure exceeded its limit.')
+                if isinstance(node,dict):
+                    if node.get('containerType')=='Grid':grids.append(node)
+                    for key,target in (('swiftPageParameters',pages),('primeVideoCapability',capabilities)):
+                        if isinstance(node.get(key),dict):target[json.dumps(node[key],sort_keys=True)]=node[key]
+                    stack.extend(value for value in node.values() if isinstance(value,(dict,list)))
+                elif isinstance(node,list):stack.extend(value for value in node if isinstance(value,(dict,list)))
+            observe({'event':'personal_continuation_inventory','stage':'collection_discovery','collection':scope,
+                'grid_count':len(grids),'page_parameter_sets':len(pages),'capability_sets':len(capabilities),'result':'success'})
+            if len(grids)==1:
+                containers=grids
+                body={'containers':grids,'swiftPageParameters':next(iter(pages.values())) if len(pages)==1 else {},
+                    'sitewide':{'sitewide-alexa':{'primeVideoCapability':next(iter(capabilities.values())) if len(capabilities)==1 else {}}}}
         if scope=='watching':
             from .home_catalog import is_progress_collection
             candidates=[c for c in containers if is_progress_collection(c) and c.get('paginationServiceToken')]
@@ -71,7 +90,7 @@ def discover(data,content_type,address,observe,scope=None):
             actionScheme='default',payloadScheme='default')
         if grid.get('journeyIngressContext'):payload['journeyIngressContext']=grid['journeyIngressContext']
         result={'kind':'collection','address':endpoint,'source':address,'payload':payload}
-        if scope in ('watching','watchlist'):result['scope']=scope
+        if scope in ('watching','watchlist','purchases'):result['scope']=scope
         if not valid_request(result):raise PublicCatalogError('Amazon returned an unsupported genre pagination structure. Open Diagnostics.')
         observe({'event':'collection_continuation_discovered','stage':'collection_discovery',
             'start_index':payload['startIndex'],'entity_count':len(grid.get('entities') or []),

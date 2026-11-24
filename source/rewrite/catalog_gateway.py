@@ -273,7 +273,7 @@ class CatalogGateway:
         if not self._active(active):
             return None
         rows = []
-        excluded, unknown, wrong_type = 0, 0, 0
+        excluded, unknown, wrong_type,invalid_detail = 0, 0, 0,0
         for card in result.cards:
             if page in ('movies', 'tv') and not prime_included(card.access_evidence):
                 excluded += 1
@@ -290,6 +290,7 @@ class CatalogGateway:
             url = safe_url(card.detail_url, STOREFRONT_HOSTS)
             identity = detail_id(url) if url else None
             if not identity:
+                invalid_detail+=1
                 continue
             self.details.setdefault(identity, {'title': card.title, 'lazyLoadURL': url})
             info=_card_info(card)
@@ -317,6 +318,14 @@ class CatalogGateway:
             for row in rows: row['watching_only'] = True
         visited = previous_urls + ((continuation_identity(continuation),) if continuation else ())
         next_path = self._continuation(page, result.next_request or result.next_url, visited)
+        personal=page in ('watchlist','purchases','purchased_movies','purchased_tv')
+        filtered_empty=bool(result.cards) and wrong_type==len(result.cards) and not next_path
+        empty_confirmed=result.empty_confirmed or (filtered_empty if personal else bool(result.cards) and not rows and not next_path)
+        if personal and not rows and not next_path and not empty_confirmed:
+            observe({'event':'personal_collection_unknown','stage':'card_mapping','section':page,
+                'source_cards':len(result.cards),'invalid_detail_rows':invalid_detail,
+                'empty_confirmed':False,'result':'failure'})
+            raise PublicCatalogError('The personal list could not be read; no empty account list was confirmed.')
         observe({'event': 'catalog_packet_ready', 'section': page, 'rows': len(rows),
                  'empty_confirmed':result.empty_confirmed,'empty_after_filtering':bool(result.cards) and not rows and not next_path,
                  'source_cards': len(result.cards), 'prime_only': page in ('movies', 'tv'),
@@ -327,6 +336,8 @@ class CatalogGateway:
                  'has_next': bool(next_path), 'result': 'success'})
         return {'rows': rows, 'next': next_path, 'library_confirmed': result.library_confirmed,
                 'watchlist_confirmed':result.watchlist_confirmed,
-                'empty_confirmed':result.empty_confirmed or bool(result.cards) and not rows and not next_path,
+                'empty_confirmed':empty_confirmed,
+                'personal_schema':2 if personal else None,
+                'collection_state':'items' if rows else 'empty' if empty_confirmed else 'continuation' if next_path else 'unknown',
                 'catalog_policy': 'prime_only' if page in ('movies', 'tv') else
                                   'account_library' if page == 'purchases' or page.startswith('purchased_') else 'watch_progress' if page == 'watching' else page}
