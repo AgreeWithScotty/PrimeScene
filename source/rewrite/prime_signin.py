@@ -6,6 +6,7 @@ from http.cookiejar import LoadError, LWPCookieJar
 import json
 from pathlib import Path
 import re
+from secrets import token_hex
 from tempfile import NamedTemporaryFile
 from time import monotonic
 from urllib.error import HTTPError
@@ -15,17 +16,17 @@ from .web_identity import USER_AGENT
 
 try:
     from .public_catalog import ORIGIN, StorefrontRedirect
-    from .prime_diagnostics import route
+    from .prime_diagnostics import route, exception_details
 except ImportError:
     from public_catalog import ORIGIN, StorefrontRedirect
-    from prime_diagnostics import route
+    from prime_diagnostics import route, exception_details
 
 
 ACCOUNT = ORIGIN + '/settings/'
 PRIME_HOST = 'www.primevideo.com'
 AMAZON_HOST = 'www.amazon.com'
 PRIME_HOSTS = {PRIME_HOST, 'primevideo.com', 'na.primevideo.com'}
-AMAZON_HOSTS = {prefix + domain for domain in ('amazon.com', 'amazon.de', 'amazon.co.uk', 'amazon.co.jp')
+AMAZON_HOSTS = {prefix + domain for domain in ('amazon.com', 'amazon.ca', 'amazon.de', 'amazon.co.uk', 'amazon.co.jp')
                 for prefix in ('', 'www.')}
 HEADERS = {'Accept': 'text/html,application/xhtml+xml', 'Accept-Language': 'en-US,en;q=0.9',
            'User-Agent': USER_AGENT}
@@ -33,7 +34,7 @@ MAX_DOCUMENT_BYTES = 8 * 1024 * 1024
 CODE_FIELDS = {'otpcode', 'otppin', 'verificationcode', 'cvf_otp_input', 'mfa_otp_code'}
 CODE_FORM_IDS = {'fwcim-form', 'verification-code-form', 'auth-mfa-form'}
 CAPTCHA_FIELDS = {'guess', 'cvf_captcha_input', 'field-keywords'}
-IMAGE_HOSTS = {'www.amazon.com', 'images-na.ssl-images-amazon.com', 'm.media-amazon.com',
+IMAGE_HOSTS = {'www.amazon.com', 'www.amazon.ca', 'amazon.ca', 'images-na.ssl-images-amazon.com', 'm.media-amazon.com',
                'opfcaptcha-prod.s3.amazonaws.com'}
 
 
@@ -104,35 +105,53 @@ class SignInRedirect(HTTPRedirectHandler):
         source = trusted_host(req.full_url)
         destination = trusted_host(newurl)
         method = req.get_method()
+        callback = (self.capture_authorization and destination in AMAZON_HOSTS
+            and urlsplit(newurl).path == '/ap/maplanding'
+            and 'openid.oa2.authorization_code' in parse_qs(urlsplit(newurl).query))
+        submission_blocked = (code in (307, 308) and req.data is not None
+            and (destination != source or destination not in AMAZON_HOSTS
+                 or not urlsplit(newurl).path.startswith('/ap/')))
+        reason = ('unrecognized_destination' if destination is None else
+            'untrusted_source' if source is None else
+            'submission_outside_original_signin_route' if submission_blocked and not callback else None)
         if self.observer:
             self.observer({'event': 'redirect', 'status': code, 'method': method,
+                           'stage': getattr(req, '_prime_scene_stage', 'sign-in redirect'),
+                           'request_id': getattr(req, '_prime_scene_request_id', None),
                            'from_host': diagnostic_host(req.full_url), 'to_host': diagnostic_host(newurl),
                            'source': route(req.full_url), 'destination': route(newurl),
-                           'preserves_submission': code in (307, 308)})
+                           'cross_origin': source != destination,
+                           'allowed': reason is None, 'blocked_reason': reason,
+                           'preserves_submission': code in (307, 308),
+                           'body_forwarded': reason is None and not callback and req.data is not None and code in (307, 308),
+                           'elapsed_ms': round((monotonic()-getattr(req, '_prime_scene_started', monotonic()))*1000),
+                           'result': 'blocked' if reason else 'authorization_return' if callback else 'allowed'})
         if destination is None:
             raise SignInError(f'Amazon redirected to an unrecognized address '
                               f'(HTTP {code} {method} from {source} to {diagnostic_host(newurl)}).')
-        if (self.capture_authorization and destination in AMAZON_HOSTS
-                and urlsplit(newurl).path == '/ap/maplanding'
-                and 'openid.oa2.authorization_code' in parse_qs(urlsplit(newurl).query)):
+        if source is None:
+            raise SignInError('Amazon returned a redirect from an untrusted sign-in address.')
+        if callback:
             raise AuthorizationReturn(newurl)
         if code in (307, 308):
             # These responses retain the method and body. Only an Amazon auth
             # route on the original origin may receive a form submission again.
-            if req.data is not None and (destination != source or destination not in AMAZON_HOSTS
-                                         or not urlsplit(newurl).path.startswith('/ap/')):
+            if submission_blocked:
                 raise SignInError(f'Amazon redirected a sign-in submission outside its original sign-in route '
                                   f'(HTTP {code} from {source} to {destination}).')
             forwarded = {name: value for name, value in req.headers.items()
                          if name.lower() not in ('authorization', 'proxy-authorization', 'content-length', 'cookie', 'host')}
-            return Request(newurl, data=req.data, headers=forwarded, method=method,
-                           origin_req_host=req.origin_req_host, unverifiable=True)
-        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
-        for name in ('Cookie', 'Host', 'Authorization', 'Proxy-authorization'):
-            redirected.remove_header(name)
+            redirected = Request(newurl, data=req.data, headers=forwarded, method=method,
+                                 origin_req_host=req.origin_req_host, unverifiable=True)
+        else:
+            redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+            for name in ('Cookie', 'Host', 'Authorization', 'Proxy-authorization'):
+                redirected.remove_header(name)
         if source != destination:
             redirected.remove_header('Origin')
             redirected.remove_header('Referer')
+        for name in ('_prime_scene_request_id', '_prime_scene_stage', '_prime_scene_started'):
+            if hasattr(req, name):setattr(redirected, name, getattr(req, name))
         return redirected
 
 
@@ -358,30 +377,42 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
         headers['Referer'] = previous
     body = urlencode(fields).encode('ascii') if fields is not None else None
     started = monotonic()
+    request_id = token_hex(8)
+    def emit(event):
+        if observer:observer(dict(event, request_id=request_id, stage=stage))
     if observer:
-        observer({'event': 'request_started', 'stage': stage, 'method': 'POST' if body is not None else 'GET',
+        emit({'event': 'request_started', 'stage': stage, 'method': 'POST' if body is not None else 'GET',
                   'address': route(url), 'field_names': [key for key, _ in fields or []],
                   'request_bytes': len(body or b''), 'header_names': sorted(headers)})
     try:
-        response = opener.open(Request(url, data=body, headers=headers), timeout=12)
+        request = Request(url, data=body, headers=headers)
+        request._prime_scene_request_id = request_id
+        request._prime_scene_stage = stage
+        request._prime_scene_started = started
+        response = opener.open(request, timeout=12)
     except AuthorizationReturn as result:
         if observer:
-            observer({'event': 'authorization_return', 'stage': stage, 'address': route(result.url),
-                      'network_ms': round((monotonic() - started) * 1000), 'fetched_as_page': False})
+            emit({'event': 'authorization_return', 'stage': stage, 'address': route(result.url),
+                  'network_ms': round((monotonic() - started) * 1000), 'fetched_as_page': False,'result':'returned'})
         return result.url, SignInDocument('')
     except HTTPError as error:
         response = error
+    except Exception as error:
+        emit({'event':'signin_request_failed','address':route(url),
+              'exception':exception_details(error),'elapsed_ms':round((monotonic()-started)*1000),
+              'result':'failure'})
+        raise
     with response:
         status = getattr(response, 'status', None) or response.code
         if observer:
-            observer({'event': 'response_received', 'stage': stage, 'status': status,
+            emit({'event': 'response_received', 'stage': stage, 'status': status,
                       'address': route(response.url), 'network_ms': round((monotonic() - started) * 1000),
                       'content_type': response.headers.get_content_type(),
                       'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid'),
                       'retry_after': response.headers.get('Retry-After')})
         if status >= 400 and response.headers.get_content_type() != 'text/html':
             if observer:
-                observer({'event': 'http_error', 'status': status, 'stage': stage,
+                emit({'event': 'http_error', 'status': status, 'stage': stage,
                           'host': diagnostic_host(response.url)})
             raise SignInHTTPError(status, stage)
         if not trusted_host(response.url) or response.headers.get_content_type() != 'text/html':
@@ -391,7 +422,7 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
             raise SignInError('Amazon returned a sign-in page that is too large.')
         document = SignInDocument(content.decode(response.headers.get_content_charset() or 'utf-8', 'replace'))
         if observer:
-            observer({'event': 'form_inventory', 'stage': stage, 'forms': [
+            emit({'event': 'form_inventory', 'stage': stage, 'forms': [
                 {'id': form.identity, 'action': route(urljoin(response.url, form.action)),
                  'hidden_field_names': [key for key, _ in form.hidden],
                  'hidden_field_presence': {key: bool(value) for key, value in form.hidden},
@@ -407,7 +438,7 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
                 'document_bytes': len(content)})
         if status >= 400:
             if observer:
-                observer({'event': 'http_error', 'status': status, 'stage': stage,
+                emit({'event': 'http_error', 'status': status, 'stage': stage,
                           'host': diagnostic_host(response.url)})
             # Amazon can use HTTP 400 for a rejected code while returning the
             # same usable verification form. Let the user correct that code.
@@ -416,7 +447,7 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
             if not recoverable:
                 raise SignInHTTPError(status, stage)
         if observer:
-            observer({'event': 'page', 'host': trusted_host(response.url),
+            emit({'event': 'page', 'host': trusted_host(response.url),
                       'signed_in_navigation': document.signed_in_navigation, 'challenge': document.challenge,
                       'authenticated_context': document.authenticated_context,
                       'document_bytes': len(content), 'cookies_required': document.cookies_required,
@@ -424,6 +455,9 @@ def request_document(opener, url, *, fields=None, previous=None, observer=None, 
                       'verification_choices': sum(len(form.choices) for form in document.forms),
                       'prompt_count': sum(len(form.prompts) for form in document.forms),
                       'form_count': len(document.forms)})
+        emit({'event':'signin_request_complete','status':status,'address':route(response.url),
+              'elapsed_ms':round((monotonic()-started)*1000),
+              'result':'success' if status<400 else 'recoverable_challenge'})
         return response.url, document
 
 

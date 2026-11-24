@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.53" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.54" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.53[CR]- Use one fixed font size and equal transparent canvases for every expanded genre title; wrap long names without changing glyph size or proportions.[CR]- Keep first/last-card edge fill on the artwork and selection line, preserving the same lettering proportions at every position.[CR]- Give corrected title images content-based cache identities so existing Kodi installations receive the new pixels.[CR]- Preserve thin-strip typography and add bundled font/layout measurements to real focus diagnostics.</news>
+    <news>0.2.54[CR]- Recognize the exact amazon.ca and www.amazon.ca HTTPS hosts during native Amazon sign-in and Canadian security-image requests.[CR]- Preserve strict hostname, HTTPS, port, cookie and same-origin credential-submission rules for regional redirects.[CR]- Correlate sign-in requests and redirect chains with request IDs, stages, timings and explicit allow/block decisions without credential values.</news>
   </extension>
 </addon>
