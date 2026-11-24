@@ -21,7 +21,9 @@ def route(url):
         parts = urlsplit(url)
         segments = [s if s in ROUTE_WORDS else '#' + hashlib.sha256(s.encode()).hexdigest()[:8]
                     for s in parts.path.split('/') if s]
-        return {'host': parts.hostname, 'route': '/' + '/'.join(segments),
+        return {'host': parts.hostname, 'scheme':parts.scheme,'port':parts.port,
+                'has_userinfo':parts.username is not None or parts.password is not None,
+                'route': '/' + '/'.join(segments),
                 'query_keys': sorted(set(k for k, _ in parse_qsl(parts.query))),
                 'authorization_code_present': 'openid.oa2.authorization_code' in dict(parse_qsl(parts.query))}
     except ValueError:

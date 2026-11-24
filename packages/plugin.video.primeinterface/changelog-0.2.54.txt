@@ -1,0 +1,4 @@
+0.2.54
+- Recognize the exact amazon.ca and www.amazon.ca HTTPS hosts during native Amazon sign-in and Canadian security-image requests.
+- Preserve strict hostname, HTTPS, port, cookie and same-origin credential-submission rules for regional redirects.
+- Correlate sign-in requests and redirect chains with request IDs, stages, timings and explicit allow/block decisions without credential values.

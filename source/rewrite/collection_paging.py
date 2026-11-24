@@ -19,6 +19,7 @@ def identity(target):
 
 def valid_request(value):
     if not isinstance(value,dict) or value.get('kind')!='collection':return False
+    if value.get('scope') not in (None,'watching'):return False
     address=safe_url(value.get('address'),STOREFRONT_HOSTS)
     if not address or not re.fullmatch(r'(?:/region/[a-z]{2,4})?/api/paginateCollection',urlsplit(address).path):return False
     if urlsplit(address).query or not safe_url(value.get('source'),STOREFRONT_HOSTS):return False
@@ -33,14 +34,24 @@ def valid_request(value):
         and isinstance(payload.get('dynamicFeatures',[]),list)
         and all(isinstance(x,str) and len(x)<200 for x in payload.get('dynamicFeatures',[])))
 
-def discover(data,content_type,address,observe):
+def discover(data,content_type,address,observe,scope=None):
     from .detail_catalog import documents
     for document in documents(data,content_type,address):
         prep=(document.get('init') or {}).get('preparations') or {} if isinstance(document,dict) else {}
         body=prep.get('body') or {}
         containers=body.get('containers') or []
-        if len(containers)!=1 or containers[0].get('containerType')!='Grid':continue
-        grid=containers[0]
+        if scope=='watching':
+            from .home_catalog import is_progress_collection
+            candidates=[c for c in containers if is_progress_collection(c) and c.get('paginationServiceToken')]
+            observe({'event':'progress_continuation_inventory','stage':'collection_discovery',
+                'recognized_containers':sum(is_progress_collection(c) for c in containers),
+                'continuable_containers':len(candidates),'result':'success'})
+            if len(candidates)>1:raise PublicCatalogError('Amazon returned multiple In Progress continuations. Open Diagnostics.')
+            if not candidates:continue
+            grid=candidates[0]
+        else:
+            if len(containers)!=1 or containers[0].get('containerType')!='Grid':continue
+            grid=containers[0]
         if not grid.get('paginationServiceToken'):continue
         page=body.get('swiftPageParameters') or {}
         capability=((body.get('sitewide') or {}).get('sitewide-alexa') or {}).get('primeVideoCapability') or {}
@@ -60,6 +71,7 @@ def discover(data,content_type,address,observe):
             actionScheme='default',payloadScheme='default')
         if grid.get('journeyIngressContext'):payload['journeyIngressContext']=grid['journeyIngressContext']
         result={'kind':'collection','address':endpoint,'source':address,'payload':payload}
+        if scope=='watching':result['scope']='watching'
         if not valid_request(result):raise PublicCatalogError('Amazon returned an unsupported genre pagination structure. Open Diagnostics.')
         observe({'event':'collection_continuation_discovered','stage':'collection_discovery',
             'start_index':payload['startIndex'],'entity_count':len(grid.get('entities') or []),

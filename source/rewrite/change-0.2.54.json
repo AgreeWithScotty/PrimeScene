@@ -1,0 +1,79 @@
+{
+  "version": "0.2.54",
+  "sha256": "9bafa375cab34cb798743d7f12f80b0d56bcfac50921f05c94aee7a0cd4d0c8e",
+  "bytes": 4403386,
+  "files": 175,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/prime_signin.py"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "canadian_host_policy_and_real_report_evidence": {
+    "changed_runtime_files": [
+      "resources/lib/prime_signin.py"
+    ],
+    "other_runtime_files_byte_identical": 174,
+    "authentication_form_and_2fa_loop_ast_unchanged": true,
+    "security_policy_checks": {
+      "checks": [
+        "Published0.2.53 omitted amazon.ca",
+        "Accept exact HTTPS Canadian host: amazon.ca",
+        "Accept Canadian security-image host: amazon.ca",
+        "Accept exact HTTPS Canadian host: www.amazon.ca",
+        "Accept Canadian security-image host: www.amazon.ca",
+        "Reject unsafe URL shape 5",
+        "Reject unsafe URL shape 6",
+        "Reject unsafe URL shape 7",
+        "Reject unsafe URL shape 8",
+        "Reject unsafe URL shape 9",
+        "Reject unsafe URL shape 10",
+        "Reject unsafe URL shape 11",
+        "Reject unsafe URL shape 12",
+        "Reported GET302 can follow Canadian destination",
+        "Cross-origin headers stripped",
+        "Request correlation follows redirects",
+        "POST302 does not forward submission body",
+        "Cross-origin body replay blocked 307",
+        "Same-origin /ap/ body preservation 307",
+        "Manual authorization/cookie headers removed 307",
+        "Cross-origin body replay blocked 308",
+        "Same-origin /ap/ body preservation 308",
+        "Manual authorization/cookie headers removed 308",
+        "Redirect diagnostics classify allowed and blocked decisions"
+      ],
+      "passed": 24,
+      "network_requests": 0,
+      "private_login_verified": false,
+      "scope": "URL acceptance, header/body forwarding, correlation and security boundaries only. No provider login simulation."
+    },
+    "real_public_request_observation": {
+      "result": "public_page_unavailable",
+      "exception": {
+        "type": "SignInHTTPError",
+        "frames": [
+          {
+            "file": "observe_canada.py",
+            "line": 15,
+            "function": "<module>"
+          },
+          {
+            "file": "prime_signin.py",
+            "line": 450,
+            "function": "request_document"
+          }
+        ],
+        "status": 404,
+        "stage": "public_canadian_signin_page"
+      },
+      "credentials_or_codes_submitted": false,
+      "private_login_verified": false
+    },
+    "actual_request_log_correlation_confirmed": true,
+    "limits": "The reported Canadian hostname omission is confirmed in published source. The credential-free standalone Canadian /ap/signin request returned404; it was not an account login or the user-specific redirect. No private authentication, verification code or playback success was tested or claimed."
+  }
+}

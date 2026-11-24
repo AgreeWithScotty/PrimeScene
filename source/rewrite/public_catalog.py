@@ -25,7 +25,9 @@ ORIGIN = 'https://www.primevideo.com'
 # The broad /movie and /tv feeds also market rentals, channels and free-with-ads.
 PAGES = {'watching': '/storefront', 'home': '/storefront', 'movies': '/storefront/subscription/prime',
          'tv': '/storefront/subscription/prime', 'sports': '/sports', 'channels': '/addons', 'purchases': '/mystuff'}
-STOREFRONT_HOSTS = {'www.primevideo.com', 'primevideo.com', 'na.primevideo.com'}
+from .regional_hosts import (PRIME_WEB_HOSTS,CATALOG_NAV_HOSTS,storefront_sso,storefront_relay,
+    strip_redirect_headers,POLICY_REVISION,https_host)
+STOREFRONT_HOSTS = CATALOG_NAV_HOSTS
 IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
 MAX_PAGE_BYTES = 8 * 1024 * 1024
 MAX_JSON_NODES = 100000
@@ -42,7 +44,8 @@ def _protocol_shape(document):
                  'emptyState errorCode errorType entitlementCues offerClassification providerLogo '
                  'entitlementType offerType').split())
     known.update(('entities','hasMoreItems','startIndex','serviceToken','paginationServiceToken',
-        'paginationTargetId','paginationStartIndex','swiftPageParameters','primeVideoCapability'))
+        'paginationTargetId','paginationStartIndex','swiftPageParameters','primeVideoCapability',
+        'isContinueWatching','containerType','progress','percentage','resumeTime','playbackActions','runtime','entityType'))
     stack, result = [('$', document, 0)], []
     while stack and len(result) < 60:
         path, value, depth = stack.pop()
@@ -80,6 +83,7 @@ class Card:
     access_evidence: str = ''
     percentplayed: float = 0
     playcount: int = 0
+    resume_seconds: float = None
 
 
 @dataclass(frozen=True)
@@ -179,27 +183,35 @@ def _continuation_link(value, page_url):
 
 
 def _image(value, depth=0):
+    from .image_quality import declared_resolution
     if depth > 6:
         return ''
     if isinstance(value, str):
         return safe_url(value, IMAGE_HOSTS)
     if isinstance(value, dict):
+        candidates=[]
         for key in ('url', 'src', 'imageUrl', 'imageURL', 'packshot', 'poster',
                     'thumbnail', 'cover', 'wide', 'tall', 'square'):
             found = _image(value.get(key), depth + 1)
             if found:
-                return found
+                candidates.append((declared_resolution(found,value.get('width'),value.get('height')),found))
         # Image dimension/locale maps contain image values, never title-card subtrees.
         for child in value.values():
             if isinstance(child, str):
                 found = safe_url(child, IMAGE_HOSTS)
                 if found:
-                    return found
+                    candidates.append((declared_resolution(found),found))
+            elif isinstance(child,(dict,list)):
+                found=_image(child,depth+1)
+                if found:candidates.append((declared_resolution(found,child.get('width') if isinstance(child,dict) else None,child.get('height') if isinstance(child,dict) else None),found))
+        if candidates:return max(candidates,key=lambda candidate:candidate[0])[1]
     elif isinstance(value, list):
+        candidates=[]
         for child in value:
             found = _image(child, depth + 1)
             if found:
-                return found
+                candidates.append((declared_resolution(found,child.get('width') if isinstance(child,dict) else None,child.get('height') if isinstance(child,dict) else None),found))
+        if candidates:return max(candidates,key=lambda candidate:candidate[0])[1]
     return ''
 
 
@@ -227,6 +239,10 @@ def _shot_map(node):
 
 
 def _first_shot(shots, names):
+    if names and set(names).issubset({'heroshot','hero','fanart','background','backdrop'}):
+        from .image_quality import declared_resolution
+        candidates=[shots[name] for name in names if shots.get(name)]
+        return max(candidates,key=declared_resolution) if candidates else ''
     for name in names:
         if shots.get(name):
             return shots[name]
@@ -599,20 +615,20 @@ class StorefrontRedirect(HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         newurl = urljoin(req.full_url, newurl)
-        sso = safe_url(newurl, {'www.amazon.com', 'amazon.com'})
-        is_sso = bool(sso) and urlsplit(sso).path == '/ax/sso/redirect'
-        allowed = bool(safe_url(newurl, STOREFRONT_HOSTS)) or is_sso
-        _emit(self.observer, {'event': 'catalog_redirect', 'status': code,
-                              'from': route(req.full_url), 'to': route(newurl), 'allowed': allowed})
+        is_sso = storefront_sso(req.full_url,newurl,code,req.get_method(),req.data is not None)
+        is_relay=storefront_relay(req.full_url,newurl,code,req.get_method(),req.data is not None)
+        allowed = bool(https_host(newurl,PRIME_WEB_HOSTS)) or is_sso or is_relay
+        if code in (307,308) and req.data is not None and urlsplit(req.full_url).hostname!=urlsplit(newurl).hostname:
+            allowed=False
+        _emit(self.observer, {'event': 'catalog_redirect', 'stage':'storefront_redirect', 'status': code,
+                              'from': route(req.full_url), 'to': route(newurl), 'allowed': allowed,
+                              'policy_revision':POLICY_REVISION,'regional_sso':is_sso,'regional_relay':is_relay,
+                              'method':req.get_method(),'result':'allowed' if allowed else 'blocked'})
         if not allowed:
             raise PublicCatalogError('Prime Video redirected outside its storefront. The session may need sign-in again.')
         redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
         if redirected is not None:
-            for name in ('Cookie', 'Host', 'Authorization', 'Proxy-Authorization'):
-                redirected.remove_header(name.capitalize())
-            if urlsplit(req.full_url).hostname != urlsplit(newurl).hostname:
-                for name in ('Referer', 'Origin'):
-                    redirected.remove_header(name)
+            strip_redirect_headers(redirected)
         return redirected
 
 
@@ -720,7 +736,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                              'server_date':response.headers.get('Date'),
                              'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid'),
                              'elapsed_ms': round((perf_counter() - started) * 1000)})
-            if not safe_url(final_url, STOREFRONT_HOSTS):
+            if not https_host(final_url,PRIME_WEB_HOSTS):
                 raise PublicCatalogError('Prime Video did not return to its storefront.')
             stage = 'read_response'
             body_started=perf_counter()
@@ -745,7 +761,14 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 return fetch_page(page,opener=opener,continuation=scoped,observer=observer,_library_depth=_library_depth+1)
             _emit(observer,{'event':'genre_section_link_unavailable','stage':'genre_scope','section':page,
                 'fallback':'typed_prime_filtered_genre_page','result':'unavailable'})
-        if page == 'watching':
+        if page == 'watching' and collection:
+            if continuation.get('scope')!='watching':
+                raise PublicCatalogError('The In Progress continuation has no confirmed watch-history scope.')
+            result, details = _read_page(data,content_type,final_url)
+            next_request=collection_paging.advance(continuation,data,content_type,observer)
+            result=replace(result,next_request=next_request,empty_confirmed=not result.cards and next_request is None)
+            details.update(history_confirmed=True,progress_continuation=True)
+        elif page == 'watching':
             from .home_catalog import read_home
             try:
                 result, details = read_home(data, content_type, final_url, observer)
@@ -755,6 +778,8 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                     'protocol_structure':_protocol_shape(json.loads(data)) if content_type.endswith('json') else
                         {'format':'html','json_script_count':data.count('application/json')}})
                 raise
+            next_request=collection_paging.discover(data,content_type,final_url,observer,scope='watching')
+            if next_request:result=replace(result,next_request=next_request,empty_confirmed=False)
         elif page == 'purchases':
             from .purchases_catalog import read_library
             result, details, library_link = read_library(data, content_type, final_url,

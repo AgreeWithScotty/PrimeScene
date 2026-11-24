@@ -26,8 +26,9 @@ from .interface_diagnostics import record
 from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
+from .image_quality import source_image
 from .description_cache import DescriptionCache
-from .card_presentation import viewing_label, duration_seconds
+from .card_presentation import viewing_label, duration_seconds, position_seconds, progress_label, progress as progress_percent
 from .prime_diagnostics import DiagnosticLog, exception_details, route
 
 _BACK = (9, 10, 92)
@@ -45,14 +46,13 @@ ADDON_ID = 'plugin.video.primeinterface'
 # Estuary always ships Home.xml, so that name loads the skin window. These
 # names are not skin windows, so the add-on files are the ones that open.
 _HOME_XML = 'PrimeSceneHome.xml'
-# Amazon's public image service. A width suffix keeps the texture cache on a
-# predictable file instead of the full master.
+# Cards use a small delivery variant; full-screen backgrounds use the master.
 _AMAZON_IMAGE = compile_re(
     r'^(https://(?:m\.media-amazon\.com|images-na\.ssl-images-amazon\.com)/images/.+?)'
     r'(?:\._[^./]+_)?(\.(?:jpe?g|png|webp))$',
     IGNORECASE)
 _CARD_ART = 720
-_HERO_ART = 1920
+_HERO_ART = None
 _DESCRIPTION_AHEAD = 10
 _DESCRIPTION_BEHIND = 2
 _BACKDROP_AHEAD = 2
@@ -63,13 +63,7 @@ def _http(value):
 
 
 def _progress(info):
-    raw = (info or {}).get('percentplayed')
-    if raw in (None, ''):
-        raw = (info or {}).get('progress') or 0
-    try:
-        return max(0, min(100, int(raw)))
-    except (TypeError, ValueError):
-        return 0
+    return int(progress_percent(info or {}))
 
 
 def _kind(info):
@@ -287,6 +281,8 @@ def _fit_art(url, width):
     url = _http(url)
     if not url:
         return ''
+    if width is None:
+        return source_image(url)
     base, _, query = url.partition('?')
     match = _AMAZON_IMAGE.match(base)
     if not match:
@@ -404,11 +400,12 @@ def _item(row, title_art='', image_cache=None, report=None):
     item.setProperty('Meta', meta)
     item.setProperty('Watched', '%s%% WATCHED' % _progress(info) if _progress(info) else meta)
     item.setProperty('ViewingLabel',viewing_label(info))
+    item.setProperty('ProgressLabel',clean(progress_label(info) or viewing_label(info)))
     card_bits=[]
     if _kind(info)=='episode':card_bits.append('S%sE%s'%(str(info.get('season') or 0).zfill(2),str(info.get('episode') or 0).zfill(2)))
     elif _kind(info)=='season' and info.get('season') is not None:card_bits.append('Season '+str(info['season']))
     elif _year_label(info):card_bits.append(_year_label(info))
-    secondary=viewing_label(info) or _runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
+    secondary=_runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
     if secondary:card_bits.append(secondary)
     item.setProperty('CardMeta',clean('  ·  '.join(card_bits)))
     item.setProperty('Plot', plot)
@@ -426,8 +423,9 @@ def _item(row, title_art='', image_cache=None, report=None):
         tag = item.getVideoInfoTag()
         progress = _progress(info)
         if hasattr(tag, 'setResumePoint'):
-            total=duration_seconds(info) or 100
-            tag.setResumePoint(total*progress/100,total)
+            known_total=duration_seconds(info);total=known_total or 100
+            position=position_seconds(info) if known_total else progress
+            tag.setResumePoint(position if position is not None else total*progress/100,total)
         if title and hasattr(tag, 'setTitle'):
             tag.setTitle(title)
         if plot and hasattr(tag, 'setPlot'):
@@ -605,6 +603,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.artwork = set()
         self.account_generation = None
         self._ready = False
+        self._signed_out_view = False
         self._progress_refresh_generation = None
         self._restore = None
         self.detail_jobs = Queue()
@@ -614,6 +613,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.genre_jobs = Queue()
         self.preloaded_catalogs = Queue(maxsize=4)
         self._genre_focus = None
+        self._genre_panel_reported = None
         self._genre_selection = None
         self.genre_cache = {}
         self.genre_requested = set()
@@ -629,6 +629,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self._allow_enrich = True
         self.loader = None
         self.image_cache = None
+        self.genre_image_cache=None;self.genre_backdrops=None
+        self._startup=None;self._genre_discovery='pending';self._genre_warm_signature=None
         self.visual_worker = None
         self.items, self.row_keys = [], set()
         self.views, self.known_details, self.title_cache = {}, {}, {}
@@ -654,6 +656,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.account_monitor = _AccountMonitor(self)
         self.performance = DiagnosticLog(self.g.DATA_PATH, self.g.addon.getAddonInfo('version'),
                                          operation='interface_performance')
+        self.setProperty('StartupSplash','1')
 
     def onInit(self):
         if self._ready:
@@ -703,10 +706,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._reactivation_ready.set()
                 return
         if self.genre_owner is not None and self.getProperty('GenrePanel'):
-            owner=self.genre_owner;selected=self.getControl(410).getSelectedPosition()
+            owner=self.genre_owner;selected=self._browse_list().getSelectedPosition()
             self._genre_rows=[]
             self._populate_genres({301:'movies',302:'tv',303:'extras'}[owner])
-            self.getControl(410).selectItem(max(0,selected));self.setFocusId(owner)
+            self._browse_list().selectItem(max(0,selected));self.setFocusId(owner)
             self.performance({'event':'browse_grid_controls_restored','stage':stage,'owner':owner,
                 'tiles':len(self._genre_rows),'result':'success'})
             self._reactivation_ready.set()
@@ -785,6 +788,7 @@ class AuroraHome(xbmcgui.WindowXML):
             return
         if self.worker is not None:
             return
+        self._signed_out_view = False
         if self.account_name is not None:
             from .account_state import account_epoch
             self.account_generation = account_epoch(self.g.DATA_PATH)
@@ -807,13 +811,19 @@ class AuroraHome(xbmcgui.WindowXML):
         self.play_worker = Thread(target=self._play_loop, name='PrimeTitleActions', daemon=True)
         self.visual_worker = Thread(target=self._visual_loop, name='PrimeVisuals', daemon=True)
         self.genre_worker = Thread(target=self._genre_loop,name='PrimeGenres',daemon=True)
+        self._startup={'started':monotonic(),'signature':None,'bound_at':None}
+        self._genre_discovery='pending';self._genre_warm_signature=None;self.setProperty('StartupSplash','1');self.setProperty('StartupNotice','')
+        self.setProperty('GenreEntryFocus','1')
         self._show_genres(301,focus_grid=False)
         self.setFocusId(301)
         self.performance({'event':'startup_focus','control_id':301,'actual_control':self.getFocusId(),
             'initial_view':'movie_genres','catalog_pages_requested':0,'result':'success' if self.getFocusId()==301 else 'failure'})
         self.performance({'event':'interface_configuration','stage':'presentation',
             'content_columns':4,'content_rows':1,'content_flow':'horizontal_fixedlist','content_card_ratio':'16:9','base_background':'000000',
-            'genre_artwork':'provider_navigation_preferred','genre_layout':'wide_horizontal_carousel',
+            'genre_artwork':'preloaded_amazon_title_backdrops','genre_layout':'expanding_cinematic_planes',
+            'startup_splash_min_seconds':3,'startup_artwork_notice_after_seconds':25,'bundled_genre_backgrounds':False,
+            'presentation_revision':'genre-preload-splash-v1','genre_artwork_metadata_pages_per_genre':1,
+            'genre_plane_width':1600,'genre_edge_plane_width':1760,'genre_spine_width':160,'genre_transition_ms':320,
             'genre_preview_first_pages':2,'genre_preview_lane':'separate_from_startup_pagination',
             'native_binding_retained_when_confirmed':True,'result':'success'})
         self.worker.start()
@@ -832,6 +842,9 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else 'Sign out' if name else 'Sign in')
 
     def show_signed_out(self):
+        self._startup=None;self.setProperty('StartupSplash','')
+        self._genre_warm_signature=None;self._genre_panel_reported=None;self.artwork.clear()
+        self._signed_out_view = True
         self._cancel_genre_selection('account_changed')
         self.setProperty('NavigationBackdrop','')
         from .display_text import reset_account_observations
@@ -887,6 +900,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroTitleArt',plate)
 
     def pause_catalog(self, status='Signing out...'):
+        self._startup=None;self.setProperty('StartupSplash','')
+        self._genre_warm_signature=None;self._genre_panel_reported=None;self.artwork.clear()
         self._cancel_genre_selection('account_changed')
         self.setProperty('NavigationBackdrop','')
         from .display_text import reset_account_observations
@@ -1172,7 +1187,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('SectionNotice','')
         # Kodi cannot focus an empty list. Park on this section's selector
         # before clearing it, then focus the new cards when they arrive.
-        if not refreshing_progress and self.getFocusId() in (200,410):
+        if not refreshing_progress and self.getFocusId() in (200,410,415):
             self._focus_first_generation=token
             self.setFocusId(self._menu_control())
         self._section_label()
@@ -1252,7 +1267,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
         self.jobs.put((token, path, query, selection))
 
-    def _personal_ready(self,token,path,loader,future):
+    def _personal_ready(self,token,path,loader,future,page_path=None,visited=()):
+        page_path=page_path or path;continued=False
         try:
             if self.stop.is_set() or token!=self.generation:
                 self.performance({'event':'personal_result_discarded','stage':'direct_personal_request',
@@ -1260,15 +1276,30 @@ class AuroraHome(xbmcgui.WindowXML):
             packet=future.result()
             if packet is None:raise RuntimeError('The personal list ended without a provider result')
             self._publish(token,packet)
+            if path=='__watching__' and packet.get('next'):
+                next_page=packet['next']
+                if next_page in visited or next_page==page_path or len(visited)>=99:
+                    raise RuntimeError('The In Progress continuation repeated or exceeded its page limit')
+                if self.stop.is_set() or token!=self.generation:return
+                next_future=loader.request(next_page)
+                continued=True
+                next_future.add_done_callback(lambda result:self._personal_ready(token,path,loader,result,
+                    next_page,visited+(page_path,)))
+                self.performance({'event':'progress_next_batch_requested','stage':'fresh_history_paging',
+                    'generation':token,'page_number':len(visited)+2,'cards_visible':len(self.rows),
+                    'user_scroll_required':False,'result':'started'})
             with self.lock:
                 if token!=self.generation or self.stop.is_set():return
-                if not self.rows and not self.next_path:self._display_category_state()
+                if not self.rows and not self.next_path and not continued:self._display_category_state()
             self.performance({'event':'personal_screen_ready','stage':'direct_personal_request',
                 'section':self.nav,'generation':token,'cards':len(self.rows),
-                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
+                'page_number':len(visited)+1,'history_complete':path=='__watching__' and not continued,
+                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),
+                'result':'partial' if continued else 'success'})
         except Exception as error:
             self.performance({'event':'personal_request_failed','stage':'direct_personal_request',
-                'generation':token,'exception':exception_details(error),'result':'failure'})
+                'generation':token,'page_number':len(visited)+1,'cards_retained':len(self.rows),
+                'exception':exception_details(error),'result':'failure'})
             with self.lock:
                 if token==self.generation and not self.stop.is_set():
                     if not self.rows:
@@ -1278,12 +1309,13 @@ class AuroraHome(xbmcgui.WindowXML):
                         'Your Amazon session needs verification. Use Sign out, then sign in again.' if isinstance(error,CatalogSigninRequired) else
                         'Your In Progress list could not be refreshed. Select In Progress to try again.')
                     self._progress_refresh_generation=None
-                    if path=='__watching__':self._pending_progress_return=None
+                    if path=='__watching__':
+                        self._pending_progress_return=None;self.next_path=None
                     self.setProperty('ProgressRefreshing','')
         finally:
-            if path=='__watching__':loader.release(path,future)
+            if path=='__watching__':loader.release(page_path,future)
             with self.lock:
-                if token==self.generation:
+                if token==self.generation and not continued:
                     self.busy=False;self.pending_path=None
 
     def _selected_index(self):
@@ -1311,6 +1343,7 @@ class AuroraHome(xbmcgui.WindowXML):
         # WINDOW_INIT and clearing/hiding a native container also produce focus
         # callbacks. Only input actions may turn menu focus into navigation.
         if control_id in (301,302,303,304,305,306,308,309):
+            self.setProperty('GenreEntryFocus','1')
             self.performance({'event':'menu_focus_observed','stage':'native_focus',
                 'control_id':control_id,'generation':self.generation,'section':self.nav,
                 'navigation_dispatched':False,'result':'observed'})
@@ -1448,10 +1481,11 @@ class AuroraHome(xbmcgui.WindowXML):
                 if key in keys:
                     old=keys.index(key);existing=items[old]
                     existing.setLabel(item.getLabel())
-                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
+                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','ProgressLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
                         existing.setProperty(prop,item.getProperty(prop))
-                    values=row.get('info') or {};total=duration_seconds(values) or 100
-                    try:existing.getVideoInfoTag().setResumePoint(total*_progress(values)/100,total)
+                    values=row.get('info') or {};known_total=duration_seconds(values);total=known_total or 100
+                    position=position_seconds(values) if known_total else _progress(values)
+                    try:existing.getVideoInfoTag().setResumePoint(position if position is not None else total*_progress(values)/100,total)
                     except Exception as error:self.performance({'event':'progress_indicator_update_failed','stage':'in_place_refresh',
                         'exception':exception_details(error),'result':'failure'})
                     existing.setArt({name:item.getArt(name) for name in ('thumb','landscape','poster','icon','fanart') if item.getArt(name)})
@@ -1489,20 +1523,26 @@ class AuroraHome(xbmcgui.WindowXML):
             self.metadata_bridge = CatalogGateway(self.g)
             self.loader = StorefrontLoader(self.g,ready=self._catalog_preload_ready)
             self.image_cache = ImageCache(self.g, self.loader.epoch)
+            self.genre_image_cache=ImageCache(self.g,self.loader.epoch,genre=True)
+            from .genre_backdrops import GenreBackdrops
+            self.genre_backdrops=GenreBackdrops(self.g,self.loader.epoch)
             self.description_cache = DescriptionCache(self.g, self.loader.epoch, self.performance)
             self.loader.preload_startup()
             record(self.g, 'catalog_worker_ready')
             self._catalog_loop(bridge)
         except Exception as error:
             record(self.g, 'provider_init_failed', error)
+            self._startup=None;self.setProperty('StartupSplash','')
             if not self.stop.is_set():
                 self._set_hero_status('SMOOTH PRIME', 'COULD NOT OPEN THE CATALOG. YOUR SIGN-IN IS SAVED.')
             self.busy = False
             self.stop.set()
         finally:
             self.stop.set()
+            if self.genre_backdrops is not None:self.genre_backdrops.close()
             if self.loader is not None:
                 self.loader.close()
+            if self.genre_image_cache is not None:self.genre_image_cache.close()
             if self.image_cache is not None:
                 self.image_cache.close()
 
@@ -1851,8 +1891,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 'exception':exception_details(error),'result':'failure'})
             if self.genre_owner is not None:
                 try:
+                    self._warm_genre_backdrops()
                     self._preload_grid_focus()
                     self._refresh_tile_art()
+                    self._advance_startup()
                 except Exception as error:self.performance({'event':'browse_tile_art_failed','stage':'tile_artwork','exception':exception_details(error),'result':'failure'})
                 self.stop.wait(.1)
                 continue
@@ -1914,6 +1956,7 @@ class AuroraHome(xbmcgui.WindowXML):
                             self._reported_background_signature=signature
                             self.performance({'event':'background_artwork_selected','stage':'hero_binding',
                                 'generation':token,'index':position,'requested_width':_HERO_ART,
+                                'resolution_policy':'provider_original_master','artificial_width_cap':False,
                                 'source':'provider_heroshot' if info.get('fanart') else 'cover_preview',
                                 'address':route(hero) if hero else None,'local_cache_used':bool(local and local!=hero),
                                 'result':'success' if hero else 'unavailable'})
@@ -1960,6 +2003,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'prepare_elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
 
     def _preload_grid_focus(self):
+        self._observe_genre_panel()
         self._dispatch_genre_selection()
         if self.loader is None or self.genre_owner not in (301,302):return
         index=self.getControl(410).getSelectedPosition()
@@ -1972,6 +2016,65 @@ class AuroraHome(xbmcgui.WindowXML):
         if now-self._genre_focus[1]>=.1:
             adjacent=tuple(row['path'] for row in self._genre_rows[index+1:index+2])
             self.loader.preload_focus(path,adjacent)
+
+    def _warm_genre_backdrops(self):
+        gallery,cache=self.genre_backdrops,self.genre_image_cache
+        if gallery is None or cache is None or self._genre_discovery!='complete':return
+        with self.lock:rows=list(self.genre_cache.get('movies',[]))
+        gallery.request(rows)
+        priority=[];remaining=[]
+        for section in ('movies','tv'):
+            for index,row in enumerate(rows):
+                image=gallery.image(section,row['address'])
+                if image:(priority if index<3 else remaining).append(image)
+        signature=tuple(dict.fromkeys(priority))
+        cache.warm(priority,priority=signature!=self._genre_warm_signature)
+        self._genre_warm_signature=signature;cache.warm(remaining)
+        for image in dict.fromkeys(priority+remaining):
+            local=cache.local(image)
+            if local!=image:
+                cache.dimensions(image)
+                self._track_tile_art(image);self._track_tile_art(local)
+
+    def _advance_startup(self):
+        startup=self._startup
+        if startup is None:return
+        now=monotonic();elapsed=now-startup['started'];required=ready=pending=unavailable=0
+        gallery,cache=self.genre_backdrops,self.genre_image_cache
+        if self._genre_discovery=='complete' and gallery is not None and cache is not None:
+            for section in ('movies','tv'):
+                for row in self.genre_cache.get(section,[])[:3]:
+                    required+=1;address=row['address'];image=gallery.image(section,address)
+                    if gallery.pending(address):pending+=1
+                    elif not image:unavailable+=1
+                    elif cache.local(image)==image:pending+=1
+                    else:ready+=1
+        else:pending=1
+        signature=(self._genre_discovery,required,ready,pending,unavailable)
+        if signature!=startup['signature']:
+            startup['signature']=signature
+            self.performance({'event':'startup_artwork_progress','stage':'startup_preload','discovery':signature[0],
+                'visible_images_required':required,'visible_images_ready':ready,'pending':pending,'unavailable':unavailable,
+                'elapsed_ms':round(elapsed*1000),'result':'preparing'})
+        complete=self._genre_discovery=='complete' and required>0 and pending==0 and unavailable==0
+        if complete and startup['bound_at'] is None:startup['bound_at']=now
+        if not complete:startup['bound_at']=None
+        settled=complete and now-startup['bound_at']>=.2
+        failed=self._genre_discovery=='failed'
+        if (failed or unavailable or elapsed>=25) and not startup.get('unavailable_reported'):
+            startup['unavailable_reported']=True
+            self.setProperty('StartupNotice','Prime Video artwork could not be prepared yet. Press Back to return to Kodi.')
+            self.performance({'event':'startup_artwork_unavailable','stage':'startup_preload','elapsed_ms':round(elapsed*1000),
+                'visible_images_required':required,'visible_images_ready':ready,'pending':pending,'unavailable':unavailable,
+                'discovery':self._genre_discovery,'exit_available':True,'result':'failure' if failed or unavailable else 'pending'})
+        if elapsed<3 or not settled:return
+        if self._startup is not startup:return
+        result='success' if settled and not unavailable else 'partial' if ready else 'failure'
+        self._startup=None;self.setFocusId(301);self.setProperty('StartupSplash','');self.setProperty('StartupNotice','')
+        self.performance({'event':'startup_splash_released','stage':'startup_preload','elapsed_ms':round(elapsed*1000),
+            'visible_images_required':required,'visible_images_ready':ready,'unavailable':unavailable,
+            'pending':pending,'minimum_display_seconds':3,
+            'backgrounds_bundled':False,'selected_control':self.getFocusId(),'result':result})
 
     def _detail_loop(self):
         while not self.stop.is_set():
@@ -2232,6 +2335,7 @@ class AuroraHome(xbmcgui.WindowXML):
             refreshed=_item(painted,image_cache=self.image_cache,report=self.performance)
             item.setProperty('CardMeta',refreshed.getProperty('CardMeta'))
             item.setProperty('ViewingLabel',refreshed.getProperty('ViewingLabel'))
+            item.setProperty('ProgressLabel',refreshed.getProperty('ProgressLabel'))
             item.setProperty('Meta', _meta(painted))
             item.setProperty('Plot', _plain(current.get('plot') or ''))
             item.setProperty('Year', _year_label(current))
@@ -2358,16 +2462,19 @@ class AuroraHome(xbmcgui.WindowXML):
         if focus_cards:self._focus_first_card()
 
     def _show_genres(self,owner,focus_grid=True):
+        self.setProperty('GenreEntryFocus','1')
         self._cancel_genre_selection('menu_selected')
         self.setProperty('NavigationBackdrop','')
         if self.account_name is not None and not self.account_name():return
         self._dismiss_pending_playback_refresh()
         if owner==303 and self._service_future is False:
             self._service_future=None
-        if self.genre_owner==owner and self.getProperty('GenrePanel'):
-            if focus_grid:self.setFocusId(410)
-            return
         section={301:'movies',302:'tv',303:'extras'}[owner]
+        if section!='extras' and section not in self.genre_requested:
+            self.genre_requested.add(section);self.genre_jobs.put(section)
+        if self.genre_owner==owner and self.getProperty('GenrePanel'):
+            if focus_grid:self.setFocusId(self._browse_control_id())
+            return
         with self.lock:
             self._save_view()
             self.generation+=1
@@ -2389,7 +2496,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('GenreHeading',{'movies':'Movie genres','tv':'TV genres','extras':'Extras'}[section])
         self.setProperty('GenrePanel','1')
         self._populate_genres(section)
-        if focus_grid:self.setFocusId(410)
+        if focus_grid:self.setFocusId(self._browse_control_id())
         if section!='extras' and section not in self.genre_requested:
             self.genre_requested.add(section);self.genre_jobs.put(section)
         self.performance({'event':'browse_grid_opened','section':section,'tiles':len(self._genre_rows),
@@ -2397,9 +2504,10 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _populate_genres(self,section):
         from .browse_tiles import genres,extras
+        from .genre_type import assets as genre_type
         with self.lock:
             if self.genre_owner!={'movies':301,'tv':302,'extras':303}[section]:return
-            listing=self.getControl(410);selected=max(0,listing.getSelectedPosition())
+            listing=self._browse_list();selected=max(0,listing.getSelectedPosition())
             title=self._genre_rows[selected]['title'] if selected<len(self._genre_rows) else None
             rows=extras(self.service_rows) if section=='extras' else genres(section,self.genre_cache.get(section,[]))
             if rows==self._genre_rows:return
@@ -2417,16 +2525,64 @@ class AuroraHome(xbmcgui.WindowXML):
             for row in rows:
                 item=xbmcgui.ListItem(label=clean(row['title']))
                 artwork=row.get('artwork') or self._tile_art.get(row['path'],'')
+                if section!='extras' and self.genre_backdrops is not None and self.genre_image_cache is not None:
+                    address=row.get('address') or next((r['address'] for r in self.genre_cache.get(section,[])
+                        if self.genre_backdrops.image(section,r['address'])),None)
+                    source=self.genre_backdrops.image(section,address) if address else ''
+                    cached=self.genre_image_cache.local(source) if source else ''
+                    if cached and cached!=source:
+                        artwork=cached;row.update(artwork=source,artwork_source='provider_title_backdrop')
                 if artwork:
                     fitted=_fit_art(artwork,_CARD_ART) if artwork.startswith('https://') else artwork
                     item.setArt({'thumb':self.image_cache.local(fitted) if self.image_cache else fitted,
                         'fanart':_fit_art(artwork,_HERO_ART) if artwork.startswith('https://') else artwork})
+                    if section!='extras' and not artwork.startswith('https://'):item.setProperty('TileArt',artwork)
                 item.setProperty('GridLabel',clean(row.get('grid_label') or (row['title'] if not artwork else '')))
+                if section!='extras':
+                    typography=genre_type(row['title'])
+                    item.setProperty('PanelKey',row['title'])
+                    item.setProperty('PanelTitle',typography.get('title',''))
+                    item.setProperty('PanelSpine',typography.get('spine',''))
                 item.setProperty('Caption',clean(row['caption']));items.append(item)
                 self._tile_items[row['path']]=item
             listing.reset();listing.addItems(items);listing.selectItem(selected)
             self.performance({'event':'browse_grid_updated','section':section,'tiles':len(rows),
                 'selection_preserved':bool(title and rows[selected]['title']==title),'result':'success'})
+
+    def _browse_control_id(self):
+        return 415 if self.genre_owner==303 else 410
+
+    def _browse_list(self):
+        return self.getControl(self._browse_control_id())
+
+    def _observe_genre_panel(self):
+        if self.genre_owner not in (301,302) or not self.getProperty('GenrePanel'):return
+        from .genre_type import layout as genre_type_layout
+        listing=self.getControl(410);index=listing.getSelectedPosition()
+        row=self._genre_rows[index] if 0<=index<len(self._genre_rows) else {}
+        item=self._tile_items.get(row.get('path'))
+        dimensions=self.genre_image_cache.metadata.get(row.get('artwork')) if self.genre_image_cache else None
+        signature=(self.generation,self.genre_owner,index,len(self._genre_rows),
+            self.getFocusId(),xbmc.getInfoLabel('Container(410).NumItems'),
+            bool(item and item.getProperty('TileArt')),tuple(dimensions or ()))
+        if signature==self._genre_panel_reported:return
+        previous=self._genre_panel_reported;self._genre_panel_reported=signature
+        self.performance({'event':'genre_plane_focus','stage':'native_genre_presentation',
+            'generation':self.generation,'section':self.nav,'selected_index':index,
+            'previous_index':previous[2] if previous and previous[:2]==signature[:2] else None,
+            'native_items':signature[5],
+            'focused_control':signature[4],'previous_spine':index>0,
+            'next_spine':index+1<len(self._genre_rows),
+            'configured_plane_width':1760 if index in (0,len(self._genre_rows)-1) else 1600,
+            'configured_spine_width':160,'configured_transition_ms':320,
+            'configured_title_width':1440,'configured_title_height':600,
+            'configured_typography':genre_type_layout(),'title_inherits_edge_stretch':False,
+            'entry_animation_suppressed':bool(self.getProperty('GenreEntryFocus')),
+            'background_pixel_dimensions':dimensions,'background_source':'provider_title_backdrop',
+            'title_bound':bool(item and item.getProperty('PanelTitle')),
+            'spine_title_bound':bool(item and item.getProperty('PanelSpine')),
+            'image_bound':bool(item and item.getArt('fanart')),
+            'catalog_request_for_presentation':False,'result':'configured'})
 
     def _hide_genres(self,restore=True):
         self._cancel_genre_selection('chooser_closed')
@@ -2436,7 +2592,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _choose_genre(self):
         if self.genre_owner not in (301,302,303):return
         owner=self.genre_owner;section={301:'movies',302:'tv',303:'extras'}[owner]
-        index=self.getControl(410).getSelectedPosition()
+        index=self._browse_list().getSelectedPosition()
         if not 0<=index<len(self._genre_rows):return
         row=self._genre_rows[index]
         if section=='extras':path=row['path']
@@ -2503,7 +2659,7 @@ class AuroraHome(xbmcgui.WindowXML):
         with self.lock:
             if (self._genre_selection is not pending or self.stop.is_set() or pending['generation']!=self.generation
                     or pending['owner']!=self.genre_owner):return
-            if self.getControl(410).getSelectedPosition()!=pending['index']:
+            if self._browse_list().getSelectedPosition()!=pending['index']:
                 self._cancel_genre_selection('focus_changed');return
             self._genre_selection=None
             row=pending['row'];self._hide_genres(restore=False)
@@ -2528,29 +2684,47 @@ class AuroraHome(xbmcgui.WindowXML):
         loader=self.loader
         if loader is None or not loader.current():return
         owner=self.genre_owner
-        if owner==303 and not self.service_rows:
+        if owner in (301,302):self._observe_genre_panel()
+        if owner==303:
             if self._service_future is None:self._service_future=loader.request('__service_directory__')
             future=self._service_future
-            if future is not False and future.done():
+            if future is not False:
                 try:
-                    packet=future.result()
+                    finished=future.done()
+                    packet=loader.peek('__service_directory__');failure=None
+                    if finished:
+                        try:packet=future.result() or packet
+                        except Exception as error:failure=error
                     if self.stop.is_set() or not loader.current():return
-                    self.service_rows=list((packet or {}).get('tiles') or [])
-                    if not self.service_rows:
+                    rows=list((packet or {}).get('tiles') or [])
+                    if rows!=self.service_rows and (rows or (packet or {}).get('empty_confirmed')):
+                        self.service_rows=rows
+                        if self.genre_owner==303:self._populate_genres('extras')
+                        self.setProperty('GenreMessage','')
+                        self.performance({'event':'service_grid_batch_displayed','stage':'service_directory',
+                            'services':len(rows),'request_finished':finished,
+                            'complete':bool(packet.get('directory_complete')),
+                            'subscription_filter_applied':False,'result':'displayed'})
+                    if finished:
+                        self._service_future=False
+                    if failure is not None:raise failure
+                    if finished and not rows:
                         if not (packet or {}).get('empty_confirmed'):raise RuntimeError('The service directory returned no service tiles')
                         from .browse_status import category_status
-                        self._service_future=False
                         self.setProperty('GenreMessage',category_status('extras','__service_directory__')['message'])
                         self.performance({'event':'service_directory_empty','stage':'category_message','empty_confirmed':True,'result':'empty'})
                         return
-                    if self.genre_owner==303:self._populate_genres('extras')
-                    self.performance({'event':'service_grid_ready','stage':'service_directory','services':len(self.service_rows),
-                        'subscription_filter_applied':False,'complete':packet.get('directory_complete'),'result':'success'})
+                    if finished and rows:
+                        self.performance({'event':'service_grid_ready','stage':'service_directory','services':len(rows),
+                            'subscription_filter_applied':False,'complete':packet.get('directory_complete'),
+                            'result':'success' if packet.get('directory_complete') else 'partial'})
                 except Exception as error:
                     self._service_future=False
                     from .browse_status import category_status
-                    self.setProperty('GenreMessage',category_status('extras','__service_directory__',unavailable=True)['message'])
-                    self.performance({'event':'service_grid_failed','stage':'service_directory','exception':exception_details(error),'result':'failure'})
+                    self.setProperty('GenreMessage','Some services could not be retrieved. Reopen Extras to retry.' if self.service_rows else
+                        category_status('extras','__service_directory__',unavailable=True)['message'])
+                    self.performance({'event':'service_grid_failed','stage':'service_directory',
+                        'displayed_services_retained':len(self.service_rows),'exception':exception_details(error),'result':'failure'})
         if owner!=self.genre_owner or self.stop.is_set():return
         # Both navigation genres and services already carry artwork. Kodi's
         # background texture loader owns downloads/cache. Do not duplicate them
@@ -2559,11 +2733,27 @@ class AuroraHome(xbmcgui.WindowXML):
         for row in list(self._genre_rows):
             if owner!=self.genre_owner or self.stop.is_set():return
             path=row['path'];item=self._tile_items.get(path);artwork=row.get('artwork')
-            if owner in (301,302) and not row.get('address'):
-                packet=loader.peek(path) or {}
-                first=next((entry.get('info') or {} for entry in packet.get('rows') or [] if _rail_art(entry.get('info') or {})),{})
-                artwork=_rail_art(first) or artwork
-                if artwork:row.update(artwork=artwork,artwork_source='catalog_preload')
+            if owner in (301,302):
+                gallery,cache=self.genre_backdrops,self.genre_image_cache
+                if gallery is None or cache is None or item is None:continue
+                section='movies' if owner==301 else 'tv'
+                address=row.get('address')
+                if not address:
+                    address=next((r['address'] for r in self.genre_cache.get(section,[]) if gallery.image(section,r['address'])),None)
+                artwork=gallery.image(section,address) if address else ''
+                if not artwork:continue
+                original=source_image(artwork);local=cache.local(original)
+                if local==original:continue
+                row.update(artwork=original,artwork_source='provider_title_backdrop')
+                if item.getProperty('TileArt')!=local:
+                    item.setArt({'thumb':local,'fanart':local});item.setProperty('TileArt',local);updated+=1
+                    self._tile_art[path]=original;self._track_tile_art(original);self._track_tile_art(local)
+                    dimensions=cache.dimensions(original)
+                    self.performance({'event':'genre_backdrop_bound','stage':'genre_artwork','section':section,
+                        'genre':row['title'],'source':route(original),'pixel_dimensions':dimensions,
+                        'original_source':True,'cover_fallback_used':False,'bound_to_local_original':True,
+                        'native_upscaling_needed':bool(dimensions and dimensions[0]<1920),'result':'success'})
+                continue
             if item is None or not artwork:continue
             if self._tile_art.get(path)!=artwork:
                 self._tile_art[path]=artwork;self._track_tile_art(artwork)
@@ -2573,8 +2763,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 backdrop=_fit_art(artwork,_HERO_ART) if artwork.startswith('https://') else artwork
                 item.setArt({'thumb':fitted,'fanart':backdrop});item.setProperty('TileArt',fitted);updated+=1
         if updated:self.performance({'event':'navigation_artwork_bound','stage':'tile_artwork','section':self.nav,
-            'tiles_updated':updated,'source':'provider_navigation_with_bundled_fallback' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
-            'image_loader':'kodi_background_texture_cache','result':'success'})
+            'tiles_updated':updated,'source':'preloaded_amazon_title_backdrop' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
+            'resolution_policy':'provider_original_master','artificial_width_cap':False,
+            'image_loader':'account_scoped_original_cache' if owner in (301,302) else 'kodi_background_texture_cache','result':'success'})
 
     def _genre_loop(self):
         from .genre_catalog import discover
@@ -2584,6 +2775,7 @@ class AuroraHome(xbmcgui.WindowXML):
             except Empty:continue
             report=gateway._observe(lambda:not self.stop.is_set())
             try:
+                self._genre_discovery='loading'
                 if snapshot is None or monotonic()-received>900:
                     with gateway.session(lambda:not self.stop.is_set(),report) as client:
                         snapshot=discover(client,section,report)
@@ -2593,27 +2785,28 @@ class AuroraHome(xbmcgui.WindowXML):
                 if not snapshot:raise RuntimeError('Amazon returned no recognized genre navigation')
                 with self.lock:
                     for target in ('movies','tv'):
-                        merged={row['title']:row for row in self.genre_cache.get(target,[])}
-                        for row in snapshot:merged[row['title']]=dict(merged.get(row['title'],{}),**row)
-                        self.genre_cache[target]=sorted(merged.values(),key=lambda row:row['title'])
+                        self.genre_cache[target]=sorted((dict(row) for row in snapshot),key=lambda row:row['title'])
                     self.genre_requested.update(('movies','tv'))
                     owner=self.genre_owner
+                    self._genre_discovery='complete'
                 if owner in (301,302):self._populate_genres('movies' if owner==301 else 'tv')
                 self.performance({'event':'genres_ready','section':section,'genres':len(snapshot),
                     'artwork_supplied':sum(bool(row.get('artwork')) for row in snapshot),'source':source,
                     'shared_between_movies_and_tv':True,'catalog_pages_requested':0,'result':'success'})
             except Exception as error:
+                self._genre_discovery='failed'
                 self.genre_requested.discard(section)
                 self.performance({'event':'genre_discovery_failed','section':section,'stage':'genre_grid',
                     'exception':exception_details(error),'result':'failure'})
 
     def onClick(self, control_id):
+        if self.getProperty('StartupSplash'):return
         primary = {309: '__watching__', 301: '__prime_movies__', 302: '__prime_tv__',
                    303: '__extras__', 308: '__prime_purchases__'}
         if control_id in primary:
             path = primary[control_id]
             self._activate_section(control_id,focus_cards=True)
-        elif control_id == 410:
+        elif control_id in (410,415):
             self._choose_genre()
         elif control_id == 304:
             self._search()
@@ -2667,11 +2860,36 @@ class AuroraHome(xbmcgui.WindowXML):
             self.setProperty('Busy','1')
             self.play_jobs.put((token,self.generation,path,row.get('title') or 'Smooth Prime',origin,resume_mode))
 
+    def _exit_to_kodi(self,reason):
+        self._cancel_genre_selection('interface_closed')
+        self.performance({'event':'interface_exit_requested','stage':'user_back',
+            'reason':reason,'signed_out_view':self._signed_out_view,
+            'workers_stopped':self.stop.is_set(),'generation':self.generation,'result':'requested'})
+        self.stop.set()
+        self._unregister_return()
+        record(self.g,'window_exit_to_kodi_home')
+        self.close()
+
     def onAction(self, action):
         # Left and right belong to the list. The hero reads Container(200),
         # so updating it from here only delays the move.
         action_id = action.getId()
+        if self.getProperty('StartupSplash'):
+            if action_id in _BACK:
+                self.performance({'event':'startup_preload_cancelled','stage':'startup_preload',
+                    'elapsed_ms':round((monotonic()-self._startup['started'])*1000) if self._startup else None,
+                    'reason':'back_pressed','result':'cancelled'})
+                self._startup=None;self.setProperty('StartupSplash','');self._exit_to_kodi('startup_cancelled')
+            return
+        # Back belongs to the window, even when authentication or a catalog
+        # worker has ended. It must never depend on a provider/database request.
+        if action_id in _BACK and (self._signed_out_view or self.stop.is_set()):
+            self._exit_to_kodi('signed_out' if self._signed_out_view else 'workers_stopped')
+            return
         focus=self.getFocusId()
+        if focus==410 and action_id in (1,2):
+            self.setProperty('GenreEntryFocus','');self._observe_genre_panel()
+        elif self.genre_owner in (301,302) and action_id in (3,4):self.setProperty('GenreEntryFocus','1')
         if action_id in (1,2,3,4) and self.worker is not None and self.worker.is_alive():
             if focus in (309,301,302,303,308):
                 self._focus_first_generation=None
@@ -2686,12 +2904,12 @@ class AuroraHome(xbmcgui.WindowXML):
         if action_id==4 and focus in (301,302,303):
             self._show_genres(focus)
             return
-        if self.getProperty('GenrePanel') and action_id in _BACK and focus==410:
+        if self.getProperty('GenrePanel') and action_id in _BACK and focus in (410,415):
             if self._genre_selection:
                 self._cancel_genre_selection('back_pressed');return
             self.setFocusId(self.genre_owner)
             return
-        if action_id not in _BACK or self.stop.is_set():
+        if action_id not in _BACK:
             return
         if self.path not in _SECTION_PATHS and self.history:
             record(self.g, 'catalog_back')
@@ -2707,10 +2925,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self._show_genres(303,focus_grid=True)
             self.performance({'event':'back_to_service_grid','stage':'back_navigation','result':'success'})
         else:
-            self.stop.set()
-            self._unregister_return()
-            record(self.g, 'window_exit_to_kodi_home')
-            self.close()
+            self._exit_to_kodi('root_back')
 
     def _card_actions(self,info_only=False):
         row=self._selected_row()

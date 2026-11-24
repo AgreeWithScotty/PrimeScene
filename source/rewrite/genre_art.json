@@ -1,85 +1,248 @@
 {
-  "schema": 2,
-  "verified": "2026-11-22",
-  "source": "public_provider_landscape_art",
+  "schema": 3,
+  "verified": "2026-11-24",
+  "source": "public_provider_original_resolution_art",
   "tiles": {
     "movies|Anime": [
-      "landscape-72a1c77bc200034c9659ab87.jpg"
+      "master-5a05aeadc663fad80b2a0d22.jpg"
     ],
     "tv|Anime": [
-      "landscape-b9ec282deb80782f8871a212.png"
+      "master-dc890fc35712b7e59ad8d925.png"
     ],
     "movies|Action & adventure": [
-      "landscape-66643306e8b2dbc26890ee38.jpg"
+      "master-8a43bb21c033581a910e1848.jpg"
     ],
     "tv|Action & adventure": [
-      "landscape-38a38bbe060bd887f9bc28a0.jpg"
+      "master-c25e1314801b90a5038b05b3.jpg"
     ],
     "movies|Comedy": [
-      "landscape-e8ecadd49f799012f59acbbf.jpg"
+      "master-250e547f699d2c714c65e3d4.jpg"
     ],
     "tv|Comedy": [
-      "landscape-12d04f04b5c5acfe77f35671.jpg"
+      "master-30f7fb3bd287cd9fd7bb1cd6.jpg"
     ],
     "movies|Documentary": [
-      "landscape-45dedfb51202f6a482cd2bb9.jpg"
+      "master-a278c04ac620f0540d55865d.jpg"
     ],
     "tv|Documentary": [
-      "landscape-32d76299b6a75d5edd275267.png"
+      "master-50189ad8f5006f8687a29624.png"
     ],
     "movies|Drama": [
-      "landscape-ac801836eab29dcf8a2ec274.png"
+      "master-7e6e4cf55acfd39b76449216.png"
     ],
     "tv|Drama": [
-      "landscape-38a38bbe060bd887f9bc28a0.jpg"
+      "master-c25e1314801b90a5038b05b3.jpg"
     ],
     "movies|Fantasy": [
-      "landscape-43f61683e521760e11d21adf.jpg"
+      "master-ae57e1a640f07044de91e913.jpg"
     ],
     "tv|Fantasy": [
-      "landscape-38a38bbe060bd887f9bc28a0.jpg"
+      "master-c25e1314801b90a5038b05b3.jpg"
     ],
     "movies|Historical": [
-      "landscape-c2427213395c8bec11669840.jpg"
+      "master-02ec5bb03eb5cecf8e639b0a.jpg"
     ],
     "tv|Historical": [
-      "landscape-fe3add7b5eb66a5b56cdfbcc.jpg"
+      "master-24656ceb98b8ddf101f02556.jpg"
     ],
     "movies|Horror": [
-      "landscape-5e5499df0ce5041cc3f48dcd.jpg"
+      "master-cd1d6159762376f65c91482b.jpg"
     ],
     "tv|Horror": [
-      "landscape-16f9547113dff69aefc0c662.jpg"
+      "master-6e1d54400b062e62694ab785.jpg"
     ],
     "movies|Kids & family": [
-      "landscape-c25576c23ced1bff7ae9fb3a.jpg"
+      "master-b79a63ac2a9bda567cd6d8c2.jpg"
     ],
     "tv|Kids & family": [
-      "landscape-788f982eace064a0a419bc28.jpg"
+      "master-bb62842743b47c2edc2fa175.jpg"
     ],
     "movies|Mystery & thriller": [
-      "landscape-e8ecadd49f799012f59acbbf.jpg"
+      "master-250e547f699d2c714c65e3d4.jpg"
     ],
     "tv|Mystery & thriller": [
-      "landscape-5c7ed53aebf77f972e21306e.jpg"
+      "master-b7f7fedca929cad9ce24ad2c.jpg"
     ],
     "movies|Romance": [
-      "landscape-ac801836eab29dcf8a2ec274.png"
+      "master-7e6e4cf55acfd39b76449216.png"
     ],
     "tv|Romance": [
-      "landscape-ee55e3c1cc39ca777b6ed8a6.png"
+      "master-20bf35374c49d9cab00ffaee.png"
     ],
     "movies|Science fiction": [
-      "landscape-611243b8f403bee437178a8e.jpg"
+      "master-265059ed786a3fc02f7ea990.jpg"
     ],
     "tv|Science fiction": [
-      "landscape-bd423e3ec2f92b549bc2a250.jpg"
+      "master-05bb6d9c72c453535aed73e8.jpg"
     ],
     "movies|*": [
-      "landscape-72a1c77bc200034c9659ab87.jpg"
+      "master-5a05aeadc663fad80b2a0d22.jpg"
     ],
     "tv|*": [
-      "landscape-b9ec282deb80782f8871a212.png"
+      "master-dc890fc35712b7e59ad8d925.png"
     ]
+  },
+  "resolution_policy": "original_master_no_resizing",
+  "assets": {
+    "master-30f7fb3bd287cd9fd7bb1cd6.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 227138,
+      "sha256": "30f7fb3bd287cd9fd7bb1cd6364e32a3da3474b9d5282ad40b4f2656092d27c3"
+    },
+    "master-6e1d54400b062e62694ab785.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 289212,
+      "sha256": "6e1d54400b062e62694ab78540c80bf37f4f314bb97d458ce73c9012072c3e33"
+    },
+    "master-50189ad8f5006f8687a29624.png": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 204399,
+      "sha256": "50189ad8f5006f8687a296246139b7f3b9572a2ea9991d992e5220582f6bb208"
+    },
+    "master-c25e1314801b90a5038b05b3.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 256465,
+      "sha256": "c25e1314801b90a5038b05b3f15798170154a2283499740a32046fb4de2ae1e1"
+    },
+    "master-ae57e1a640f07044de91e913.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 232456,
+      "sha256": "ae57e1a640f07044de91e9136ce4a027fd0983436a6eeab9c7e5a6fd2af25376"
+    },
+    "master-a278c04ac620f0540d55865d.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 181175,
+      "sha256": "a278c04ac620f0540d55865d96edfd0896c221f8f41c32b18ff5469b37e6fe9e"
+    },
+    "master-b7f7fedca929cad9ce24ad2c.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 166167,
+      "sha256": "b7f7fedca929cad9ce24ad2c3f3ff50c1300628685743dafafe9e05739d0ec09"
+    },
+    "master-cd1d6159762376f65c91482b.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 263364,
+      "sha256": "cd1d6159762376f65c91482b9fa1eefbe47b95443e14a22db789561d58c6c30f"
+    },
+    "master-265059ed786a3fc02f7ea990.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 261773,
+      "sha256": "265059ed786a3fc02f7ea99018a7b131b95d2bd3ffe5834611a81a57fe7f1f52"
+    },
+    "master-8a43bb21c033581a910e1848.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 172603,
+      "sha256": "8a43bb21c033581a910e1848f36425921165f10735342308d65d63f17462347a"
+    },
+    "master-5a05aeadc663fad80b2a0d22.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 255551,
+      "sha256": "5a05aeadc663fad80b2a0d22c53d9434fbc32a93c9fff9c4f5481f1e28bcf514"
+    },
+    "master-bb62842743b47c2edc2fa175.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 366131,
+      "sha256": "bb62842743b47c2edc2fa1756c2be9f7e7bb8c01104e0b39d893dc55329c5f26"
+    },
+    "master-7e6e4cf55acfd39b76449216.png": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 219763,
+      "sha256": "7e6e4cf55acfd39b7644921676bf7e20ad1f75dcf42579df34f26ef9ddb6f211"
+    },
+    "master-dc890fc35712b7e59ad8d925.png": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 211319,
+      "sha256": "dc890fc35712b7e59ad8d92554e3c8b24fe994ff8c8d26ffa4a9e9c0ba61faba"
+    },
+    "master-05bb6d9c72c453535aed73e8.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 150364,
+      "sha256": "05bb6d9c72c453535aed73e8b8b27bc308a28fd83d4c07f53d8147dd943d7eb0"
+    },
+    "master-02ec5bb03eb5cecf8e639b0a.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 240801,
+      "sha256": "02ec5bb03eb5cecf8e639b0a30e2350e73baa1a73402c7042dbfd22eceb58b46"
+    },
+    "master-b79a63ac2a9bda567cd6d8c2.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 318524,
+      "sha256": "b79a63ac2a9bda567cd6d8c2c761624fe5ae7585cd91a6d91aee56a178170f44"
+    },
+    "master-250e547f699d2c714c65e3d4.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 306130,
+      "sha256": "250e547f699d2c714c65e3d4677f5117c6785e4eb34e8d61cb821e2fc5f2fc5f"
+    },
+    "master-20bf35374c49d9cab00ffaee.png": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 291675,
+      "sha256": "20bf35374c49d9cab00ffaee88e041de7ecb1e3d15342fc29dd22babcac94b94"
+    },
+    "master-24656ceb98b8ddf101f02556.jpg": {
+      "original_dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 295466,
+      "sha256": "24656ceb98b8ddf101f02556b619da842048b8a9532b5d76d1cd787fb0cc8f5c"
+    }
   }
 }

@@ -1,0 +1,6 @@
+0.2.58
+- Load genre backgrounds from Amazon at startup and remove all bundled genre photos.
+- Keep the splash visible for at least three seconds and until the initial Movies and TV backdrops are cached.
+- Preload original movie/show hero images in a separate queue; avoid stretched cover thumbnails.
+- Keep the expanded genre card steady when focus enters from the top menu.
+- Allow Back to cancel startup, and report artwork readiness, dimensions, request stages and failures.

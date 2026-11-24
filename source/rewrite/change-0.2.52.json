@@ -1,0 +1,169 @@
+{
+  "version": "0.2.52",
+  "sha256": "9c7dc147212e682e66740ca34d76047acefec1003c16e3796a11f2359a65cb66",
+  "bytes": 4594912,
+  "files": 175,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/service_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": true,
+  "mocked_provider_or_kodi_tests": false,
+  "concrete_exit_title_and_directory_evidence": {
+    "compared_to": "published0.2.51",
+    "changed_runtime_files": [
+      "resources/lib/aurora.py",
+      "resources/lib/catalog_gateway.py",
+      "resources/lib/navigation.py",
+      "resources/lib/service_catalog.py",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml"
+    ],
+    "focused_genre_title_dimensions_before": [
+      1520,
+      700
+    ],
+    "focused_genre_title_dimensions_after": [
+      760,
+      350
+    ],
+    "other_xml_controls_byte_equivalent_after_normalizing_title_box": true,
+    "unchanged_typography_pngs": 56,
+    "native_signed_out_exit": {
+      "kodi": "22.0-RC2 (21.90.902) Git:20261109-d686683a55d",
+      "scenarios": [
+        {
+          "workers_stopped": false,
+          "signed_out_view": true,
+          "window_id": 13000,
+          "current_window": 13000,
+          "focus": 306,
+          "actual_empty_account_storage": true,
+          "provider_requests": false,
+          "api_stubs": false,
+          "modal_returned": true,
+          "current_window_after": 10000
+        },
+        {
+          "workers_stopped": true,
+          "signed_out_view": true,
+          "window_id": 13001,
+          "current_window": 13001,
+          "focus": 306,
+          "actual_empty_account_storage": true,
+          "provider_requests": false,
+          "api_stubs": false,
+          "modal_returned": true,
+          "current_window_after": 10000
+        }
+      ]
+    },
+    "public_service_directory": {
+      "result": "failure",
+      "exception": {
+        "type": "HTTPError",
+        "frames": [
+          {
+            "file": "observe_services.py",
+            "line": 39,
+            "function": "<module>"
+          },
+          {
+            "file": "service_catalog.py",
+            "line": 85,
+            "function": "discover"
+          },
+          {
+            "file": "observe_services.py",
+            "line": 19,
+            "function": "request"
+          },
+          {
+            "file": "request.py",
+            "line": 521,
+            "function": "open"
+          },
+          {
+            "file": "request.py",
+            "line": 630,
+            "function": "http_response"
+          },
+          {
+            "file": "request.py",
+            "line": 559,
+            "function": "error"
+          },
+          {
+            "file": "request.py",
+            "line": 492,
+            "function": "_call_chain"
+          },
+          {
+            "file": "request.py",
+            "line": 639,
+            "function": "http_error_default"
+          }
+        ],
+        "status": 503,
+        "code": 503,
+        "reason_type": "str"
+      },
+      "reads": [
+        {
+          "stage": "service_directory_discovery",
+          "status": 200,
+          "route": {
+            "host": "www.primevideo.com",
+            "route": "/#960f41e9",
+            "query_keys": [],
+            "authorization_code_present": false
+          },
+          "bytes": 1711079,
+          "elapsed_ms": 1500,
+          "result": "success"
+        },
+        {
+          "stage": "service_directory_fetch",
+          "status": 200,
+          "route": {
+            "host": "www.primevideo.com",
+            "route": "/storefront/#a8fa7fd6/#37a8eec1",
+            "query_keys": [
+              "jic",
+              "ref_"
+            ],
+            "authorization_code_present": false
+          },
+          "bytes": 1057652,
+          "elapsed_ms": 687,
+          "result": "success"
+        }
+      ],
+      "batches": [
+        {
+          "services": 48,
+          "complete": false,
+          "elapsed_ms": 1563,
+          "requests_finished": 1
+        },
+        {
+          "services": 102,
+          "complete": false,
+          "elapsed_ms": 2313,
+          "requests_finished": 2
+        }
+      ]
+    },
+    "public_service_observation_limit": "The later provider continuation returned HTTP503; the private authenticated directory was not exercised.",
+    "private_in_progress_finding": "User confirms older titles are also absent from Amazon Continue Watching for the same profile. No history protocol change.",
+    "private_login_or_playback_exercised": false,
+    "provider_mocks": false
+  }
+}

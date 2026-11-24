@@ -1,0 +1,2131 @@
+{
+  "version": "0.2.57",
+  "sha256": "3f4be56ffb5f182278cbe2f94f4e4d65c5fecb9c0d674e6bce3fc6a7bb6e46fc",
+  "bytes": 8589511,
+  "files": 177,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/artwork_cache.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/genre_art.json",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/genre_type.json",
+    "plugin.video.primeinterface/resources/lib/image_quality.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-02ec5bb03eb5cecf8e639b0a.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-05bb6d9c72c453535aed73e8.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-20bf35374c49d9cab00ffaee.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-24656ceb98b8ddf101f02556.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-250e547f699d2c714c65e3d4.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-265059ed786a3fc02f7ea990.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-30f7fb3bd287cd9fd7bb1cd6.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-50189ad8f5006f8687a29624.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-5a05aeadc663fad80b2a0d22.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-6e1d54400b062e62694ab785.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-7e6e4cf55acfd39b76449216.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-8a43bb21c033581a910e1848.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-a278c04ac620f0540d55865d.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-ae57e1a640f07044de91e913.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-b79a63ac2a9bda567cd6d8c2.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-b7f7fedca929cad9ce24ad2c.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-bb62842743b47c2edc2fa175.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-c25e1314801b90a5038b05b3.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-cd1d6159762376f65c91482b.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-dc890fc35712b7e59ad8d925.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-075fb4dc2b15.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-0a871f66f4b6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-0c1ca875a032.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-16beedfa0d41.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-373b1a5fc6ef.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-454cd5f6417c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-4dcb64fd4a0d.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-59c449667a4b.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-63c68884c717.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-6b638c649335.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-6f19479a0779.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7620bdd8c785.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-796dd9dce045.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-79d6b5a807d1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7dfba87c0240.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-86cc4612ae4d.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-880ff72d5880.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-8c1f46301bb0.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-8de597ec28be.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-a45d26bbc9ae.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-a9921a744c13.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-b8efaed802d2.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-c09cd9dbc085.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-c8969302406a.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-d49d99abe3e1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-eb17612b64d7.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-f26ccc2f4714.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-f610f5df4e37.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-105aef574284.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-18eeac1b13f4.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-1f40307ed8c3.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-2133357e896e.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-297636050a46.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-46080206475f.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-46f45aa6d206.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-4dc4bee45386.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-5061df8bb9fc.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-584daf7cfef0.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-6a2883733ad1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-6f258b941ff6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-7208159add34.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-8337c78dabd1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-8b13cdb82770.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-8f8dd844c490.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-9b530f3f2c14.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-a47065792c7c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-a9a06a96038c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-b1b87f217648.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-b4f29e4442ec.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-c3fe61cad617.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-d85bed3bf7fc.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-e1476b206e7f.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-e7ce7420bd99.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-e9bac167400c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-ec57f5c40ae9.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-ef300950ae3f.png"
+  ],
+  "added_files": [
+    "plugin.video.primeinterface/resources/lib/image_quality.py",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-02ec5bb03eb5cecf8e639b0a.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-05bb6d9c72c453535aed73e8.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-20bf35374c49d9cab00ffaee.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-24656ceb98b8ddf101f02556.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-250e547f699d2c714c65e3d4.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-265059ed786a3fc02f7ea990.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-30f7fb3bd287cd9fd7bb1cd6.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-50189ad8f5006f8687a29624.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-5a05aeadc663fad80b2a0d22.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-6e1d54400b062e62694ab785.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-7e6e4cf55acfd39b76449216.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-8a43bb21c033581a910e1848.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-a278c04ac620f0540d55865d.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-ae57e1a640f07044de91e913.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-b79a63ac2a9bda567cd6d8c2.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-b7f7fedca929cad9ce24ad2c.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-bb62842743b47c2edc2fa175.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-c25e1314801b90a5038b05b3.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-cd1d6159762376f65c91482b.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-dc890fc35712b7e59ad8d925.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-075fb4dc2b15.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-0a871f66f4b6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-0c1ca875a032.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-16beedfa0d41.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-373b1a5fc6ef.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-454cd5f6417c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-4dcb64fd4a0d.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-59c449667a4b.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-63c68884c717.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-6b638c649335.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-6f19479a0779.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7620bdd8c785.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-796dd9dce045.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-79d6b5a807d1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7dfba87c0240.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-86cc4612ae4d.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-880ff72d5880.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-8c1f46301bb0.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-8de597ec28be.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-a45d26bbc9ae.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-a9921a744c13.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-b8efaed802d2.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-c09cd9dbc085.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-c8969302406a.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-d49d99abe3e1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-eb17612b64d7.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-f26ccc2f4714.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-f610f5df4e37.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-105aef574284.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-18eeac1b13f4.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-1f40307ed8c3.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-2133357e896e.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-297636050a46.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-46080206475f.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-46f45aa6d206.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-4dc4bee45386.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-5061df8bb9fc.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-584daf7cfef0.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-6a2883733ad1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-6f258b941ff6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-7208159add34.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-8337c78dabd1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-8b13cdb82770.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-8f8dd844c490.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-9b530f3f2c14.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-a47065792c7c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-a9a06a96038c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-b1b87f217648.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-b4f29e4442ec.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-c3fe61cad617.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-d85bed3bf7fc.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-e1476b206e7f.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-e7ce7420bd99.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-e9bac167400c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-ec57f5c40ae9.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-ef300950ae3f.png"
+  ],
+  "removed_files": [
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-12d04f04b5c5acfe77f35671.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-16f9547113dff69aefc0c662.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-32d76299b6a75d5edd275267.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-38a38bbe060bd887f9bc28a0.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-43f61683e521760e11d21adf.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-45dedfb51202f6a482cd2bb9.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-5c7ed53aebf77f972e21306e.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-5e5499df0ce5041cc3f48dcd.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-611243b8f403bee437178a8e.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-66643306e8b2dbc26890ee38.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-72a1c77bc200034c9659ab87.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-788f982eace064a0a419bc28.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-ac801836eab29dcf8a2ec274.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-b9ec282deb80782f8871a212.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-bd423e3ec2f92b549bc2a250.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-c2427213395c8bec11669840.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-c25576c23ced1bff7ae9fb3a.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-e8ecadd49f799012f59acbbf.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-ee55e3c1cc39ca777b6ed8a6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/landscape-fe3add7b5eb66a5b56cdfbcc.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-013ba1fb7c7f.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-1244df2d83ff.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-1a08a3ef6eb0.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-24f7c728136c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-3abddb903efa.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-3c103bf9f63e.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-3dcc468a1e31.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-426ba832bb5f.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-441830dbbe0e.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-68236f1f85d6.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7284928fd12f.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7533d3172cf8.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-79d5f1fafb01.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7ed6f4c51209.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-7f0718118fad.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-816103839704.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-8185cea952a1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-82287d8cf501.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-868f63d61d0c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-87bc9dfdec26.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-a12b3f33b487.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-bd0e9ee7d72b.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-d7d5b4da0a45.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-deb793c68d98.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-ee1f3712fd8a.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-f13aa67e25e9.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-f1a21e62f3e1.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/genre-fe0beea1a12d.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-063e9e2403ab.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-08d5f92ca9e9.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-0c0a9c87f940.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-173af5934866.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-2a9f8d30cf97.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-3580469d06f3.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-4c9e85d7cf2e.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-51c95d4c9ad8.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-549f2b17195c.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-560c2a455e3a.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-5ed598f0566a.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-60a0b4714191.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-6d692ee13c1a.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-789c91216663.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-7f6aa4a93812.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-80e37803b97e.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-870b752b8540.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-8db635245d1d.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-9a26a76fee31.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-bbe4e712197e.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-c3e70d7eae96.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-c6837ea765f2.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-d23f93c09692.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-dcba0c70c613.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-dd6a995c7b8d.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-e7017faea536.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-ff32a18957b5.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-type/spine-ff481f81aecb.png"
+  ],
+  "kodi_ui_outcome_observed": true,
+  "mocked_provider_or_kodi_tests": false,
+  "actual_typography_asset_scope_and_native_observations": {
+    "layout": {
+      "model": "fixed_cap_height_equal_canvas",
+      "canvas": [
+        2880,
+        1200
+      ],
+      "font_pixels": 456,
+      "line_step_pixels": 368,
+      "stroke_pixels": 4,
+      "tracking": "bundled_font_default_tight",
+      "output_box": [
+        1440,
+        600
+      ],
+      "output_font_pixels": 228.0,
+      "cap_height_1080p": 164.0,
+      "cap_height_2160p": 328.0,
+      "screen_height_fraction": 0.15185185185185185,
+      "strip_canvas": [
+        184,
+        1460
+      ],
+      "strip_output_box": [
+        92,
+        730
+      ],
+      "strip_font_pixels": 128,
+      "strip_stroke_pixels": 1,
+      "strip_cap_height_1080p": 46.0,
+      "strip_to_active_ratio": 0.2804878048780488,
+      "glyph_resize": false,
+      "source_scale": 2
+    },
+    "glyph_asset_checks": [
+      {
+        "label": "Action",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          946,
+          432,
+          1920,
+          769
+        ]
+      },
+      {
+        "label": "Action",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          595,
+          139,
+          869
+        ]
+      },
+      {
+        "label": "Action & adventure",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          640,
+          248,
+          2235,
+          953
+        ]
+      },
+      {
+        "label": "Action & adventure",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          321,
+          139,
+          1140
+        ]
+      },
+      {
+        "label": "Adventure",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          640,
+          436,
+          2235,
+          769
+        ]
+      },
+      {
+        "label": "Adventure",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          46,
+          507,
+          139,
+          955
+        ]
+      },
+      {
+        "label": "All TV shows",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          465,
+          432,
+          2409,
+          769
+        ]
+      },
+      {
+        "label": "All TV shows",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          459,
+          139,
+          1004
+        ]
+      },
+      {
+        "label": "All movies",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          643,
+          432,
+          2231,
+          769
+        ]
+      },
+      {
+        "label": "All movies",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          509,
+          139,
+          954
+        ]
+      },
+      {
+        "label": "Animation",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          678,
+          432,
+          2188,
+          769
+        ]
+      },
+      {
+        "label": "Animation",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          520,
+          139,
+          945
+        ]
+      },
+      {
+        "label": "Anime",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          1002,
+          436,
+          1872,
+          764
+        ]
+      },
+      {
+        "label": "Anime",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          46,
+          608,
+          138,
+          853
+        ]
+      },
+      {
+        "label": "Comedy",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          884,
+          432,
+          2006,
+          769
+        ]
+      },
+      {
+        "label": "Comedy",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          571,
+          139,
+          886
+        ]
+      },
+      {
+        "label": "Crime",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          1022,
+          432,
+          1863,
+          769
+        ]
+      },
+      {
+        "label": "Crime",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          611,
+          139,
+          848
+        ]
+      },
+      {
+        "label": "Documentary",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          432,
+          432,
+          2462,
+          769
+        ]
+      },
+      {
+        "label": "Documentary",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          443,
+          139,
+          1013
+        ]
+      },
+      {
+        "label": "Drama",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          964,
+          436,
+          1929,
+          764
+        ]
+      },
+      {
+        "label": "Drama",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          46,
+          593,
+          138,
+          864
+        ]
+      },
+      {
+        "label": "Family",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          949,
+          436,
+          1945,
+          764
+        ]
+      },
+      {
+        "label": "Family",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          46,
+          588,
+          138,
+          868
+        ]
+      },
+      {
+        "label": "Fantasy",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          837,
+          432,
+          2057,
+          769
+        ]
+      },
+      {
+        "label": "Fantasy",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          556,
+          139,
+          899
+        ]
+      },
+      {
+        "label": "Historical",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          661,
+          432,
+          2231,
+          769
+        ]
+      },
+      {
+        "label": "Historical",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          507,
+          139,
+          949
+        ]
+      },
+      {
+        "label": "Horror",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          900,
+          432,
+          1988,
+          769
+        ]
+      },
+      {
+        "label": "Horror",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          576,
+          139,
+          882
+        ]
+      },
+      {
+        "label": "Kids & family",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          465,
+          432,
+          2429,
+          769
+        ]
+      },
+      {
+        "label": "Kids & family",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          452,
+          139,
+          1003
+        ]
+      },
+      {
+        "label": "Music",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          1023,
+          432,
+          1863,
+          769
+        ]
+      },
+      {
+        "label": "Music",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          611,
+          139,
+          847
+        ]
+      },
+      {
+        "label": "Musicals",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          768,
+          432,
+          2119,
+          769
+        ]
+      },
+      {
+        "label": "Musicals",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          540,
+          139,
+          919
+        ]
+      },
+      {
+        "label": "Mystery",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          808,
+          432,
+          2085,
+          769
+        ]
+      },
+      {
+        "label": "Mystery",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          548,
+          139,
+          907
+        ]
+      },
+      {
+        "label": "Mystery & thriller",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          677,
+          248,
+          2213,
+          948
+        ]
+      },
+      {
+        "label": "Mystery & thriller",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          323,
+          139,
+          1136
+        ]
+      },
+      {
+        "label": "Romance",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          789,
+          432,
+          2099,
+          769
+        ]
+      },
+      {
+        "label": "Romance",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          545,
+          139,
+          913
+        ]
+      },
+      {
+        "label": "Romantic comedy",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          142,
+          432,
+          2752,
+          769
+        ]
+      },
+      {
+        "label": "Romantic comedy",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          361,
+          139,
+          1094
+        ]
+      },
+      {
+        "label": "Science fiction",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          316,
+          432,
+          2555,
+          769
+        ]
+      },
+      {
+        "label": "Science fiction",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          417,
+          139,
+          1046
+        ]
+      },
+      {
+        "label": "Science fiction & fantasy",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          316,
+          248,
+          2555,
+          953
+        ]
+      },
+      {
+        "label": "Science fiction & fantasy",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          193,
+          139,
+          1266
+        ]
+      },
+      {
+        "label": "Sports",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          922,
+          432,
+          1958,
+          769
+        ]
+      },
+      {
+        "label": "Sports",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          585,
+          139,
+          877
+        ]
+      },
+      {
+        "label": "Suspense",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          748,
+          432,
+          2132,
+          769
+        ]
+      },
+      {
+        "label": "Suspense",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          536,
+          139,
+          925
+        ]
+      },
+      {
+        "label": "Thriller",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          794,
+          436,
+          2081,
+          764
+        ]
+      },
+      {
+        "label": "Thriller",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          46,
+          550,
+          138,
+          912
+        ]
+      },
+      {
+        "label": "Western",
+        "role": "title",
+        "canvas": [
+          2880,
+          1200
+        ],
+        "ink_bounds": [
+          791,
+          432,
+          2076,
+          769
+        ]
+      },
+      {
+        "label": "Western",
+        "role": "spine",
+        "canvas": [
+          184,
+          1460
+        ],
+        "ink_bounds": [
+          45,
+          552,
+          139,
+          913
+        ]
+      }
+    ],
+    "changed_runtime_files": [
+      "README.md",
+      "addon.xml",
+      "changelog.txt",
+      "resources/lib/artwork_cache.py",
+      "resources/lib/aurora.py",
+      "resources/lib/genre_art.json",
+      "resources/lib/genre_catalog.py",
+      "resources/lib/genre_type.json",
+      "resources/lib/image_quality.py",
+      "resources/lib/public_catalog.py",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml",
+      "resources/skins/Default/media/genre-art/master-02ec5bb03eb5cecf8e639b0a.jpg",
+      "resources/skins/Default/media/genre-art/master-05bb6d9c72c453535aed73e8.jpg",
+      "resources/skins/Default/media/genre-art/master-20bf35374c49d9cab00ffaee.png",
+      "resources/skins/Default/media/genre-art/master-24656ceb98b8ddf101f02556.jpg",
+      "resources/skins/Default/media/genre-art/master-250e547f699d2c714c65e3d4.jpg",
+      "resources/skins/Default/media/genre-art/master-265059ed786a3fc02f7ea990.jpg",
+      "resources/skins/Default/media/genre-art/master-30f7fb3bd287cd9fd7bb1cd6.jpg",
+      "resources/skins/Default/media/genre-art/master-50189ad8f5006f8687a29624.png",
+      "resources/skins/Default/media/genre-art/master-5a05aeadc663fad80b2a0d22.jpg",
+      "resources/skins/Default/media/genre-art/master-6e1d54400b062e62694ab785.jpg",
+      "resources/skins/Default/media/genre-art/master-7e6e4cf55acfd39b76449216.png",
+      "resources/skins/Default/media/genre-art/master-8a43bb21c033581a910e1848.jpg",
+      "resources/skins/Default/media/genre-art/master-a278c04ac620f0540d55865d.jpg",
+      "resources/skins/Default/media/genre-art/master-ae57e1a640f07044de91e913.jpg",
+      "resources/skins/Default/media/genre-art/master-b79a63ac2a9bda567cd6d8c2.jpg",
+      "resources/skins/Default/media/genre-art/master-b7f7fedca929cad9ce24ad2c.jpg",
+      "resources/skins/Default/media/genre-art/master-bb62842743b47c2edc2fa175.jpg",
+      "resources/skins/Default/media/genre-art/master-c25e1314801b90a5038b05b3.jpg",
+      "resources/skins/Default/media/genre-art/master-cd1d6159762376f65c91482b.jpg",
+      "resources/skins/Default/media/genre-art/master-dc890fc35712b7e59ad8d925.png",
+      "resources/skins/Default/media/genre-type/genre-075fb4dc2b15.png",
+      "resources/skins/Default/media/genre-type/genre-0a871f66f4b6.png",
+      "resources/skins/Default/media/genre-type/genre-0c1ca875a032.png",
+      "resources/skins/Default/media/genre-type/genre-16beedfa0d41.png",
+      "resources/skins/Default/media/genre-type/genre-373b1a5fc6ef.png",
+      "resources/skins/Default/media/genre-type/genre-454cd5f6417c.png",
+      "resources/skins/Default/media/genre-type/genre-4dcb64fd4a0d.png",
+      "resources/skins/Default/media/genre-type/genre-59c449667a4b.png",
+      "resources/skins/Default/media/genre-type/genre-63c68884c717.png",
+      "resources/skins/Default/media/genre-type/genre-6b638c649335.png",
+      "resources/skins/Default/media/genre-type/genre-6f19479a0779.png",
+      "resources/skins/Default/media/genre-type/genre-7620bdd8c785.png",
+      "resources/skins/Default/media/genre-type/genre-796dd9dce045.png",
+      "resources/skins/Default/media/genre-type/genre-79d6b5a807d1.png",
+      "resources/skins/Default/media/genre-type/genre-7dfba87c0240.png",
+      "resources/skins/Default/media/genre-type/genre-86cc4612ae4d.png",
+      "resources/skins/Default/media/genre-type/genre-880ff72d5880.png",
+      "resources/skins/Default/media/genre-type/genre-8c1f46301bb0.png",
+      "resources/skins/Default/media/genre-type/genre-8de597ec28be.png",
+      "resources/skins/Default/media/genre-type/genre-a45d26bbc9ae.png",
+      "resources/skins/Default/media/genre-type/genre-a9921a744c13.png",
+      "resources/skins/Default/media/genre-type/genre-b8efaed802d2.png",
+      "resources/skins/Default/media/genre-type/genre-c09cd9dbc085.png",
+      "resources/skins/Default/media/genre-type/genre-c8969302406a.png",
+      "resources/skins/Default/media/genre-type/genre-d49d99abe3e1.png",
+      "resources/skins/Default/media/genre-type/genre-eb17612b64d7.png",
+      "resources/skins/Default/media/genre-type/genre-f26ccc2f4714.png",
+      "resources/skins/Default/media/genre-type/genre-f610f5df4e37.png",
+      "resources/skins/Default/media/genre-type/spine-105aef574284.png",
+      "resources/skins/Default/media/genre-type/spine-18eeac1b13f4.png",
+      "resources/skins/Default/media/genre-type/spine-1f40307ed8c3.png",
+      "resources/skins/Default/media/genre-type/spine-2133357e896e.png",
+      "resources/skins/Default/media/genre-type/spine-297636050a46.png",
+      "resources/skins/Default/media/genre-type/spine-46080206475f.png",
+      "resources/skins/Default/media/genre-type/spine-46f45aa6d206.png",
+      "resources/skins/Default/media/genre-type/spine-4dc4bee45386.png",
+      "resources/skins/Default/media/genre-type/spine-5061df8bb9fc.png",
+      "resources/skins/Default/media/genre-type/spine-584daf7cfef0.png",
+      "resources/skins/Default/media/genre-type/spine-6a2883733ad1.png",
+      "resources/skins/Default/media/genre-type/spine-6f258b941ff6.png",
+      "resources/skins/Default/media/genre-type/spine-7208159add34.png",
+      "resources/skins/Default/media/genre-type/spine-8337c78dabd1.png",
+      "resources/skins/Default/media/genre-type/spine-8b13cdb82770.png",
+      "resources/skins/Default/media/genre-type/spine-8f8dd844c490.png",
+      "resources/skins/Default/media/genre-type/spine-9b530f3f2c14.png",
+      "resources/skins/Default/media/genre-type/spine-a47065792c7c.png",
+      "resources/skins/Default/media/genre-type/spine-a9a06a96038c.png",
+      "resources/skins/Default/media/genre-type/spine-b1b87f217648.png",
+      "resources/skins/Default/media/genre-type/spine-b4f29e4442ec.png",
+      "resources/skins/Default/media/genre-type/spine-c3fe61cad617.png",
+      "resources/skins/Default/media/genre-type/spine-d85bed3bf7fc.png",
+      "resources/skins/Default/media/genre-type/spine-e1476b206e7f.png",
+      "resources/skins/Default/media/genre-type/spine-e7ce7420bd99.png",
+      "resources/skins/Default/media/genre-type/spine-e9bac167400c.png",
+      "resources/skins/Default/media/genre-type/spine-ec57f5c40ae9.png",
+      "resources/skins/Default/media/genre-type/spine-ef300950ae3f.png"
+    ],
+    "added_files": [
+      "resources/lib/image_quality.py",
+      "resources/skins/Default/media/genre-art/master-02ec5bb03eb5cecf8e639b0a.jpg",
+      "resources/skins/Default/media/genre-art/master-05bb6d9c72c453535aed73e8.jpg",
+      "resources/skins/Default/media/genre-art/master-20bf35374c49d9cab00ffaee.png",
+      "resources/skins/Default/media/genre-art/master-24656ceb98b8ddf101f02556.jpg",
+      "resources/skins/Default/media/genre-art/master-250e547f699d2c714c65e3d4.jpg",
+      "resources/skins/Default/media/genre-art/master-265059ed786a3fc02f7ea990.jpg",
+      "resources/skins/Default/media/genre-art/master-30f7fb3bd287cd9fd7bb1cd6.jpg",
+      "resources/skins/Default/media/genre-art/master-50189ad8f5006f8687a29624.png",
+      "resources/skins/Default/media/genre-art/master-5a05aeadc663fad80b2a0d22.jpg",
+      "resources/skins/Default/media/genre-art/master-6e1d54400b062e62694ab785.jpg",
+      "resources/skins/Default/media/genre-art/master-7e6e4cf55acfd39b76449216.png",
+      "resources/skins/Default/media/genre-art/master-8a43bb21c033581a910e1848.jpg",
+      "resources/skins/Default/media/genre-art/master-a278c04ac620f0540d55865d.jpg",
+      "resources/skins/Default/media/genre-art/master-ae57e1a640f07044de91e913.jpg",
+      "resources/skins/Default/media/genre-art/master-b79a63ac2a9bda567cd6d8c2.jpg",
+      "resources/skins/Default/media/genre-art/master-b7f7fedca929cad9ce24ad2c.jpg",
+      "resources/skins/Default/media/genre-art/master-bb62842743b47c2edc2fa175.jpg",
+      "resources/skins/Default/media/genre-art/master-c25e1314801b90a5038b05b3.jpg",
+      "resources/skins/Default/media/genre-art/master-cd1d6159762376f65c91482b.jpg",
+      "resources/skins/Default/media/genre-art/master-dc890fc35712b7e59ad8d925.png",
+      "resources/skins/Default/media/genre-type/genre-075fb4dc2b15.png",
+      "resources/skins/Default/media/genre-type/genre-0a871f66f4b6.png",
+      "resources/skins/Default/media/genre-type/genre-0c1ca875a032.png",
+      "resources/skins/Default/media/genre-type/genre-16beedfa0d41.png",
+      "resources/skins/Default/media/genre-type/genre-373b1a5fc6ef.png",
+      "resources/skins/Default/media/genre-type/genre-454cd5f6417c.png",
+      "resources/skins/Default/media/genre-type/genre-4dcb64fd4a0d.png",
+      "resources/skins/Default/media/genre-type/genre-59c449667a4b.png",
+      "resources/skins/Default/media/genre-type/genre-63c68884c717.png",
+      "resources/skins/Default/media/genre-type/genre-6b638c649335.png",
+      "resources/skins/Default/media/genre-type/genre-6f19479a0779.png",
+      "resources/skins/Default/media/genre-type/genre-7620bdd8c785.png",
+      "resources/skins/Default/media/genre-type/genre-796dd9dce045.png",
+      "resources/skins/Default/media/genre-type/genre-79d6b5a807d1.png",
+      "resources/skins/Default/media/genre-type/genre-7dfba87c0240.png",
+      "resources/skins/Default/media/genre-type/genre-86cc4612ae4d.png",
+      "resources/skins/Default/media/genre-type/genre-880ff72d5880.png",
+      "resources/skins/Default/media/genre-type/genre-8c1f46301bb0.png",
+      "resources/skins/Default/media/genre-type/genre-8de597ec28be.png",
+      "resources/skins/Default/media/genre-type/genre-a45d26bbc9ae.png",
+      "resources/skins/Default/media/genre-type/genre-a9921a744c13.png",
+      "resources/skins/Default/media/genre-type/genre-b8efaed802d2.png",
+      "resources/skins/Default/media/genre-type/genre-c09cd9dbc085.png",
+      "resources/skins/Default/media/genre-type/genre-c8969302406a.png",
+      "resources/skins/Default/media/genre-type/genre-d49d99abe3e1.png",
+      "resources/skins/Default/media/genre-type/genre-eb17612b64d7.png",
+      "resources/skins/Default/media/genre-type/genre-f26ccc2f4714.png",
+      "resources/skins/Default/media/genre-type/genre-f610f5df4e37.png",
+      "resources/skins/Default/media/genre-type/spine-105aef574284.png",
+      "resources/skins/Default/media/genre-type/spine-18eeac1b13f4.png",
+      "resources/skins/Default/media/genre-type/spine-1f40307ed8c3.png",
+      "resources/skins/Default/media/genre-type/spine-2133357e896e.png",
+      "resources/skins/Default/media/genre-type/spine-297636050a46.png",
+      "resources/skins/Default/media/genre-type/spine-46080206475f.png",
+      "resources/skins/Default/media/genre-type/spine-46f45aa6d206.png",
+      "resources/skins/Default/media/genre-type/spine-4dc4bee45386.png",
+      "resources/skins/Default/media/genre-type/spine-5061df8bb9fc.png",
+      "resources/skins/Default/media/genre-type/spine-584daf7cfef0.png",
+      "resources/skins/Default/media/genre-type/spine-6a2883733ad1.png",
+      "resources/skins/Default/media/genre-type/spine-6f258b941ff6.png",
+      "resources/skins/Default/media/genre-type/spine-7208159add34.png",
+      "resources/skins/Default/media/genre-type/spine-8337c78dabd1.png",
+      "resources/skins/Default/media/genre-type/spine-8b13cdb82770.png",
+      "resources/skins/Default/media/genre-type/spine-8f8dd844c490.png",
+      "resources/skins/Default/media/genre-type/spine-9b530f3f2c14.png",
+      "resources/skins/Default/media/genre-type/spine-a47065792c7c.png",
+      "resources/skins/Default/media/genre-type/spine-a9a06a96038c.png",
+      "resources/skins/Default/media/genre-type/spine-b1b87f217648.png",
+      "resources/skins/Default/media/genre-type/spine-b4f29e4442ec.png",
+      "resources/skins/Default/media/genre-type/spine-c3fe61cad617.png",
+      "resources/skins/Default/media/genre-type/spine-d85bed3bf7fc.png",
+      "resources/skins/Default/media/genre-type/spine-e1476b206e7f.png",
+      "resources/skins/Default/media/genre-type/spine-e7ce7420bd99.png",
+      "resources/skins/Default/media/genre-type/spine-e9bac167400c.png",
+      "resources/skins/Default/media/genre-type/spine-ec57f5c40ae9.png",
+      "resources/skins/Default/media/genre-type/spine-ef300950ae3f.png"
+    ],
+    "removed_files": [
+      "resources/skins/Default/media/genre-art/landscape-12d04f04b5c5acfe77f35671.jpg",
+      "resources/skins/Default/media/genre-art/landscape-16f9547113dff69aefc0c662.jpg",
+      "resources/skins/Default/media/genre-art/landscape-32d76299b6a75d5edd275267.png",
+      "resources/skins/Default/media/genre-art/landscape-38a38bbe060bd887f9bc28a0.jpg",
+      "resources/skins/Default/media/genre-art/landscape-43f61683e521760e11d21adf.jpg",
+      "resources/skins/Default/media/genre-art/landscape-45dedfb51202f6a482cd2bb9.jpg",
+      "resources/skins/Default/media/genre-art/landscape-5c7ed53aebf77f972e21306e.jpg",
+      "resources/skins/Default/media/genre-art/landscape-5e5499df0ce5041cc3f48dcd.jpg",
+      "resources/skins/Default/media/genre-art/landscape-611243b8f403bee437178a8e.jpg",
+      "resources/skins/Default/media/genre-art/landscape-66643306e8b2dbc26890ee38.jpg",
+      "resources/skins/Default/media/genre-art/landscape-72a1c77bc200034c9659ab87.jpg",
+      "resources/skins/Default/media/genre-art/landscape-788f982eace064a0a419bc28.jpg",
+      "resources/skins/Default/media/genre-art/landscape-ac801836eab29dcf8a2ec274.png",
+      "resources/skins/Default/media/genre-art/landscape-b9ec282deb80782f8871a212.png",
+      "resources/skins/Default/media/genre-art/landscape-bd423e3ec2f92b549bc2a250.jpg",
+      "resources/skins/Default/media/genre-art/landscape-c2427213395c8bec11669840.jpg",
+      "resources/skins/Default/media/genre-art/landscape-c25576c23ced1bff7ae9fb3a.jpg",
+      "resources/skins/Default/media/genre-art/landscape-e8ecadd49f799012f59acbbf.jpg",
+      "resources/skins/Default/media/genre-art/landscape-ee55e3c1cc39ca777b6ed8a6.png",
+      "resources/skins/Default/media/genre-art/landscape-fe3add7b5eb66a5b56cdfbcc.jpg",
+      "resources/skins/Default/media/genre-type/genre-013ba1fb7c7f.png",
+      "resources/skins/Default/media/genre-type/genre-1244df2d83ff.png",
+      "resources/skins/Default/media/genre-type/genre-1a08a3ef6eb0.png",
+      "resources/skins/Default/media/genre-type/genre-24f7c728136c.png",
+      "resources/skins/Default/media/genre-type/genre-3abddb903efa.png",
+      "resources/skins/Default/media/genre-type/genre-3c103bf9f63e.png",
+      "resources/skins/Default/media/genre-type/genre-3dcc468a1e31.png",
+      "resources/skins/Default/media/genre-type/genre-426ba832bb5f.png",
+      "resources/skins/Default/media/genre-type/genre-441830dbbe0e.png",
+      "resources/skins/Default/media/genre-type/genre-68236f1f85d6.png",
+      "resources/skins/Default/media/genre-type/genre-7284928fd12f.png",
+      "resources/skins/Default/media/genre-type/genre-7533d3172cf8.png",
+      "resources/skins/Default/media/genre-type/genre-79d5f1fafb01.png",
+      "resources/skins/Default/media/genre-type/genre-7ed6f4c51209.png",
+      "resources/skins/Default/media/genre-type/genre-7f0718118fad.png",
+      "resources/skins/Default/media/genre-type/genre-816103839704.png",
+      "resources/skins/Default/media/genre-type/genre-8185cea952a1.png",
+      "resources/skins/Default/media/genre-type/genre-82287d8cf501.png",
+      "resources/skins/Default/media/genre-type/genre-868f63d61d0c.png",
+      "resources/skins/Default/media/genre-type/genre-87bc9dfdec26.png",
+      "resources/skins/Default/media/genre-type/genre-a12b3f33b487.png",
+      "resources/skins/Default/media/genre-type/genre-bd0e9ee7d72b.png",
+      "resources/skins/Default/media/genre-type/genre-d7d5b4da0a45.png",
+      "resources/skins/Default/media/genre-type/genre-deb793c68d98.png",
+      "resources/skins/Default/media/genre-type/genre-ee1f3712fd8a.png",
+      "resources/skins/Default/media/genre-type/genre-f13aa67e25e9.png",
+      "resources/skins/Default/media/genre-type/genre-f1a21e62f3e1.png",
+      "resources/skins/Default/media/genre-type/genre-fe0beea1a12d.png",
+      "resources/skins/Default/media/genre-type/spine-063e9e2403ab.png",
+      "resources/skins/Default/media/genre-type/spine-08d5f92ca9e9.png",
+      "resources/skins/Default/media/genre-type/spine-0c0a9c87f940.png",
+      "resources/skins/Default/media/genre-type/spine-173af5934866.png",
+      "resources/skins/Default/media/genre-type/spine-2a9f8d30cf97.png",
+      "resources/skins/Default/media/genre-type/spine-3580469d06f3.png",
+      "resources/skins/Default/media/genre-type/spine-4c9e85d7cf2e.png",
+      "resources/skins/Default/media/genre-type/spine-51c95d4c9ad8.png",
+      "resources/skins/Default/media/genre-type/spine-549f2b17195c.png",
+      "resources/skins/Default/media/genre-type/spine-560c2a455e3a.png",
+      "resources/skins/Default/media/genre-type/spine-5ed598f0566a.png",
+      "resources/skins/Default/media/genre-type/spine-60a0b4714191.png",
+      "resources/skins/Default/media/genre-type/spine-6d692ee13c1a.png",
+      "resources/skins/Default/media/genre-type/spine-789c91216663.png",
+      "resources/skins/Default/media/genre-type/spine-7f6aa4a93812.png",
+      "resources/skins/Default/media/genre-type/spine-80e37803b97e.png",
+      "resources/skins/Default/media/genre-type/spine-870b752b8540.png",
+      "resources/skins/Default/media/genre-type/spine-8db635245d1d.png",
+      "resources/skins/Default/media/genre-type/spine-9a26a76fee31.png",
+      "resources/skins/Default/media/genre-type/spine-bbe4e712197e.png",
+      "resources/skins/Default/media/genre-type/spine-c3e70d7eae96.png",
+      "resources/skins/Default/media/genre-type/spine-c6837ea765f2.png",
+      "resources/skins/Default/media/genre-type/spine-d23f93c09692.png",
+      "resources/skins/Default/media/genre-type/spine-dcba0c70c613.png",
+      "resources/skins/Default/media/genre-type/spine-dd6a995c7b8d.png",
+      "resources/skins/Default/media/genre-type/spine-e7017faea536.png",
+      "resources/skins/Default/media/genre-type/spine-ff32a18957b5.png",
+      "resources/skins/Default/media/genre-type/spine-ff481f81aecb.png"
+    ],
+    "all_other_xml_controls_and_animations_unchanged": true,
+    "all_non_artwork_login_catalog_playback_logic_unchanged": true,
+    "native": {
+      "kodi": "22.0-RC2 (21.90.902) Git:20261109-d686683a55d",
+      "provider_exercised": false,
+      "api_stubs": false,
+      "native_window_closed": true
+    },
+    "native_focus_records": [
+      {
+        "event": "genre_plane_focus",
+        "stage": "native_genre_presentation",
+        "generation": 1,
+        "section": "movies",
+        "selected_index": 0,
+        "previous_index": null,
+        "native_items": "0",
+        "focused_control": 301,
+        "previous_spine": false,
+        "next_spine": true,
+        "configured_plane_width": 1760,
+        "configured_spine_width": 160,
+        "configured_transition_ms": 320,
+        "configured_title_width": 1440,
+        "configured_title_height": 600,
+        "configured_typography": {
+          "model": "fixed_cap_height_equal_canvas",
+          "canvas": [
+            2880,
+            1200
+          ],
+          "font_pixels": 456,
+          "line_step_pixels": 368,
+          "stroke_pixels": 4,
+          "tracking": "bundled_font_default_tight",
+          "output_box": [
+            1440,
+            600
+          ],
+          "output_font_pixels": 228.0,
+          "cap_height_1080p": 164.0,
+          "cap_height_2160p": 328.0,
+          "screen_height_fraction": 0.15185185185185185,
+          "strip_canvas": [
+            184,
+            1460
+          ],
+          "strip_output_box": [
+            92,
+            730
+          ],
+          "strip_font_pixels": 128,
+          "strip_stroke_pixels": 1,
+          "strip_cap_height_1080p": 46.0,
+          "strip_to_active_ratio": 0.2804878048780488,
+          "glyph_resize": false,
+          "source_scale": 2
+        },
+        "title_inherits_edge_stretch": false,
+        "title_bound": true,
+        "spine_title_bound": true,
+        "image_bound": true,
+        "catalog_request_for_presentation": false,
+        "result": "configured",
+        "schema": 2,
+        "operation": "interface_performance",
+        "attempt": "98dcc2988bf50573",
+        "sequence": 4,
+        "version": "0.2.57",
+        "time": "2026-11-24T16:10:39.213957+00:00",
+        "attempt_elapsed_ms": 447
+      },
+      {
+        "event": "genre_plane_focus",
+        "stage": "native_genre_presentation",
+        "generation": 1,
+        "section": "movies",
+        "selected_index": 0,
+        "previous_index": 0,
+        "native_items": "13",
+        "focused_control": 410,
+        "previous_spine": false,
+        "next_spine": true,
+        "configured_plane_width": 1760,
+        "configured_spine_width": 160,
+        "configured_transition_ms": 320,
+        "configured_title_width": 1440,
+        "configured_title_height": 600,
+        "configured_typography": {
+          "model": "fixed_cap_height_equal_canvas",
+          "canvas": [
+            2880,
+            1200
+          ],
+          "font_pixels": 456,
+          "line_step_pixels": 368,
+          "stroke_pixels": 4,
+          "tracking": "bundled_font_default_tight",
+          "output_box": [
+            1440,
+            600
+          ],
+          "output_font_pixels": 228.0,
+          "cap_height_1080p": 164.0,
+          "cap_height_2160p": 328.0,
+          "screen_height_fraction": 0.15185185185185185,
+          "strip_canvas": [
+            184,
+            1460
+          ],
+          "strip_output_box": [
+            92,
+            730
+          ],
+          "strip_font_pixels": 128,
+          "strip_stroke_pixels": 1,
+          "strip_cap_height_1080p": 46.0,
+          "strip_to_active_ratio": 0.2804878048780488,
+          "glyph_resize": false,
+          "source_scale": 2
+        },
+        "title_inherits_edge_stretch": false,
+        "title_bound": true,
+        "spine_title_bound": true,
+        "image_bound": true,
+        "catalog_request_for_presentation": false,
+        "result": "configured",
+        "schema": 2,
+        "operation": "interface_performance",
+        "attempt": "98dcc2988bf50573",
+        "sequence": 5,
+        "version": "0.2.57",
+        "time": "2026-11-24T16:10:39.527524+00:00",
+        "attempt_elapsed_ms": 761
+      },
+      {
+        "event": "genre_plane_focus",
+        "stage": "native_genre_presentation",
+        "generation": 1,
+        "section": "movies",
+        "selected_index": 1,
+        "previous_index": 0,
+        "native_items": "13",
+        "focused_control": 410,
+        "previous_spine": true,
+        "next_spine": true,
+        "configured_plane_width": 1600,
+        "configured_spine_width": 160,
+        "configured_transition_ms": 320,
+        "configured_title_width": 1440,
+        "configured_title_height": 600,
+        "configured_typography": {
+          "model": "fixed_cap_height_equal_canvas",
+          "canvas": [
+            2880,
+            1200
+          ],
+          "font_pixels": 456,
+          "line_step_pixels": 368,
+          "stroke_pixels": 4,
+          "tracking": "bundled_font_default_tight",
+          "output_box": [
+            1440,
+            600
+          ],
+          "output_font_pixels": 228.0,
+          "cap_height_1080p": 164.0,
+          "cap_height_2160p": 328.0,
+          "screen_height_fraction": 0.15185185185185185,
+          "strip_canvas": [
+            184,
+            1460
+          ],
+          "strip_output_box": [
+            92,
+            730
+          ],
+          "strip_font_pixels": 128,
+          "strip_stroke_pixels": 1,
+          "strip_cap_height_1080p": 46.0,
+          "strip_to_active_ratio": 0.2804878048780488,
+          "glyph_resize": false,
+          "source_scale": 2
+        },
+        "title_inherits_edge_stretch": false,
+        "title_bound": true,
+        "spine_title_bound": true,
+        "image_bound": true,
+        "catalog_request_for_presentation": false,
+        "result": "configured",
+        "schema": 2,
+        "operation": "interface_performance",
+        "attempt": "98dcc2988bf50573",
+        "sequence": 6,
+        "version": "0.2.57",
+        "time": "2026-11-24T16:10:55.081778+00:00",
+        "attempt_elapsed_ms": 16315
+      }
+    ],
+    "provider_login_or_playback_exercised": false,
+    "scope": "Actual asset pixels, XML scope, native production skin display and focus diagnostics; no provider mocks.",
+    "native_visual_review": {
+      "states_observed": [
+        "first Action & adventure",
+        "middle Anime",
+        "last All movies"
+      ],
+      "expanded_and_strip_hierarchy_observed": true,
+      "uniform_first_middle_last_letter_shapes": true,
+      "note": "Typography was inspected on first/middle/final states before replacing the genre image files. The second inspection was stopped by the user with Escape; no further computer control was used. The existing probe logs indices0/1; End reached All movies and was inspected directly. Original image bytes/dimensions were separately verified from real Amazon responses. No account/provider emulation."
+    }
+  },
+  "actual_original_genre_image_downloads": {
+    "operation": "bundled_genre_originals",
+    "credentials_sent": false,
+    "source": "Saved actual public Amazon metadata and live certificate-verified image responses",
+    "results": [
+      {
+        "old_asset": "landscape-12d04f04b5c5acfe77f35671.jpg",
+        "asset": "master-30f7fb3bd287cd9fd7bb1cd6.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#bfd6b5ce/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "12d04f04b5c5acfe",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 227138,
+        "sha256": "30f7fb3bd287cd9fd7bb1cd6364e32a3da3474b9d5282ad40b4f2656092d27c3",
+        "elapsed_ms": 406,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-16f9547113dff69aefc0c662.jpg",
+        "asset": "master-6e1d54400b062e62694ab785.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#e190880b/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#ed17fe6b/#df576cfb/#64330525/#407224e8",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "16f9547113dff69a",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 289212,
+        "sha256": "6e1d54400b062e62694ab78540c80bf37f4f314bb97d458ce73c9012072c3e33",
+        "elapsed_ms": 219,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-32d76299b6a75d5edd275267.png",
+        "asset": "master-50189ad8f5006f8687a29624.png",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#3af12e63/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#9fe502de",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "32d76299b6a75d5e",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 204399,
+        "sha256": "50189ad8f5006f8687a296246139b7f3b9572a2ea9991d992e5220582f6bb208",
+        "elapsed_ms": 219,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-38a38bbe060bd887f9bc28a0.jpg",
+        "asset": "master-c25e1314801b90a5038b05b3.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#628bb418/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "38a38bbe060bd887",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 256465,
+        "sha256": "c25e1314801b90a5038b05b3f15798170154a2283499740a32046fb4de2ae1e1",
+        "elapsed_ms": 219,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-43f61683e521760e11d21adf.jpg",
+        "asset": "master-ae57e1a640f07044de91e913.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "43f61683e521760e",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 232456,
+        "sha256": "ae57e1a640f07044de91e9136ce4a027fd0983436a6eeab9c7e5a6fd2af25376",
+        "elapsed_ms": 125,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-45dedfb51202f6a482cd2bb9.jpg",
+        "asset": "master-a278c04ac620f0540d55865d.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#c090e435/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "45dedfb51202f6a4",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 181175,
+        "sha256": "a278c04ac620f0540d55865d96edfd0896c221f8f41c32b18ff5469b37e6fe9e",
+        "elapsed_ms": 125,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-5c7ed53aebf77f972e21306e.jpg",
+        "asset": "master-b7f7fedca929cad9ce24ad2c.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#1f771094/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "5c7ed53aebf77f97",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 166167,
+        "sha256": "b7f7fedca929cad9ce24ad2c3f3ff50c1300628685743dafafe9e05739d0ec09",
+        "elapsed_ms": 141,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-5e5499df0ce5041cc3f48dcd.jpg",
+        "asset": "master-cd1d6159762376f65c91482b.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#9e4dcb7e/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "5e5499df0ce5041c",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 263364,
+        "sha256": "cd1d6159762376f65c91482b9fa1eefbe47b95443e14a22db789561d58c6c30f",
+        "elapsed_ms": 141,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-611243b8f403bee437178a8e.jpg",
+        "asset": "master-265059ed786a3fc02f7ea990.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#a8fd6ae2/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "611243b8f403bee4",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 261773,
+        "sha256": "265059ed786a3fc02f7ea99018a7b131b95d2bd3ffe5834611a81a57fe7f1f52",
+        "elapsed_ms": 141,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-66643306e8b2dbc26890ee38.jpg",
+        "asset": "master-8a43bb21c033581a910e1848.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#9804a712/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "66643306e8b2dbc2",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 172603,
+        "sha256": "8a43bb21c033581a910e1848f36425921165f10735342308d65d63f17462347a",
+        "elapsed_ms": 156,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-72a1c77bc200034c9659ab87.jpg",
+        "asset": "master-5a05aeadc663fad80b2a0d22.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#1898a56b/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "72a1c77bc200034c",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 255551,
+        "sha256": "5a05aeadc663fad80b2a0d22c53d9434fbc32a93c9fff9c4f5481f1e28bcf514",
+        "elapsed_ms": 469,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-788f982eace064a0a419bc28.jpg",
+        "asset": "master-bb62842743b47c2edc2fa175.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#01534626/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "788f982eace064a0",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 366131,
+        "sha256": "bb62842743b47c2edc2fa1756c2be9f7e7bb8c01104e0b39d893dc55329c5f26",
+        "elapsed_ms": 140,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-ac801836eab29dcf8a2ec274.png",
+        "asset": "master-7e6e4cf55acfd39b76449216.png",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#9a891eef/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#9fe502de",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "ac801836eab29dcf",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 219763,
+        "sha256": "7e6e4cf55acfd39b7644921676bf7e20ad1f75dcf42579df34f26ef9ddb6f211",
+        "elapsed_ms": 203,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-b9ec282deb80782f8871a212.png",
+        "asset": "master-dc890fc35712b7e59ad8d925.png",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#865432d3/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#9fe502de",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "b9ec282deb80782f",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 211319,
+        "sha256": "dc890fc35712b7e59ad8d92554e3c8b24fe994ff8c8d26ffa4a9e9c0ba61faba",
+        "elapsed_ms": 140,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-bd423e3ec2f92b549bc2a250.jpg",
+        "asset": "master-05bb6d9c72c453535aed73e8.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#63e666f9/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "bd423e3ec2f92b54",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 150364,
+        "sha256": "05bb6d9c72c453535aed73e8b8b27bc308a28fd83d4c07f53d8147dd943d7eb0",
+        "elapsed_ms": 141,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-c2427213395c8bec11669840.jpg",
+        "asset": "master-02ec5bb03eb5cecf8e639b0a.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#de115feb/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "c2427213395c8bec",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 240801,
+        "sha256": "02ec5bb03eb5cecf8e639b0a30e2350e73baa1a73402c7042dbfd22eceb58b46",
+        "elapsed_ms": 141,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-c25576c23ced1bff7ae9fb3a.jpg",
+        "asset": "master-b79a63ac2a9bda567cd6d8c2.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#bee5f76e/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "c25576c23ced1bff",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 318524,
+        "sha256": "b79a63ac2a9bda567cd6d8c2c761624fe5ae7585cd91a6d91aee56a178170f44",
+        "elapsed_ms": 484,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-e8ecadd49f799012f59acbbf.jpg",
+        "asset": "master-250e547f699d2c714c65e3d4.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#5de29d69/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "e8ecadd49f799012",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 306130,
+        "sha256": "250e547f699d2c714c65e3d4677f5117c6785e4eb34e8d61cb821e2fc5f2fc5f",
+        "elapsed_ms": 156,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-ee55e3c1cc39ca777b6ed8a6.png",
+        "asset": "master-20bf35374c49d9cab00ffaee.png",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#f844f1a0/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#9fe502de",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "ee55e3c1cc39ca77",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 291675,
+        "sha256": "20bf35374c49d9cab00ffaee88e041de7ecb1e3d15342fc29dd22babcac94b94",
+        "elapsed_ms": 188,
+        "resized_or_reencoded": false,
+        "result": "success"
+      },
+      {
+        "old_asset": "landscape-fe3add7b5eb66a5b56cdfbcc.jpg",
+        "asset": "master-24656ceb98b8ddf101f02556.jpg",
+        "status": 200,
+        "address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#2ba2e7f7/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_asset_fingerprint": "fe3add7b5eb66a5b",
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "bytes": 295466,
+        "sha256": "24656ceb98b8ddf101f02556b619da842048b8a9532b5d76d1cd787fb0cc8f5c",
+        "elapsed_ms": 156,
+        "resized_or_reencoded": false,
+        "result": "success"
+      }
+    ]
+  },
+  "actual_hero_master_and_provider_image_metadata": {
+    "source": "Actual public Amazon title metadata and live original image responses",
+    "credentials_sent": false,
+    "reference_hero": {
+      "status": 200,
+      "address": {
+        "host": "m.media-amazon.com",
+        "scheme": "https",
+        "port": null,
+        "has_userinfo": false,
+        "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#50e36aae",
+        "query_keys": [],
+        "authorization_code_present": false
+      },
+      "dimensions": [
+        3840,
+        2160
+      ],
+      "bytes": 1035645,
+      "content_type": "image/jpeg",
+      "sha256": "7b54caed1cd6db4a99821c95760334c9b7fd8dc0e65638b8fa270d08e33274d4",
+      "elapsed_ms": 781,
+      "resized_or_reencoded": false
+    },
+    "actual_public_image_records_checked": 1092,
+    "actual_variant_choices_changed": 0,
+    "original_master_policy": true,
+    "fixed_background_width_removed": true,
+    "card_width_720_preserved": true,
+    "provider_login_or_playback_tested": false,
+    "mocked_provider_success": false
+  }
+}

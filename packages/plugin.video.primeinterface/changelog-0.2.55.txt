@@ -1,0 +1,6 @@
+0.2.55
+- Unify exact verified Amazon website hosts across sign-in, cookies, security images and narrow catalog sign-on redirects.
+- Recognize23 Amazon-owned country domains and the documented regional account hosts without enabling wildcard trust.
+- Keep token/media APIs separately restricted and prevent catalog sign-on rules from applying to playback or token transports.
+- Resolve bare regional website names consistently with www names and reject undiscovered media endpoints before saving an unusable account.
+- Record scheme/port, policy decisions, regional inventory and complete security-image request/redirect/failure context without secret values.

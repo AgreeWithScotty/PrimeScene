@@ -13,6 +13,7 @@ from time import monotonic
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+from .regional_hosts import AUTH_API_DOMAINS
 
 try:
     from .prime_signin import AMAZON_HOSTS, SignInError, SignInHTTPError, trusted_host
@@ -74,7 +75,7 @@ class DeviceAuthorization:
     def __post_init__(self):
         self.account = dict(self.account)
         self.domain = self.account.get('sidomain', '')
-        if 'www.' + self.domain not in AMAZON_HOSTS:
+        if self.domain not in AUTH_API_DOMAINS:
             raise SignInError('Amazon returned an unsupported account region.')
         serial = self.account.get('deviceid', '')
         if len(serial) != 32 or not all(c in '0123456789abcdef' for c in serial.lower()):

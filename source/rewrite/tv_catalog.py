@@ -10,6 +10,7 @@ from .public_catalog import (MAX_PAGE_BYTES, STOREFRONT_HOSTS, PublicCatalogErro
     _count_value, _duration_value, _first_shot, _genre_value, _next_url, _plot_value,
     _rating_value, _shot_map, _text, _year_value, _direct_next_links, safe_url)
 from .prime_diagnostics import exception_details, route
+from .regional_hosts import PRIME_WEB_HOSTS,POLICY_REVISION,https_host,url_rejection
 
 
 def _kind(info):
@@ -175,7 +176,11 @@ def fetch_tv_page(address, pluginid, opener, observer):
             observer({'event': 'tv_response_received', 'stage': stage, 'status': status,
                 'address': route(final), 'content_type': content_type,
                 'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid')})
-            if not safe_url(final, STOREFRONT_HOSTS):
+            if not https_host(final,PRIME_WEB_HOSTS):
+                observer({'event':'tv_terminal_address_rejected','stage':stage,'status':status,
+                    'address':route(final),'policy_revision':POLICY_REVISION,
+                    'policy_reason':url_rejection(final,PRIME_WEB_HOSTS),
+                    'elapsed_ms':round((monotonic()-started)*1000),'result':'failure'})
                 raise PublicCatalogError('The TV response left its trusted storefront.')
             raw = response.read(MAX_PAGE_BYTES+1)
             if len(raw) > MAX_PAGE_BYTES:

@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.49" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.58" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.49[CR]- Replace the genre grid with one horizontal row of wide image cards, using Amazon navigation artwork where supplied.[CR]- Warm the focused genre and its next neighbour in a separate bounded request lane; retain the chooser until the selected first page is ready.[CR]- Signal return to the selected card directly on the native player terminal callback, before progress reporting and cleanup; remove the fixed one-second return grace.[CR]- Keep fresh In Progress updates after the final provider progress attempt and add stage timings for genre selection and playback return.</news>
+    <news>0.2.58[CR]- Load genre backgrounds from Amazon at startup and remove all bundled genre photos.[CR]- Keep the splash visible for at least three seconds and until the initial Movies and TV backdrops are cached.[CR]- Preload original movie/show hero images in a separate queue; avoid stretched cover thumbnails.[CR]- Keep the expanded genre card steady when focus enters from the top menu.[CR]- Allow Back to cancel startup, and report artwork readiness, dimensions, request stages and failures.</news>
   </extension>
 </addon>

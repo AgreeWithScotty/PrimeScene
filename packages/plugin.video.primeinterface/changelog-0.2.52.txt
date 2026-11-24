@@ -1,0 +1,6 @@
+0.2.52
+- Allow Back to exit the signed-out interface, including after catalog work has stopped.
+- Halve the expanded genre title size while preserving thin-strip lettering and the existing genre layout.
+- Warm the Extras service directory after the main catalogs and display actual service batches before all directory pages finish.
+- Retain returned service cards if a later directory request fails; incomplete directories stay in memory and remain retryable.
+- Report exit state, service batch timings, completion, cancellation and failures without account secrets.

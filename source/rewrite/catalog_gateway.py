@@ -29,6 +29,7 @@ def _card_info(card):
         info['landscape'] = card.landscape_url
     info['primeincluded'] = prime_included(card.access_evidence)
     info['access_evidence'] = card.access_evidence
+    if card.resume_seconds is not None:info['resume_seconds']=card.resume_seconds
     if card.fanart_url:
         info['fanart'] = card.fanart_url
     if card.plot:
@@ -140,7 +141,7 @@ class CatalogGateway:
     def browse_progressive(self,path,publish,active,query=None):
         if not self._active(active):return
         if query is not None:packet=self.search(query,active)
-        elif path=='__service_directory__':packet=self.services(active)
+        elif path=='__service_directory__':return self.services(active,publish)
         elif path.startswith('__service__/'):
             from .service_catalog import service_address
             address=service_address(unquote_plus(path[len('__service__/'):]))
@@ -189,14 +190,25 @@ class CatalogGateway:
         if packet is not None and self._active(active):publish(packet)
         return packet
 
-    def services(self,active):
+    def services(self,active,publish=None):
         from .service_catalog import discover
-        observe=self._observe(active)
-        with self.session(active,observe) as client:tiles,complete=discover(client,observe)
+        observe=self._observe(active);started=monotonic()
+        def packet(tiles,complete):
+            return {'rows':[],'tiles':tiles,'next':None,'catalog_policy':'services','directory_complete':complete,
+                'empty_confirmed':not tiles and complete}
+        def receive(tiles,complete):
+            if publish is not None and self._active(active):publish(packet(tiles,complete))
+        try:
+            with self.session(active,observe) as client:
+                tiles,complete=discover(client,observe,receive,lambda:self._active(active))
+        except Exception as error:
+            observe({'event':'service_directory_failed','stage':'service_directory_fetch_or_parse',
+                'elapsed_ms':round((monotonic()-started)*1000),
+                'exception':exception_details(error),'result':'failure'})
+            raise
         if not self._active(active):return None
         if not tiles and not complete:raise PublicCatalogError('Amazon did not return its service directory. Open Diagnostics.')
-        return {'rows':[],'tiles':tiles,'next':None,'catalog_policy':'services','directory_complete':complete,
-            'empty_confirmed':not tiles and complete}
+        return packet(tiles,complete)
 
     def _continuation(self, page, next_url, previous_urls):
         if not next_url:
@@ -288,9 +300,16 @@ class CatalogGateway:
         if page == 'watching':
             from .watch_home import complete
             from .home_catalog import unique_progress_rows
-            rows, duplicates = unique_progress_rows([row for row in rows if not complete(row.get('info') or {})])
+            # A completed episode does not complete its containing TV series.
+            finished=[row for row in rows if (row.get('info') or {}).get('mediatype') in ('movie','episode')
+                      and complete(row.get('info') or {})]
+            rows, duplicates = unique_progress_rows([row for row in rows if row not in finished])
             observe({'event':'progress_snapshot_ready','fresh':True,'source':'amazon_only',
-                'duplicates_removed':duplicates,'rows':len(rows),'result':'success'})
+                'duplicates_removed':duplicates,'completed_titles_removed':len(finished),
+                'movie_rows':sum((row.get('info') or {}).get('mediatype')=='movie' for row in rows),
+                'tv_rows':sum((row.get('info') or {}).get('mediatype') in ('tvshow','season','episode') for row in rows),
+                'position_fields':sum('resume_seconds' in (row.get('info') or {}) for row in rows),
+                'rows':len(rows),'result':'success'})
             for row in rows: row['watching_only'] = True
         visited = previous_urls + ((continuation_identity(continuation),) if continuation else ())
         next_path = self._continuation(page, result.next_request or result.next_url, visited)
