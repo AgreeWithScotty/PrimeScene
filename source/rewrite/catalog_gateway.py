@@ -14,7 +14,8 @@ from . import collection_paging
 from .detail_catalog import parse_detail,search_request
 
 STOREFRONT_PAGES={'__watching__':'watching','__prime_home__':'movies','__prime_movies__':'movies',
-    '__prime_tv__':'tv','__prime_sports__':'sports','__prime_channels__':'channels','__prime_purchases__':'purchases'}
+    '__prime_tv__':'tv','__prime_sports__':'sports','__prime_channels__':'channels','__prime_purchases__':'purchases',
+    '__prime_watchlist__':'watchlist','__purchases__/movies':'purchased_movies','__purchases__/tv':'purchased_tv'}
 from .public_catalog import PublicSigninRequired as CatalogSigninRequired
 
 def _card_info(card):
@@ -229,8 +230,8 @@ class CatalogGateway:
             return None
         observe = self._observe(active)
         key = (self.epoch, page, continuation_identity(continuation))
-        if page == 'watching': self.public_pages.pop(key,None)
-        cached = self.public_pages.get(key) if page != 'watching' else None
+        if page in ('watching','watchlist'): self.public_pages.pop(key,None)
+        cached = self.public_pages.get(key) if page not in ('watching','watchlist') else None
         if cached and monotonic() - cached[0] < 120:
             result = cached[1]
             observe({'event': 'catalog_cache_hit', 'section': page, 'cards': len(result.cards),
@@ -251,7 +252,8 @@ class CatalogGateway:
                 opener = prime_signin.catalog_opener(
                     jar, observer=observe, headers=session_store.session_headers(self.g.DATA_PATH))
                 try:
-                    result = fetch_page(page, opener=opener, continuation=continuation, observer=observe)
+                    result = fetch_page('purchases' if page.startswith('purchased_') else page,
+                        opener=opener, continuation=continuation, observer=observe)
                 finally:
                     for cookie in jar:
                         observe.secret(cookie.value)
@@ -267,25 +269,28 @@ class CatalogGateway:
             finally:
                 if jar is not None:
                     jar.clear()
-            if page != 'watching': self.public_pages[key] = (monotonic(), result)
+            if page not in ('watching','watchlist'): self.public_pages[key] = (monotonic(), result)
         if not self._active(active):
             return None
         rows = []
-        excluded, unknown, wrong_type = 0, 0, 0
+        excluded, unknown, wrong_type,invalid_detail = 0, 0, 0,0
         for card in result.cards:
             if page in ('movies', 'tv') and not prime_included(card.access_evidence):
                 excluded += 1
                 unknown += not bool(card.access_evidence)
                 continue
-            if ((page == 'movies' and card.mediatype != 'movie')
-                    or (page == 'tv' and card.mediatype not in ('tvshow', 'season', 'episode'))):
+            if ((page in ('movies','purchased_movies') and card.mediatype != 'movie')
+                    or (page in ('tv','purchased_tv') and card.mediatype not in ('tvshow', 'season', 'episode'))):
                 wrong_type += 1
                 continue
-            if page == 'purchases' and not result.library_confirmed:
+            if (page == 'purchases' or page.startswith('purchased_')) and not result.library_confirmed:
                 raise PublicCatalogError('The account library could not be confirmed. Open Diagnostics for details.')
+            if page=='watchlist' and not result.watchlist_confirmed:
+                raise PublicCatalogError('The Amazon Watchlist could not be confirmed. Open Diagnostics for details.')
             url = safe_url(card.detail_url, STOREFRONT_HOSTS)
             identity = detail_id(url) if url else None
             if not identity:
+                invalid_detail+=1
                 continue
             self.details.setdefault(identity, {'title': card.title, 'lazyLoadURL': url})
             info=_card_info(card)
@@ -313,14 +318,26 @@ class CatalogGateway:
             for row in rows: row['watching_only'] = True
         visited = previous_urls + ((continuation_identity(continuation),) if continuation else ())
         next_path = self._continuation(page, result.next_request or result.next_url, visited)
+        personal=page in ('watchlist','purchases','purchased_movies','purchased_tv')
+        filtered_empty=bool(result.cards) and wrong_type==len(result.cards) and not next_path
+        empty_confirmed=result.empty_confirmed or (filtered_empty if personal else bool(result.cards) and not rows and not next_path)
+        if personal and not rows and not next_path and not empty_confirmed:
+            observe({'event':'personal_collection_unknown','stage':'card_mapping','section':page,
+                'source_cards':len(result.cards),'invalid_detail_rows':invalid_detail,
+                'empty_confirmed':False,'result':'failure'})
+            raise PublicCatalogError('The personal list could not be read; no empty account list was confirmed.')
         observe({'event': 'catalog_packet_ready', 'section': page, 'rows': len(rows),
                  'empty_confirmed':result.empty_confirmed,'empty_after_filtering':bool(result.cards) and not rows and not next_path,
                  'source_cards': len(result.cards), 'prime_only': page in ('movies', 'tv'),
                  'access_excluded': excluded, 'access_unknown': unknown,
                  'type_excluded': wrong_type,
                  'library_confirmed': result.library_confirmed,
+                 'watchlist_confirmed':result.watchlist_confirmed,
                  'has_next': bool(next_path), 'result': 'success'})
         return {'rows': rows, 'next': next_path, 'library_confirmed': result.library_confirmed,
-                'empty_confirmed':result.empty_confirmed or bool(result.cards) and not rows and not next_path,
+                'watchlist_confirmed':result.watchlist_confirmed,
+                'empty_confirmed':empty_confirmed,
+                'personal_schema':2 if personal else None,
+                'collection_state':'items' if rows else 'empty' if empty_confirmed else 'continuation' if next_path else 'unknown',
                 'catalog_policy': 'prime_only' if page in ('movies', 'tv') else
-                                  'account_library' if page == 'purchases' else 'watch_progress' if page == 'watching' else page}
+                                  'account_library' if page == 'purchases' or page.startswith('purchased_') else 'watch_progress' if page == 'watching' else page}

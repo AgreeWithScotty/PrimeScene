@@ -1,0 +1,70 @@
+{
+  "version": "0.2.60",
+  "sha256": "bc2e91f5dda734e55970c57a419ea91c31b23f0897708935deb8d8bdf10b9574",
+  "bytes": 3754628,
+  "files": 160,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/artwork_cache.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_status.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/collection_paging.py",
+    "plugin.video.primeinterface/resources/lib/genre_backdrops.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/provider_documents.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/purchases_catalog.py"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "artifact_and_public_image_checks": {
+    "baseline_version": "0.2.59",
+    "runtime_files": 160,
+    "changed_runtime_python_files": [
+      "resources/lib/artwork_cache.py",
+      "resources/lib/aurora.py",
+      "resources/lib/browse_status.py",
+      "resources/lib/catalog_gateway.py",
+      "resources/lib/collection_paging.py",
+      "resources/lib/genre_backdrops.py",
+      "resources/lib/navigation.py",
+      "resources/lib/provider_documents.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/purchases_catalog.py"
+    ],
+    "python_3_8_and_xml_valid": true,
+    "no_missing_references": true,
+    "unrelated_runtime_and_assets_unchanged": true,
+    "actual_public_artwork_check": {
+      "genre_metadata_requests": 1,
+      "title_metadata_requests": 4,
+      "genre_pagination_requests": 0,
+      "distinct_movie_backgrounds": 3,
+      "duplicate_backgrounds": 0,
+      "image_dimensions": [
+        [
+          3840,
+          2160
+        ],
+        [
+          1920,
+          1080
+        ],
+        [
+          3840,
+          2160
+        ]
+      ],
+      "per_section_publication_observed": true
+    },
+    "provider_response_mocks": false,
+    "authenticated_personal_collection_retest_observed": false,
+    "native_rendering_of_this_update_observed": false,
+    "publication_scope": "main only; no release/testing/public distribution branch update"
+  }
+}

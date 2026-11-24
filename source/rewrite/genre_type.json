@@ -200,6 +200,13 @@
       "lines": [
         "WESTERN"
       ]
+    },
+    "Purchases": {
+      "title": "genre-e3d6b8dcf33f.png",
+      "lines": [
+        "PURCHASES"
+      ],
+      "spine": "spine-bedd48a3b4f3.png"
     }
   },
   "layout": {

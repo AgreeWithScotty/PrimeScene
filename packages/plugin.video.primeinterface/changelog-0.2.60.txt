@@ -1,0 +1,7 @@
+0.2.60
+- Read selected Watchlist and Purchases collections without looping through tracking-link variants.
+- Distinguish confirmed empty account lists from unreadable, unfinished or failed responses; preserve collection pagination.
+- Choose distinct original Amazon backdrops for genres, All Movies/TV and Purchases without loading entire categories.
+- Prepare the first four genre backdrops concurrently and make each movie image available before TV metadata finishes.
+- Reuse verified regional artwork cache entries and continue background retries after bounded startup recovery.
+- Record collection parsing and per-image startup stages, timings and redacted failures.

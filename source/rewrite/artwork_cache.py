@@ -36,6 +36,7 @@ class ImageCache:
         self.metadata={}
         self.stop, self.lock = Event(), Lock()
         self.pending, self.failed = set(), {}
+        self.failure_details={}
         self.futures={};self.priority_signature=None
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimeArtwork')
         self.report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'),
@@ -67,6 +68,12 @@ class ImageCache:
             self.report({'event':'artwork_cached_header_failed','stage':'image_cache_metadata','address':route(url),
                 'exception':exception_details(error),'result':'failure'})
             return None
+
+    def state(self,url):
+        if self.local(url)!=url:return {'state':'ready_original','pixel_dimensions':self.dimensions(url)}
+        with self.lock:
+            state='image_download_pending' if url in self.pending else 'image_download_failed' if url in self.failed else 'image_not_queued'
+            return dict(self.failure_details.get(url) or {},state=state)
 
     def warm(self, urls,priority=False):
         urls=list(dict.fromkeys(urls))
@@ -132,6 +139,8 @@ class ImageCache:
         except Exception as error:
             with self.lock:
                 self.failed[url]=monotonic()
+                self.failure_details[url]={'request_id':request_id,'status':status or getattr(error,'code',None),
+                    'exception':exception_details(error),'stage':'image_download'}
             self.report({'event': 'artwork_ahead_failed', 'request_id':request_id,'status': status or getattr(error,'code',None),
                          'response_address':route(final),'size_limit_bytes':MAX_IMAGE_BYTES,
                          'retry_after_seconds':30,
@@ -151,5 +160,6 @@ class ImageCache:
         with self.lock:
             self.pending.clear()
             self.failed.clear()
+            self.failure_details.clear()
             self.futures.clear();self.priority_signature=None
             self.metadata.clear()
