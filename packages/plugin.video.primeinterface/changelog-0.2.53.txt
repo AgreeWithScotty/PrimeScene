@@ -1,0 +1,5 @@
+0.2.53
+- Use one fixed font size and equal transparent canvases for every expanded genre title; wrap long names without changing glyph size or proportions.
+- Keep first/last-card edge fill on the artwork and selection line, preserving the same lettering proportions at every position.
+- Give corrected title images content-based cache identities so existing Kodi installations receive the new pixels.
+- Preserve thin-strip typography and add bundled font/layout measurements to real focus diagnostics.
