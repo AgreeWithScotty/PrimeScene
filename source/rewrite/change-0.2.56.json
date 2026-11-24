@@ -1,0 +1,629 @@
+{
+  "version": "0.2.56",
+  "sha256": "1617eab65112e9fce362de153e275b5ef428f1b070798a6393dd21aa33d3694b",
+  "bytes": 4407883,
+  "files": 176,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/account_region.py",
+    "plugin.video.primeinterface/resources/lib/http_transport.py",
+    "plugin.video.primeinterface/resources/lib/prime_signin.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/regional_hosts.py",
+    "plugin.video.primeinterface/resources/lib/tv_catalog.py"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "regional_redirect_authority_audit": {
+    "policy": {
+      "revision": "2026-11-24-r2",
+      "country_website_domains": 23,
+      "sign_in_hosts": 64,
+      "security_image_hosts": 67,
+      "catalog_hosts": 13,
+      "native_auth_api_domains": 4,
+      "prime_web_hosts": [
+        "eu.primevideo.com",
+        "fe.primevideo.com",
+        "na.primevideo.com",
+        "primevideo.com",
+        "www.primevideo.com"
+      ],
+      "prime_redirect_hosts": [
+        "amazonvideo.com",
+        "av-eu.amazon.com",
+        "av-fe.amazon.com",
+        "av-na.amazon.com",
+        "r.eu.primevideo.com",
+        "r.fe.primevideo.com",
+        "r.na.primevideo.com",
+        "www.amazonvideo.com"
+      ],
+      "amazon_redirect_hosts": [
+        "r.amazon.co.jp",
+        "r.amazon.co.uk",
+        "r.amazon.com"
+      ],
+      "media_api_hosts": 15,
+      "catalog_sso_path": "/ax/sso/redirect",
+      "country_host_wildcards": false,
+      "cookie_scope": "provider_cookiejar"
+    },
+    "actual_https_attempts": 32,
+    "unique_hosts_observed": 29,
+    "verified_navigation_hosts": [
+      "amazonvideo.com",
+      "av-eu.amazon.com",
+      "av-fe.amazon.com",
+      "av-na.amazon.com",
+      "eu.primevideo.com",
+      "fe.primevideo.com",
+      "na.primevideo.com",
+      "primevideo.com",
+      "r.amazon.co.jp",
+      "r.amazon.co.uk",
+      "r.amazon.com",
+      "r.eu.primevideo.com",
+      "r.fe.primevideo.com",
+      "r.na.primevideo.com",
+      "www.amazonvideo.com",
+      "www.primevideo.com"
+    ],
+    "verified_app_launchers_excluded": [
+      "watch.amazon.co.jp",
+      "watch.amazon.co.uk",
+      "watch.amazon.com",
+      "watch.amazon.de"
+    ],
+    "unverified_hosts_excluded": [
+      "amazonvideo.co.jp",
+      "amazonvideo.co.uk",
+      "amazonvideo.de",
+      "m.primevideo.com",
+      "r.amazon.ca",
+      "r.amazon.de",
+      "www.amazonvideo.co.jp",
+      "www.amazonvideo.co.uk",
+      "www.amazonvideo.de"
+    ],
+    "runtime_files_changed": [
+      "resources/lib/account_region.py",
+      "resources/lib/http_transport.py",
+      "resources/lib/prime_signin.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/regional_hosts.py",
+      "resources/lib/tv_catalog.py"
+    ],
+    "private_login_tested": false,
+    "provider_login_mocks": false,
+    "credential_challenge_and_api_logic_unchanged": true,
+    "all_assets_unchanged": true,
+    "cross_origin_submission_replay_blocked": true,
+    "terminal_catalog_restricted_to_prime_sites": true,
+    "existing_auth_api_domains_and_media_hosts_unchanged": true,
+    "region_aliases_decode_without_invented_api_names": true
+  },
+  "actual_public_navigation_through_production_handlers": {
+    "release": "0.2.56-candidate",
+    "environment": {
+      "python": "3.12.2",
+      "platform": "Windows",
+      "openssl": "OpenSSL 3.0.13 30 Jan 2024"
+    },
+    "scope": "Real public GET navigation only, using production redirect handlers and empty cookie jars. No account login, 2FA or playback claim.",
+    "private_login_tested": false,
+    "results": [
+      {
+        "handler": "signin",
+        "source_host": "eu.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "redirect",
+            "status": 301,
+            "method": "GET",
+            "stage": "public_regional_navigation",
+            "request_id": "be0aa89366b3b76d",
+            "from_host": "eu.primevideo.com",
+            "to_host": "www.primevideo.com",
+            "source": {
+              "host": "eu.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "destination": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "cross_origin": true,
+            "allowed": true,
+            "blocked_reason": null,
+            "policy_revision": "2026-11-24-r2",
+            "destination_policy_reason": null,
+            "preserves_submission": false,
+            "body_forwarded": false,
+            "elapsed_ms": 562,
+            "result": "allowed"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "be0aa89366b3b76d",
+        "elapsed_ms": 718
+      },
+      {
+        "handler": "signin",
+        "source_host": "fe.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "redirect",
+            "status": 301,
+            "method": "GET",
+            "stage": "public_regional_navigation",
+            "request_id": "04b36964d05adb9e",
+            "from_host": "fe.primevideo.com",
+            "to_host": "www.primevideo.com",
+            "source": {
+              "host": "fe.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "destination": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "cross_origin": true,
+            "allowed": true,
+            "blocked_reason": null,
+            "policy_revision": "2026-11-24-r2",
+            "destination_policy_reason": null,
+            "preserves_submission": false,
+            "body_forwarded": false,
+            "elapsed_ms": 281,
+            "result": "allowed"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "04b36964d05adb9e",
+        "elapsed_ms": 515
+      },
+      {
+        "handler": "signin",
+        "source_host": "r.eu.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "redirect",
+            "status": 302,
+            "method": "GET",
+            "stage": "public_regional_navigation",
+            "request_id": "902c4fc6743cb6b4",
+            "from_host": "r.eu.primevideo.com",
+            "to_host": "www.primevideo.com",
+            "source": {
+              "host": "r.eu.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "destination": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "cross_origin": true,
+            "allowed": true,
+            "blocked_reason": null,
+            "policy_revision": "2026-11-24-r2",
+            "destination_policy_reason": null,
+            "preserves_submission": false,
+            "body_forwarded": false,
+            "elapsed_ms": 1218,
+            "result": "allowed"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "902c4fc6743cb6b4",
+        "elapsed_ms": 1437
+      },
+      {
+        "handler": "catalog",
+        "source_host": "eu.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "catalog_redirect",
+            "stage": "public_regional_navigation",
+            "status": 301,
+            "from": {
+              "host": "eu.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "to": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "allowed": true,
+            "policy_revision": "2026-11-24-r2",
+            "regional_sso": false,
+            "regional_relay": false,
+            "method": "GET",
+            "result": "allowed",
+            "request_id": "dbfed8436fe35b59"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "dbfed8436fe35b59",
+        "elapsed_ms": 719
+      },
+      {
+        "handler": "catalog",
+        "source_host": "fe.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "catalog_redirect",
+            "stage": "public_regional_navigation",
+            "status": 301,
+            "from": {
+              "host": "fe.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "to": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "allowed": true,
+            "policy_revision": "2026-11-24-r2",
+            "regional_sso": false,
+            "regional_relay": false,
+            "method": "GET",
+            "result": "allowed",
+            "request_id": "312d49768359d420"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "312d49768359d420",
+        "elapsed_ms": 516
+      },
+      {
+        "handler": "catalog",
+        "source_host": "r.eu.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "catalog_redirect",
+            "stage": "public_regional_navigation",
+            "status": 302,
+            "from": {
+              "host": "r.eu.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "to": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "allowed": true,
+            "policy_revision": "2026-11-24-r2",
+            "regional_sso": false,
+            "regional_relay": false,
+            "method": "GET",
+            "result": "allowed",
+            "request_id": "45ae68a57047ce41"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "45ae68a57047ce41",
+        "elapsed_ms": 672
+      },
+      {
+        "handler": "catalog_transport",
+        "source_host": "eu.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "http_redirect",
+            "request_id": "9ffc85a7747ac5c8",
+            "stage": "public_regional_navigation",
+            "status": 301,
+            "from": {
+              "host": "eu.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "to": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "hop": 1,
+            "allowed": true,
+            "policy_revision": "2026-11-24-r2",
+            "regional_sso": false,
+            "regional_relay": false,
+            "method": "GET",
+            "result": "allowed"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "9ffc85a7747ac5c8",
+        "elapsed_ms": 593
+      },
+      {
+        "handler": "catalog_transport",
+        "source_host": "fe.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "http_redirect",
+            "request_id": "9ec50829c572be45",
+            "stage": "public_regional_navigation",
+            "status": 301,
+            "from": {
+              "host": "fe.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "to": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "hop": 1,
+            "allowed": true,
+            "policy_revision": "2026-11-24-r2",
+            "regional_sso": false,
+            "regional_relay": false,
+            "method": "GET",
+            "result": "allowed"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "9ec50829c572be45",
+        "elapsed_ms": 344
+      },
+      {
+        "handler": "catalog_transport",
+        "source_host": "r.eu.primevideo.com",
+        "final": {
+          "host": "www.primevideo.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "status": 200,
+        "content_type": "text/html",
+        "bytes_sampled": 1024,
+        "redirects": [
+          {
+            "event": "http_redirect",
+            "request_id": "748dc07900514268",
+            "stage": "public_regional_navigation",
+            "status": 302,
+            "from": {
+              "host": "r.eu.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "to": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/",
+              "query_keys": [],
+              "authorization_code_present": false
+            },
+            "hop": 1,
+            "allowed": true,
+            "policy_revision": "2026-11-24-r2",
+            "regional_sso": false,
+            "regional_relay": false,
+            "method": "GET",
+            "result": "allowed"
+          }
+        ],
+        "certificate_verification": true,
+        "credentials_sent": false,
+        "private_login_tested": false,
+        "result": "success",
+        "request_id": "748dc07900514268",
+        "elapsed_ms": 766
+      }
+    ]
+  }
+}

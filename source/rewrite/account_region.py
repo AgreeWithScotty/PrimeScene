@@ -8,8 +8,9 @@ import secrets
 from urllib.parse import urlencode, urlsplit
 
 from .auth_transport import json_request, structure
-from .prime_signin import SignInError, AMAZON_HOSTS, PRIME_HOSTS
-from .regional_hosts import https_host,MEDIA_API_HOSTS,POLICY_REVISION
+from .prime_signin import SignInError
+from .regional_hosts import (https_host,MEDIA_API_HOSTS,POLICY_REVISION,
+    SIGNIN_NAV_HOSTS,canonical_video_domain)
 from .prime_diagnostics import route
 
 MARKETS = {
@@ -29,7 +30,7 @@ CHOICES = (None, 'A1PA6795UKMFR9', 'A1F83G8C2ARO7P', 'ATVPDKIKX0DER',
 def _https(value):
     if not isinstance(value, str):
         raise SignInError('Amazon omitted an account website address.')
-    if not https_host(value,AMAZON_HOSTS|PRIME_HOSTS):
+    if not https_host(value,SIGNIN_NAV_HOSTS):
         raise SignInError('Amazon returned an unsupported account website.')
     return value.rstrip('/')
 
@@ -44,8 +45,7 @@ def decode_startup(value, serial):
         suffix = {'NA': '', 'EU': '-eu', 'FE': '-fe'}[region]
         if not isinstance(market, str) or not re.fullmatch('[A-Z0-9]{8,32}', market):
             raise ValueError('Invalid marketplace identifier')
-        public_host = urlsplit(site).hostname
-        public_host=public_host[4:] if public_host.startswith('www.') else public_host
+        public_host = canonical_video_domain(urlsplit(site).hostname)
         country_defaults = {'amazon.de': ('amazon.de','de','de_DE','-eu'),
             'amazon.co.uk': ('amazon.co.uk','uk','en_US','-eu'),
             'amazon.co.jp': ('amazon.co.jp','jp','ja_JP','-fe')}
@@ -56,11 +56,7 @@ def decode_startup(value, serial):
             language = preferred
     except (KeyError, TypeError, AttributeError, ValueError) as error:
         raise SignInError('Amazon returned an unrecognized account region. The discovery report contains its structure.') from error
-    host = urlsplit(site).hostname
-    if host in PRIME_HOSTS:
-        host = 'primevideo.com'
-    if host.startswith('www.'):
-        host = host[4:]
+    host = canonical_video_domain(urlsplit(site).hostname)
     media='https://atv-ps'+suffix+'.'+host
     if not https_host(media,MEDIA_API_HOSTS):
         raise SignInError('Amazon returned a regional media service that is not yet recognized. The discovery report identifies its host.')

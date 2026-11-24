@@ -14,7 +14,7 @@ from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 from urllib.request import HTTPCookieProcessor, HTTPRedirectHandler, Request, build_opener
 from .web_identity import USER_AGENT
 from .regional_hosts import (AUTH_WEB_HOSTS,PRIME_WEB_HOSTS,SECURITY_IMAGE_HOSTS,
-    POLICY_REVISION,https_host,url_rejection)
+    SIGNIN_NAV_HOSTS,POLICY_REVISION,https_host,url_rejection)
 
 try:
     from .public_catalog import ORIGIN, StorefrontRedirect
@@ -64,7 +64,7 @@ class AuthorizationReturn(Exception):
 
 
 def trusted_host(url):
-    return https_host(url,PRIME_HOSTS|AMAZON_HOSTS)
+    return https_host(url,SIGNIN_NAV_HOSTS)
 
 
 def diagnostic_host(url):
@@ -113,7 +113,7 @@ class SignInRedirect(HTTPRedirectHandler):
                            'cross_origin': source != destination,
                            'allowed': reason is None, 'blocked_reason': reason,
                            'policy_revision':POLICY_REVISION,
-                           'destination_policy_reason':url_rejection(newurl,PRIME_HOSTS|AMAZON_HOSTS),
+                           'destination_policy_reason':url_rejection(newurl,SIGNIN_NAV_HOSTS),
                            'preserves_submission': code in (307, 308),
                            'body_forwarded': reason is None and not callback and req.data is not None and code in (307, 308),
                            'elapsed_ms': round((monotonic()-getattr(req, '_prime_scene_started', monotonic()))*1000),

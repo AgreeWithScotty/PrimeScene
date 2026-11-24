@@ -1,0 +1,5 @@
+0.2.56
+- Recognize the verified North American, European and Far East Prime Video hosts consistently across sign-in, catalog navigation, cookies and region discovery.
+- Follow Amazon's verified regional relay addresses while keeping credential forms restricted to sign-in hosts and retail catalog handoffs restricted to the existing SSO route.
+- Normalize regional website identities for account discovery without inventing regional token or media API names.
+- Keep catalog and TV episode responses restricted to actual Prime Video sites after redirects; include the complete regional policy inventory and redirect decisions in diagnostics.
