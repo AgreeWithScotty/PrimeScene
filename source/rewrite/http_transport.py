@@ -60,6 +60,7 @@ def server_errors(value):
 
 
 class Redirects(HTTPRedirectHandler):
+    http_error_308=HTTPRedirectHandler.http_error_302
     def __init__(self,report,hosts,request_id,stage='http'):
         self.report,self.hosts,self.request_id,self.hops=report,hosts,request_id,0
         self.stage=stage
@@ -78,6 +79,8 @@ class Redirects(HTTPRedirectHandler):
             'method':request.get_method(),'result':'allowed' if allowed else 'blocked'})
         if not allowed:raise TransportFailure('The provider returned an untrusted redirect')
         result=super().redirect_request(request,fp,code,msg,headers,newurl)
+        if result:
+            result._prime_request_id=self.request_id;result._prime_stage=self.stage
         if result and catalog:strip_redirect_headers(result)
         elif result and urlsplit(request.full_url).hostname!=urlsplit(newurl).hostname:
             for name in ('Authorization','Cookie'):result.remove_header(name)
@@ -108,10 +111,15 @@ class HttpTransport:
         if self.jar:
             for cookie in self.jar:self.report.secret(cookie.value)
         request=Request(address,data=data,headers=combined,method=method)
+        request._prime_request_id=identifier;request._prime_stage=stage
         self.report({'event':'http_started','request_id':identifier,'stage':stage,
             'method':request.get_method(),'address':route(address),'request_bytes':len(data or b'')})
         handlers=[Redirects(self.report,self.hosts,identifier,stage)]
-        if self.jar is not None:handlers.append(HTTPCookieProcessor(self.jar))
+        if self.jar is not None:
+            if storefront_transport(self.hosts):
+                from .public_catalog import CatalogCookies
+                handlers.append(CatalogCookies(self.jar,self.report))
+            else:handlers.append(HTTPCookieProcessor(self.jar))
         try:
             with build_opener(*handlers).open(request,timeout=20) as reply:
                 status=reply.status;final=reply.geturl()

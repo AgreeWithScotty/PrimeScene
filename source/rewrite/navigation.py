@@ -36,6 +36,7 @@ class StorefrontLoader:
         self.readers = {root: (CatalogGateway(g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
         self.cache, self.futures = {}, {}
+        self.revalidate=set()
         self.background_paths, self.saved_checked = set(), set()
         self.focus_path = None
         self.focus_paths = ()
@@ -123,7 +124,7 @@ class StorefrontLoader:
                     'section':self.diagnostic_section(path),'result':'success'})
             entry = self.cache.get(path)
             if (path not in FRESH_ROOTS and future is not None and future.done() and not future.cancelled()
-                    and future.exception() is None and entry and time() - entry[0] < FRESH_SECONDS
+                    and future.exception() is None and entry and path not in self.revalidate and time() - entry[0] < FRESH_SECONDS
                     and (path!='__service_directory__' or entry[1].get('directory_complete'))):
                 if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and entry[1].get('next'):self.request(entry[1]['next'],background=True)
                 return future
@@ -189,9 +190,15 @@ class StorefrontLoader:
             bridge.continuations.update(staged)
             for alias in staged:
                 self.routes[alias] = root
+            # A restart may follow a VPN/territory change without changing the
+            # account epoch. Keep the warm display, but obtain a fresh first
+            # page before using old regional continuation tokens.
+            held=bool(packet.get('next'));packet['next']=None
             self.cache[root] = (saved['saved'], packet)
+            self.revalidate.add(root)
             self.report({'event': 'saved_catalog_loaded', 'section': self.diagnostic_section(root), 'cards': len(packet['rows']),
-                         'age_seconds': round(time() - saved['saved']), 'result': 'success'})
+                         'age_seconds': round(time() - saved['saved']), 'session_revalidation_required':True,
+                         'regional_continuation_held':held,'result': 'display_only'})
         except Exception as error:
             self.report({'event': 'saved_catalog_load_failed', 'section': self.diagnostic_section(root),
                          'exception': exception_details(error), 'result': 'failure'})
@@ -251,7 +258,7 @@ class StorefrontLoader:
             elif path=='__prime_watchlist__':
                 bridge,reader_lock=CatalogGateway(self.g),Lock()
                 entry=None
-            if (entry and 0 <= time() - entry[0] < FRESH_SECONDS
+            if (entry and path not in self.revalidate and 0 <= time() - entry[0] < FRESH_SECONDS
                     and (path!='__service_directory__' or entry[1].get('directory_complete'))):
                 packet = deepcopy(entry[1])
                 source = 'cache'
@@ -286,6 +293,7 @@ class StorefrontLoader:
                 source = 'network'
                 saved = time()
                 with self.lock:
+                    self.revalidate.discard(path)
                     if not fresh: self.cache[path] = (saved, deepcopy(packet))
                     if packet.get('next'):
                         self.routes[packet['next']] = root
@@ -328,6 +336,7 @@ class StorefrontLoader:
         self.personal.shutdown(wait=True)
         with self.lock:
             self.cache.clear()
+            self.revalidate.clear()
             self.futures.clear()
             self.routes.clear()
             self.readers.clear()

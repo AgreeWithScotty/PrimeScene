@@ -10,7 +10,7 @@ from .catalog_gateway import CatalogGateway
 from .detail_catalog import documents,state_records
 from .image_quality import source_image
 from .prime_diagnostics import DiagnosticLog,exception_details,route
-from .regional_hosts import PRIME_WEB_HOSTS,url_rejection
+from .regional_hosts import PRIME_WEB_HOSTS,url_rejection,storefront_path
 from .public_catalog import _read_page,_shot_map,_first_shot,safe_url,detail_id,IMAGE_HOSTS,STOREFRONT_HOSTS
 
 _EXTRA={'__prime_movies__':'movies','__prime_tv__':'tv','__purchases__/movies':'movies','__purchases__/tv':'tv'}
@@ -20,7 +20,7 @@ def genre_identity(address):
     if address in _EXTRA:return address
     parts=urlsplit(address)
     if parts.scheme!='https' or parts.hostname not in PRIME_WEB_HOSTS:return address
-    path=re.sub(r'^/region/[a-z]{2,4}(?=/)','',parts.path).rstrip('/') or '/'
+    path=storefront_path(address).rstrip('/') or '/'
     query=urlencode(sorted((k,v) for k,v in parse_qsl(parts.query) if k not in ('ref','ref_','jic')))
     return urlunsplit(('https','www.primevideo.com',path,query,''))
 

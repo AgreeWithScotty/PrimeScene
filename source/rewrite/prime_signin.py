@@ -618,6 +618,7 @@ def save_cookies(jar, path):
 
 
 def catalog_opener(jar, *, observer=None, headers=None):
-    opener = build_opener(StorefrontRedirect(observer=observer), HTTPCookieProcessor(jar))
+    from .public_catalog import CatalogCookies
+    opener = build_opener(StorefrontRedirect(observer=observer), CatalogCookies(jar,observer))
     opener.addheaders = list(dict(HEADERS, **(headers or {})).items())
     return opener

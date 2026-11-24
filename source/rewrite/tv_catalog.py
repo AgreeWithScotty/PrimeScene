@@ -2,13 +2,14 @@
 from copy import deepcopy
 import json
 from time import monotonic
+from secrets import token_hex
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request
 
 from .public_catalog import (MAX_PAGE_BYTES, STOREFRONT_HOSTS, PublicCatalogError, StorefrontParser,
     _count_value, _duration_value, _first_shot, _genre_value, _next_url, _plot_value,
-    _rating_value, _shot_map, _text, _year_value, _direct_next_links, safe_url)
+    _rating_value, _shot_map, _text, _year_value, _direct_next_links, safe_url, _emit)
 from .prime_diagnostics import exception_details, route
 from .regional_hosts import PRIME_WEB_HOSTS,POLICY_REVISION,https_host,url_rejection
 
@@ -44,18 +45,12 @@ def _info(node):
 
 
 def parse_tv_page(data, content_type, address, pluginid, observer=None):
-    if content_type.endswith('json'):
-        documents = [json.loads(data)]
-    else:
-        parser = StorefrontParser(address)
-        parser.feed(data)
-        parser.close()
-        documents = []
-        for script in parser.json_scripts:
-            try:
-                documents.append(json.loads(script))
-            except ValueError:
-                pass
+    from .provider_documents import read_documents
+    documents,extraction,_=read_documents(data,content_type)
+    _emit(observer,dict(extraction,event='tv_document_extracted',stage='tv_document_extract',result='success'))
+    if extraction.get('sign_in_form_present') or extraction.get('verification_form_present'):
+        from .public_catalog import PublicSigninRequired
+        raise PublicSigninRequired('Amazon returned a sign-in page instead of TV details. Open Diagnostics.')
     states, stack, visited = [], list(documents), 0
     while stack:
         node = stack.pop()
@@ -63,9 +58,9 @@ def parse_tv_page(data, content_type, address, pluginid, observer=None):
         if visited > 100000:
             raise PublicCatalogError('TV detail structure exceeds the parser limit.')
         if isinstance(node, dict):
-            state = node.get('state')
-            if isinstance(state, dict) and state.get('pageTitleId'):
-                states.append(state)
+            # pageTitleId declares the state regardless of its regional wrapper.
+            if node.get('pageTitleId') and any(isinstance(node.get(k),(dict,list)) for k in ('detail','self','episodeList','seasons')):
+                states.append(node)
             widgets = node.get('widgets')
             if isinstance(widgets, dict) and isinstance(widgets.get('episodeList'), dict):
                 context = widgets.get('pageContext') or {}
@@ -164,13 +159,17 @@ def parse_tv_page(data, content_type, address, pluginid, observer=None):
 
 def fetch_tv_page(address, pluginid, opener, observer):
     started = monotonic()
+    parent_observer=observer;identifier=token_hex(8)
+    observer=lambda event:_emit(parent_observer,dict(event,request_id=identifier))
     if not safe_url(address, STOREFRONT_HOSTS):
         raise PublicCatalogError('The show did not provide a trusted episode-list address.')
     stage = 'tv_fetch'
     status = None
     observer({'event': 'tv_request_started', 'stage': stage, 'address': route(address), 'method': 'GET'})
     try:
-        with opener.open(Request(address, headers={'Accept': 'text/html, application/json;q=0.9','Cache-Control':'no-cache','Pragma':'no-cache'}), timeout=15) as response:
+        request=Request(address, headers={'Accept': 'text/html, application/json;q=0.9','Cache-Control':'no-cache','Pragma':'no-cache'})
+        request._prime_request_id=identifier;request._prime_stage=stage
+        with opener.open(request, timeout=15) as response:
             status, final = response.getcode(), response.geturl()
             content_type = response.headers.get_content_type()
             observer({'event': 'tv_response_received', 'stage': stage, 'status': status,

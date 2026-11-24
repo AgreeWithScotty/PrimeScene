@@ -11,6 +11,7 @@ Prime Video NA/EU/FE sites and the exact relay aliases below were separately
 verified against their live HTTPS301/302 responses on2026-11-24. Public relay
 verification establishes navigation/ownership, not a completed account login.
 """
+import re
 from urllib.parse import urlsplit
 
 POLICY_REVISION='2026-11-24-r2'
@@ -82,6 +83,24 @@ def canonical_video_domain(host):
     host=VIDEO_ALIAS_TARGETS.get(host,host)
     if host in PRIME_WEB_HOSTS:return 'primevideo.com'
     return host[4:] if host.startswith('www.') else host
+
+
+def storefront_path(address):
+    """Classify a provider URL without changing its request address.
+
+    Amazon's live localized navigation uses /-/de/, /-/fr/ and /-/ja/.
+    Regional and language prefixes are routing context, not the content type.
+    """
+    path=urlsplit(address).path
+    for _ in range(2):
+        path=re.sub(r'^/(?:region/[a-z]{2,4}|-/[a-z]{2,3}(?:-[A-Za-z]{2,4})?)(?=/|$)','',path)
+    return path or '/'
+
+
+def region_prefix(address):
+    """The existing web pagination protocol uses the provider's region prefix."""
+    match=re.search(r'(?:^|/)(region/[a-z]{2,4})(?=/|$)',urlsplit(address).path)
+    return '/'+match.group(1) if match else ''
 
 
 def storefront_transport(hosts):

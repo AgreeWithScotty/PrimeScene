@@ -1,10 +1,12 @@
 """Genre navigation from explicit provider category links, never guessed routes."""
 import json,re
+from functools import lru_cache
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 from .detail_catalog import documents
 from .public_catalog import ORIGIN,STOREFRONT_HOSTS,IMAGE_HOSTS,safe_url,_text,_protocol_shape
+from .regional_hosts import storefront_path
 
 NAMES={'action':'Action','actionandadventure':'Action & adventure','adventure':'Adventure',
     'animation':'Animation','anime':'Anime','comedy':'Comedy','documentary':'Documentary',
@@ -20,6 +22,11 @@ def published_genres():
     rows=json.loads(Path(__file__).with_name('genre_links.json').read_text(encoding='utf-8'))['rows']
     return sorted(({'title':row['title'],'address':row['address']} for row in rows
         if safe_url(row.get('address'),STOREFRONT_HOSTS)),key=lambda row:row['title'])
+
+
+@lru_cache(maxsize=1)
+def _route_names():
+    return {storefront_path(row['address']).rstrip('/'):row['title'] for row in published_genres()}
 
 class GenreSection(HTMLParser):
     def __init__(self,address):
@@ -49,11 +56,39 @@ class GenreSection(HTMLParser):
         if tag in ('h2','h3'):self.collect=False;self.last=self.heading
 
 def section_link(data,address,section,observer=None):
+    # Metadata describes movie/TV scope independently of the rendered language.
+    from .provider_documents import objects
+    from .public_catalog import _json_content
+    from .catalog_access import prime_included
+    targets=set();typed=[]
+    for node,_ in objects(documents(data,'text/html',address)):
+        if not isinstance(node.get('seeMore'),dict):continue
+        link=node['seeMore'].get('link')
+        if not isinstance(link,dict):continue
+        metadata=link.get('metadata') or {}
+        kind=metadata.get('contentType') if isinstance(metadata,dict) else None
+        target=safe_url(link.get('url'),STOREFRONT_HOSTS,address)
+        if not target:continue
+        if kind in (('movie','movies') if section=='movies' else ('tv','tvshow','season','series')):targets.add(target)
+        # Prime's translated genre shelves keep typed title records even when
+        # seeMore.metadata is empty. Preserve provider order: the main typed
+        # shelf precedes secondary popularity shelves in the native page.
+        found,_,_=_json_content(node,address,page_continuation=False)
+        expected={'movie'} if section=='movies' else {'tvshow','season','episode'}
+        if found and all(card.mediatype in expected and prime_included(card.access_evidence) for card in found.values()):
+            typed.append(target)
+    if len(targets)==1:
+        if observer:observer({'event':'genre_section_inventory','stage':'genre_scope','section':section,
+            'scope_source':'provider_content_type','section_link_found':True,'result':'success'})
+        return next(iter(targets))
     parser=GenreSection(address);parser.feed(data);parser.close()
+    target=parser.links.get(section)
+    if not target and typed:target=typed[0]
     if observer:observer({'event':'genre_section_inventory','stage':'genre_scope','section':section,
         'see_more_markers':parser.see_more_count,'recognized_sections':sorted(parser.links),
-        'section_link_found':section in parser.links,'result':'success' if section in parser.links else 'unavailable'})
-    return parser.links.get(section)
+        'scope_source':'native_heading' if section in parser.links else 'provider_ordered_prime_typed_shelf' if target else 'unrecognized',
+        'typed_prime_shelves':len(typed),'section_link_found':bool(target),'result':'success' if target else 'unavailable'})
+    return target
 
 def genre_name(text):
     text=re.sub(r'\b(movies?|tv|shows?|series|television)\b','',_text(text),flags=re.I)
@@ -98,8 +133,15 @@ def navigation(data,content_type,address,observer):
         anchors=Anchors();anchors.feed(data);anchors.close();candidates.extend(tuple(row)+(False,) for row in anchors.links)
     rows={}
     for link,label,artwork,overlay in candidates:
-        target=safe_url(link,STOREFRONT_HOSTS,address);name=genre_name(label)
-        if not target or not name or not any(p in urlsplit(target).path for p in ('/genre/','/kids')):continue
+        target=safe_url(link,STOREFRONT_HOSTS,address)
+        if not target:continue
+        path=storefront_path(target)
+        # The provider's actual genre slug is stable across translated labels.
+        # Use only known genre slugs from declared links; never construct a URL.
+        match=re.fullmatch(r'/genre/([a-z-]+)/?',path)
+        name=_route_names().get(path.rstrip('/')) or genre_name(label)
+        if not name and match:name=genre_name(match.group(1).replace('-',' '))
+        if not name or not (path.startswith('/genre/') or path.startswith('/kids')):continue
         key=(name,target);row={'title':name,'address':target}
         if artwork:
             row['artwork']=artwork
@@ -118,7 +160,7 @@ def discover(client,section,observer):
     rows,_=navigation(response.data.decode('utf-8',errors='replace'),response.headers.get_content_type(),response.address,observer)
     result={}
     for row in rows:
-        path=urlsplit(row['address']).path.lower()
+        path=storefront_path(row['address']).lower()
         if ('/tv/' in path and section=='movies') or ('/movie/' in path and section=='tv'):continue
         old=result.get(row['title'])
         if old is None or row.get('artwork') and not old.get('artwork'):result[row['title']]=row
