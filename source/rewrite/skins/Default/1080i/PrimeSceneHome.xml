@@ -2287,10 +2287,10 @@
                                 <colordiffuse>3F000000</colordiffuse>
                             </control>
                             <control type="image">
-                                <left>40</left>
-                                <top>70</top>
-                                <width>1520</width>
-                                <height>700</height>
+                                <left>420</left>
+                                <top>245</top>
+                                <width>760</width>
+                                <height>350</height>
                                 <texture background="true">$INFO[ListItem.Property(PanelTitle)]</texture>
                                 <colordiffuse>FFFFFFFF</colordiffuse>
                                 <aspectratio align="center" aligny="center">keep</aspectratio>

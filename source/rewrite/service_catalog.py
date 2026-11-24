@@ -1,5 +1,6 @@
 """Service directory from provider Nodes, distinct from promoted title shelves."""
 import re
+from time import monotonic
 from urllib.parse import urlsplit
 from .detail_catalog import documents
 from .public_catalog import ORIGIN,STOREFRONT_HOSTS,IMAGE_HOSTS,safe_url,StorefrontParser,_protocol_shape
@@ -51,7 +52,9 @@ def read_directory(data,content_type,address,observe):
         'result':'success' if unique else 'unavailable'})
     return sorted(unique.values(),key=lambda row:row['title'].casefold()),list(dict.fromkeys(links)),next_links
 
-def discover(client,observe):
+def discover(client,observe,publish=None,active=lambda:True):
+    started=monotonic();batches=0
+    if not active():return [],False
     response=client.request(ORIGIN+'/addons',stage='service_directory_discovery')
     def read(reply):return read_directory(reply.data.decode(reply.headers.get_content_charset() or 'utf-8',errors='replace'),
         reply.headers.get_content_type(),reply.address,observe)
@@ -59,7 +62,21 @@ def discover(client,observe):
     # The marketing landing has services linked to sign-up offers. Its declared
     # Browse all page supplies actual catalog links (including STARZ), not checkout.
     rows={row['title'].casefold():row for row in initial};pending=links[:1];seen={response.address};complete=False
+    def emit():
+        nonlocal batches
+        if not active():return
+        result=sorted(rows.values(),key=lambda row:row['title'].casefold())
+        batches+=1
+        if publish is not None:publish(result,complete)
+        observe({'event':'service_directory_batch_ready','stage':'service_directory_publish',
+            'batch':batches,'pages':len(seen),'services':len(result),'complete':complete,
+            'elapsed_ms':round((monotonic()-started)*1000),'result':'complete' if complete else 'partial'})
+    emit()
     for hop in range(12):
+        if not active():
+            observe({'event':'service_directory_cancelled','stage':'service_directory_fetch',
+                'pages':len(seen),'elapsed_ms':round((monotonic()-started)*1000),'result':'cancelled'})
+            return [],False
         if not pending:break
         address=pending.pop(0)
         if address in seen:continue
@@ -68,10 +85,14 @@ def discover(client,observe):
         response=client.request(address,stage='service_directory_fetch')
         found,_,next_links=read(response)
         if hop==0 and found:rows={}
-        rows.update({row['title'].casefold():row for row in found});pending.extend(u for u in next_links if u not in seen)
+        rows.update({row['title'].casefold():row for row in found})
+        pending.extend(u for u in next_links if u not in seen and u not in pending)
         complete=not pending
+        emit()
     result=sorted(rows.values(),key=lambda row:row['title'].casefold())
     observe({'event':'service_directory_ready','stage':'service_directory_complete','services':len(result),
         'pages':len(seen),'all_services_directory_followed':bool(links),'complete':complete,
-        'subscription_filter_applied':False,'result':'success' if result else 'failure'})
+        'subscription_filter_applied':False,'batches':batches,
+        'elapsed_ms':round((monotonic()-started)*1000),
+        'result':'success' if complete else 'partial' if result else 'failure'})
     return result,complete

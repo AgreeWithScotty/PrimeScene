@@ -601,6 +601,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.artwork = set()
         self.account_generation = None
         self._ready = False
+        self._signed_out_view = False
         self._progress_refresh_generation = None
         self._restore = None
         self.detail_jobs = Queue()
@@ -782,6 +783,7 @@ class AuroraHome(xbmcgui.WindowXML):
             return
         if self.worker is not None:
             return
+        self._signed_out_view = False
         if self.account_name is not None:
             from .account_state import account_epoch
             self.account_generation = account_epoch(self.g.DATA_PATH)
@@ -830,6 +832,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else 'Sign out' if name else 'Sign in')
 
     def show_signed_out(self):
+        self._signed_out_view = True
         self._cancel_genre_selection('account_changed')
         self.setProperty('NavigationBackdrop','')
         from .display_text import reset_account_observations
@@ -2474,6 +2477,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'next_spine':index+1<len(self._genre_rows),
             'configured_plane_width':1760 if index in (0,len(self._genre_rows)-1) else 1600,
             'configured_spine_width':160,'configured_transition_ms':320,
+            'configured_title_width':760,'configured_title_height':350,
             'title_bound':bool(item and item.getProperty('PanelTitle')),
             'spine_title_bound':bool(item and item.getProperty('PanelSpine')),
             'image_bound':bool(item and item.getArt('fanart')),
@@ -2579,29 +2583,46 @@ class AuroraHome(xbmcgui.WindowXML):
         loader=self.loader
         if loader is None or not loader.current():return
         owner=self.genre_owner
-        if owner==303 and not self.service_rows:
+        if owner==303:
             if self._service_future is None:self._service_future=loader.request('__service_directory__')
             future=self._service_future
-            if future is not False and future.done():
+            if future is not False:
                 try:
-                    packet=future.result()
+                    finished=future.done()
+                    packet=loader.peek('__service_directory__');failure=None
+                    if finished:
+                        try:packet=future.result() or packet
+                        except Exception as error:failure=error
                     if self.stop.is_set() or not loader.current():return
-                    self.service_rows=list((packet or {}).get('tiles') or [])
-                    if not self.service_rows:
+                    rows=list((packet or {}).get('tiles') or [])
+                    if rows!=self.service_rows and (rows or (packet or {}).get('empty_confirmed')):
+                        self.service_rows=rows
+                        if self.genre_owner==303:self._populate_genres('extras')
+                        self.setProperty('GenreMessage','')
+                        self.performance({'event':'service_grid_batch_displayed','stage':'service_directory',
+                            'services':len(rows),'request_finished':finished,
+                            'complete':bool(packet.get('directory_complete')),
+                            'subscription_filter_applied':False,'result':'displayed'})
+                    if finished:
+                        self._service_future=False
+                    if failure is not None:raise failure
+                    if finished and not rows:
                         if not (packet or {}).get('empty_confirmed'):raise RuntimeError('The service directory returned no service tiles')
                         from .browse_status import category_status
-                        self._service_future=False
                         self.setProperty('GenreMessage',category_status('extras','__service_directory__')['message'])
                         self.performance({'event':'service_directory_empty','stage':'category_message','empty_confirmed':True,'result':'empty'})
                         return
-                    if self.genre_owner==303:self._populate_genres('extras')
-                    self.performance({'event':'service_grid_ready','stage':'service_directory','services':len(self.service_rows),
-                        'subscription_filter_applied':False,'complete':packet.get('directory_complete'),'result':'success'})
+                    if finished and rows:
+                        self.performance({'event':'service_grid_ready','stage':'service_directory','services':len(rows),
+                            'subscription_filter_applied':False,'complete':packet.get('directory_complete'),
+                            'result':'success' if packet.get('directory_complete') else 'partial'})
                 except Exception as error:
                     self._service_future=False
                     from .browse_status import category_status
-                    self.setProperty('GenreMessage',category_status('extras','__service_directory__',unavailable=True)['message'])
-                    self.performance({'event':'service_grid_failed','stage':'service_directory','exception':exception_details(error),'result':'failure'})
+                    self.setProperty('GenreMessage','Some services could not be retrieved. Reopen Extras to retry.' if self.service_rows else
+                        category_status('extras','__service_directory__',unavailable=True)['message'])
+                    self.performance({'event':'service_grid_failed','stage':'service_directory',
+                        'displayed_services_retained':len(self.service_rows),'exception':exception_details(error),'result':'failure'})
         if owner!=self.genre_owner or self.stop.is_set():return
         # Both navigation genres and services already carry artwork. Kodi's
         # background texture loader owns downloads/cache. Do not duplicate them
@@ -2718,10 +2739,25 @@ class AuroraHome(xbmcgui.WindowXML):
             self.setProperty('Busy','1')
             self.play_jobs.put((token,self.generation,path,row.get('title') or 'Smooth Prime',origin,resume_mode))
 
+    def _exit_to_kodi(self,reason):
+        self._cancel_genre_selection('interface_closed')
+        self.performance({'event':'interface_exit_requested','stage':'user_back',
+            'reason':reason,'signed_out_view':self._signed_out_view,
+            'workers_stopped':self.stop.is_set(),'generation':self.generation,'result':'requested'})
+        self.stop.set()
+        self._unregister_return()
+        record(self.g,'window_exit_to_kodi_home')
+        self.close()
+
     def onAction(self, action):
         # Left and right belong to the list. The hero reads Container(200),
         # so updating it from here only delays the move.
         action_id = action.getId()
+        # Back belongs to the window, even when authentication or a catalog
+        # worker has ended. It must never depend on a provider/database request.
+        if action_id in _BACK and (self._signed_out_view or self.stop.is_set()):
+            self._exit_to_kodi('signed_out' if self._signed_out_view else 'workers_stopped')
+            return
         focus=self.getFocusId()
         if focus==410 and action_id in (1,2):self._observe_genre_panel()
         if action_id in (1,2,3,4) and self.worker is not None and self.worker.is_alive():
@@ -2743,7 +2779,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._cancel_genre_selection('back_pressed');return
             self.setFocusId(self.genre_owner)
             return
-        if action_id not in _BACK or self.stop.is_set():
+        if action_id not in _BACK:
             return
         if self.path not in _SECTION_PATHS and self.history:
             record(self.g, 'catalog_back')
@@ -2759,10 +2795,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self._show_genres(303,focus_grid=True)
             self.performance({'event':'back_to_service_grid','stage':'back_navigation','result':'success'})
         else:
-            self.stop.set()
-            self._unregister_return()
-            record(self.g, 'window_exit_to_kodi_home')
-            self.close()
+            self._exit_to_kodi('root_back')
 
     def _card_actions(self,info_only=False):
         row=self._selected_row()
