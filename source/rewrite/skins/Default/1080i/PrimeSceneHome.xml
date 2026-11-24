@@ -2322,8 +2322,8 @@
                                 <animation effect="slide" start="0,0" end="-80,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + Integer.IsEqual(Container(410).CurrentItem,1)">Conditional</animation>
                                 <animation effect="slide" start="0,0" end="80,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + String.IsEqual(Container(410).CurrentItem,Container(410).NumItems)">Conditional</animation>
                             </control>
-                            <animation effect="zoom" start="10.0000,100" end="100,100" center="0,0" time="320" tween="cubic" easing="out" condition="Control.HasFocus(410)">Focus</animation>
-                            <animation effect="zoom" start="100,100" end="10.0000,100" center="0,0" time="320" tween="cubic" easing="out" condition="Control.HasFocus(410)">UnFocus</animation>
+                            <animation effect="zoom" start="10.0000,100" end="100,100" center="0,0" time="320" tween="cubic" easing="out" condition="Control.HasFocus(410) + String.IsEmpty(Window.Property(GenreEntryFocus))">Focus</animation>
+                            <animation effect="zoom" start="100,100" end="10.0000,100" center="0,0" time="320" tween="cubic" easing="out" condition="Control.HasFocus(410) + String.IsEmpty(Window.Property(GenreEntryFocus))">UnFocus</animation>
                         </control>
                     </focusedlayout>
                     <visible>!String.IsEqual(Window.Property(Nav),extras)</visible>
@@ -2511,6 +2511,17 @@
                     <colordiffuse>FF000000</colordiffuse>
                     <animation effect="rotate" start="-45" end="-45" center="auto" time="0" condition="true">Conditional</animation>
                 </control>
+            </control>
+            <control type="image" id="9901">
+                <left>0</left><top>0</top><width>1920</width><height>1080</height>
+                <texture>splash.png</texture>
+                <visible>String.IsEqual(Window.Property(StartupSplash),1)</visible>
+            </control>
+            <control type="label" id="9902">
+                <left>160</left><top>990</top><width>1600</width><height>56</height>
+                <font>font30</font><textcolor>FFFFFFFF</textcolor><align>center</align>
+                <label>$INFO[Window.Property(StartupNotice)]</label>
+                <visible>String.IsEqual(Window.Property(StartupSplash),1) + !String.IsEmpty(Window.Property(StartupNotice))</visible>
             </control>
         </control>
     </controls>

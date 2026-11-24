@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.57" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.58" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.57[CR]- Increase active genre capital height to164px at1080p and328px at4K, using the same heavy condensed lettering size for every genre.[CR]- Set thin-strip capital height to46px at1080p,28percent of the active lettering, with fixed metrics for every name.[CR]- Keep tight font spacing, wrap long names at the common size, and render equal transparent plates at twice the1080p layout resolution.[CR]- Use content-based texture names so Kodi shows the new lettering without clearing caches; remove all56 superseded runtime title/strip assets.[CR]- Record active/strip cap heights, proportion, canvas scale and current native layout in existing genre focus diagnostics.[CR]- Use original-resolution Amazon background images without a1920px request cap, and prefer the largest declared background/image variant.[CR]- Replace all20 bundled720px genre backgrounds with the actual unmodified1920x1080 Amazon masters.[CR]- Keep card thumbnails at720px for responsive scrolling; record image request IDs, redirect chains, actual pixel dimensions and bounded original-file downloads.</news>
+    <news>0.2.58[CR]- Load genre backgrounds from Amazon at startup and remove all bundled genre photos.[CR]- Keep the splash visible for at least three seconds and until the initial Movies and TV backdrops are cached.[CR]- Preload original movie/show hero images in a separate queue; avoid stretched cover thumbnails.[CR]- Keep the expanded genre card steady when focus enters from the top menu.[CR]- Allow Back to cancel startup, and report artwork readiness, dimensions, request stages and failures.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
