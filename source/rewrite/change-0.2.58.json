@@ -1,0 +1,593 @@
+{
+  "version": "0.2.58",
+  "sha256": "e73a5ed2ec7c64edae8f6a80d80f7870d7f9caa7a5bbe2e44366e7c058bd525c",
+  "bytes": 3705970,
+  "files": 157,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/artwork_cache.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_tiles.py",
+    "plugin.video.primeinterface/resources/lib/genre_backdrops.py",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/genre_links.json",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "added_files": [
+    "plugin.video.primeinterface/resources/lib/genre_backdrops.py"
+  ],
+  "removed_files": [
+    "plugin.video.primeinterface/resources/lib/genre_art.json",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-02ec5bb03eb5cecf8e639b0a.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-05bb6d9c72c453535aed73e8.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-20bf35374c49d9cab00ffaee.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-24656ceb98b8ddf101f02556.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-250e547f699d2c714c65e3d4.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-265059ed786a3fc02f7ea990.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-30f7fb3bd287cd9fd7bb1cd6.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-50189ad8f5006f8687a29624.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-5a05aeadc663fad80b2a0d22.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-6e1d54400b062e62694ab785.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-7e6e4cf55acfd39b76449216.png",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-8a43bb21c033581a910e1848.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-a278c04ac620f0540d55865d.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-ae57e1a640f07044de91e913.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-b79a63ac2a9bda567cd6d8c2.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-b7f7fedca929cad9ce24ad2c.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-bb62842743b47c2edc2fa175.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-c25e1314801b90a5038b05b3.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-cd1d6159762376f65c91482b.jpg",
+    "plugin.video.primeinterface/resources/skins/Default/media/genre-art/master-dc890fc35712b7e59ad8d925.png"
+  ],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "reviewed_draft_source_assets_and_actual_provider_responses": {
+    "status": "unpublished_working_draft",
+    "version_unchanged": "0.2.57",
+    "published_archive_unchanged": true,
+    "changed_runtime_files": [
+      "resources/lib/artwork_cache.py",
+      "resources/lib/aurora.py",
+      "resources/lib/browse_tiles.py",
+      "resources/lib/genre_backdrops.py",
+      "resources/lib/genre_catalog.py",
+      "resources/lib/genre_links.json",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml"
+    ],
+    "added_files": [
+      "resources/lib/genre_backdrops.py"
+    ],
+    "removed_files": [
+      "resources/lib/genre_art.json",
+      "resources/skins/Default/media/genre-art/master-02ec5bb03eb5cecf8e639b0a.jpg",
+      "resources/skins/Default/media/genre-art/master-05bb6d9c72c453535aed73e8.jpg",
+      "resources/skins/Default/media/genre-art/master-20bf35374c49d9cab00ffaee.png",
+      "resources/skins/Default/media/genre-art/master-24656ceb98b8ddf101f02556.jpg",
+      "resources/skins/Default/media/genre-art/master-250e547f699d2c714c65e3d4.jpg",
+      "resources/skins/Default/media/genre-art/master-265059ed786a3fc02f7ea990.jpg",
+      "resources/skins/Default/media/genre-art/master-30f7fb3bd287cd9fd7bb1cd6.jpg",
+      "resources/skins/Default/media/genre-art/master-50189ad8f5006f8687a29624.png",
+      "resources/skins/Default/media/genre-art/master-5a05aeadc663fad80b2a0d22.jpg",
+      "resources/skins/Default/media/genre-art/master-6e1d54400b062e62694ab785.jpg",
+      "resources/skins/Default/media/genre-art/master-7e6e4cf55acfd39b76449216.png",
+      "resources/skins/Default/media/genre-art/master-8a43bb21c033581a910e1848.jpg",
+      "resources/skins/Default/media/genre-art/master-a278c04ac620f0540d55865d.jpg",
+      "resources/skins/Default/media/genre-art/master-ae57e1a640f07044de91e913.jpg",
+      "resources/skins/Default/media/genre-art/master-b79a63ac2a9bda567cd6d8c2.jpg",
+      "resources/skins/Default/media/genre-art/master-b7f7fedca929cad9ce24ad2c.jpg",
+      "resources/skins/Default/media/genre-art/master-bb62842743b47c2edc2fa175.jpg",
+      "resources/skins/Default/media/genre-art/master-c25e1314801b90a5038b05b3.jpg",
+      "resources/skins/Default/media/genre-art/master-cd1d6159762376f65c91482b.jpg",
+      "resources/skins/Default/media/genre-art/master-dc890fc35712b7e59ad8d925.png"
+    ],
+    "current_files": 157,
+    "no_bundled_genre_backgrounds": true,
+    "no_missing_asset_references": true,
+    "existing_unused_assets_unchanged": [
+      "fanart.jpg",
+      "fanart.png",
+      "resources/menu/A1F83G8C2ARO7P.json",
+      "resources/menu/A1PA6795UKMFR9.json",
+      "resources/menu/A1VC38T7YXB528.json",
+      "resources/menu/ATVPDKIKX0DER.json",
+      "resources/skins/Default/media/button-focus.png",
+      "resources/skins/Default/media/button-idle.png",
+      "resources/skins/Default/media/focus-pill.png"
+    ],
+    "font_and_title_assets_unchanged": true,
+    "native_layout_delta_only_startup_overlay_and_entry_animation_guard": true,
+    "private_login_or_playback_tested": false,
+    "kodi_rendering_of_this_draft_observed": false,
+    "provider_response_mocks": false,
+    "actual_reader_evidence": {
+      "scope": "Real public genre landing/title/hero HTTP responses, using production parsing and redirect guards. No account or provider emulation.",
+      "genre_landing_requests": 1,
+      "title_metadata_requests": 2,
+      "pagination_requests": 0,
+      "sections": [
+        "movies",
+        "tv"
+      ],
+      "samples": [
+        {
+          "section": "movies",
+          "status": 200,
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "bytes": 7838011,
+          "address": {
+            "host": "m.media-amazon.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#d9f513bd",
+            "query_keys": [],
+            "authorization_code_present": false
+          }
+        },
+        {
+          "section": "tv",
+          "status": 200,
+          "dimensions": [
+            3840,
+            2160
+          ],
+          "bytes": 8101839,
+          "address": {
+            "host": "m.media-amazon.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#1d299af8",
+            "query_keys": [],
+            "authorization_code_present": false
+          }
+        }
+      ],
+      "transactions": [
+        {
+          "stage": "genre_backdrop_metadata",
+          "request_id": "040bf8af44a75cf1",
+          "address": {
+            "host": "www.primevideo.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/#4856d20b/#bd938c68",
+            "query_keys": [
+              "jic",
+              "ref_"
+            ],
+            "authorization_code_present": false
+          },
+          "status": 200,
+          "bytes": 1838378,
+          "response_address": {
+            "host": "www.primevideo.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/#4856d20b/#bd938c68",
+            "query_keys": [
+              "jic",
+              "ref_"
+            ],
+            "authorization_code_present": false
+          },
+          "result": "success",
+          "event": "actual_public_metadata_response",
+          "elapsed_ms": 1328
+        },
+        {
+          "stage": "genre_backdrop_title",
+          "request_id": "1441b5f354c43431",
+          "address": {
+            "host": "www.primevideo.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/detail/#755e7770",
+            "query_keys": [
+              "jic",
+              "ref_"
+            ],
+            "authorization_code_present": false
+          },
+          "status": 200,
+          "bytes": 608488,
+          "response_address": {
+            "host": "www.primevideo.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/detail/#755e7770",
+            "query_keys": [
+              "jic",
+              "ref_"
+            ],
+            "authorization_code_present": false
+          },
+          "result": "success",
+          "event": "actual_public_metadata_response",
+          "elapsed_ms": 563
+        },
+        {
+          "stage": "genre_backdrop_title",
+          "request_id": "0ae5ba424ff57497",
+          "address": {
+            "host": "www.primevideo.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/detail/#c0b21aee",
+            "query_keys": [
+              "jic",
+              "ref_"
+            ],
+            "authorization_code_present": false
+          },
+          "status": 200,
+          "bytes": 889877,
+          "response_address": {
+            "host": "www.primevideo.com",
+            "scheme": "https",
+            "port": null,
+            "has_userinfo": false,
+            "route": "/detail/#c0b21aee",
+            "query_keys": [
+              "jic",
+              "ref_"
+            ],
+            "authorization_code_present": false
+          },
+          "result": "success",
+          "event": "actual_public_metadata_response",
+          "elapsed_ms": 828
+        }
+      ],
+      "private_login_tested": false,
+      "provider_response_mocks": false
+    },
+    "recording": {
+      "duration_seconds": 18.7333,
+      "dimensions": [
+        2556,
+        1344
+      ],
+      "fps": 30,
+      "dark_body_intervals_seconds": [
+        [
+          2.6,
+          2.9
+        ],
+        [
+          6.266667,
+          6.833333
+        ],
+        [
+          9.433333,
+          9.5
+        ],
+        [
+          11.3,
+          12.133333
+        ]
+      ],
+      "observation": "The expanded genre plane briefly collapses to a strip on control focus entry. Existing Focus/UnFocus zoom was not restricted to genre-to-genre input."
+    },
+    "checks_scope": "Real file/asset/XML/source facts and actual public metadata/4K image responses. No simulated Kodi or authenticated login success.",
+    "additional_actual_reader_evidence": [
+      {
+        "genre": "Anime",
+        "scope": "Real public genre landing/title/hero HTTP responses, using production parsing and redirect guards. No account or provider emulation.",
+        "genre_landing_requests": 1,
+        "title_metadata_requests": 2,
+        "pagination_requests": 0,
+        "sections": [
+          "movies",
+          "tv"
+        ],
+        "samples": [
+          {
+            "section": "movies",
+            "status": 200,
+            "dimensions": [
+              3840,
+              2160
+            ],
+            "bytes": 1437492,
+            "address": {
+              "host": "m.media-amazon.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#80a52f0e",
+              "query_keys": [],
+              "authorization_code_present": false
+            }
+          },
+          {
+            "section": "tv",
+            "status": 200,
+            "dimensions": [
+              3840,
+              2160
+            ],
+            "bytes": 2693131,
+            "address": {
+              "host": "m.media-amazon.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#68c6a309",
+              "query_keys": [],
+              "authorization_code_present": false
+            }
+          }
+        ],
+        "transactions": [
+          {
+            "stage": "genre_backdrop_metadata",
+            "request_id": "7af18afcf0f3a2cd",
+            "address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#4856d20b/#242ab4ac",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "status": 200,
+            "bytes": 1598954,
+            "response_address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#4856d20b/#242ab4ac",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "result": "success",
+            "event": "actual_public_metadata_response",
+            "elapsed_ms": 1094
+          },
+          {
+            "stage": "genre_backdrop_title",
+            "request_id": "f2c328043f656beb",
+            "address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#d44e7112",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "status": 200,
+            "bytes": 641308,
+            "response_address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#d44e7112",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "result": "success",
+            "event": "actual_public_metadata_response",
+            "elapsed_ms": 750
+          },
+          {
+            "stage": "genre_backdrop_title",
+            "request_id": "a6c0725bb855e9b5",
+            "address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#c494fbca",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "status": 200,
+            "bytes": 672870,
+            "response_address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#c494fbca",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "result": "success",
+            "event": "actual_public_metadata_response",
+            "elapsed_ms": 687
+          }
+        ],
+        "private_login_tested": false,
+        "provider_response_mocks": false
+      },
+      {
+        "genre": "Comedy",
+        "scope": "Real public genre landing/title/hero HTTP responses, using production parsing and redirect guards. No account or provider emulation.",
+        "genre_landing_requests": 1,
+        "title_metadata_requests": 2,
+        "pagination_requests": 0,
+        "sections": [
+          "movies",
+          "tv"
+        ],
+        "samples": [
+          {
+            "section": "movies",
+            "status": 200,
+            "dimensions": [
+              3840,
+              2160
+            ],
+            "bytes": 381895,
+            "address": {
+              "host": "m.media-amazon.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#c85cc033",
+              "query_keys": [],
+              "authorization_code_present": false
+            }
+          },
+          {
+            "section": "tv",
+            "status": 200,
+            "dimensions": [
+              3840,
+              2160
+            ],
+            "bytes": 828729,
+            "address": {
+              "host": "m.media-amazon.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#d57f7896",
+              "query_keys": [],
+              "authorization_code_present": false
+            }
+          }
+        ],
+        "transactions": [
+          {
+            "stage": "genre_backdrop_metadata",
+            "request_id": "5986065faabd838f",
+            "address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#4856d20b/#03fefb8d",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "status": 200,
+            "bytes": 1821220,
+            "response_address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/#4856d20b/#03fefb8d",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "result": "success",
+            "event": "actual_public_metadata_response",
+            "elapsed_ms": 1312
+          },
+          {
+            "stage": "genre_backdrop_title",
+            "request_id": "75e85be2670fe270",
+            "address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#238f784f",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "status": 200,
+            "bytes": 619783,
+            "response_address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#238f784f",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "result": "success",
+            "event": "actual_public_metadata_response",
+            "elapsed_ms": 672
+          },
+          {
+            "stage": "genre_backdrop_title",
+            "request_id": "74f2e006523228c4",
+            "address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#f9bcaf01",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "status": 200,
+            "bytes": 1556284,
+            "response_address": {
+              "host": "www.primevideo.com",
+              "scheme": "https",
+              "port": null,
+              "has_userinfo": false,
+              "route": "/detail/#f9bcaf01",
+              "query_keys": [
+                "jic",
+                "ref_"
+              ],
+              "authorization_code_present": false
+            },
+            "result": "success",
+            "event": "actual_public_metadata_response",
+            "elapsed_ms": 1531
+          }
+        ],
+        "private_login_tested": false,
+        "provider_response_mocks": false
+      }
+    ],
+    "initial_backdrops_verified": 6,
+    "native_visual_check_performed": false,
+    "release_held_for_user_review": true
+  }
+}

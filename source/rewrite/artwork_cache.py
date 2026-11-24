@@ -30,16 +30,17 @@ class _ImageRedirect(HTTPRedirectHandler):
 
 
 class ImageCache:
-    def __init__(self, g, epoch):
+    def __init__(self, g, epoch, *, genre=False):
         self.g, self.epoch = g, epoch
-        self.folder = Path(g.DATA_PATH) / 'artwork-ahead'
+        self.folder = Path(g.DATA_PATH) / ('genre-artwork-ahead' if genre else 'artwork-ahead')
+        self.metadata={}
         self.stop, self.lock = Event(), Lock()
         self.pending, self.failed = set(), {}
         self.futures={};self.priority_signature=None
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimeArtwork')
         self.report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'),
                                     active=lambda: not self.stop.is_set() and current_account(g.DATA_PATH, epoch),
-                                    operation='artwork')
+                                    operation='genre_artwork' if genre else 'artwork')
 
     def path(self, url):
         if not safe_url(url, IMAGE_HOSTS):
@@ -52,6 +53,20 @@ class ImageCache:
     def local(self, url):
         path = self.path(url)
         return str(path) if path is not None and path.is_file() else url
+
+    def dimensions(self,url):
+        with self.lock:
+            if url in self.metadata:return self.metadata[url]
+        path=self.path(url)
+        if path is None or not path.is_file():return None
+        try:
+            with path.open('rb') as source:dimensions=pixel_dimensions(source.read(256*1024))
+            with self.lock:self.metadata[url]=dimensions
+            return dimensions
+        except Exception as error:
+            self.report({'event':'artwork_cached_header_failed','stage':'image_cache_metadata','address':route(url),
+                'exception':exception_details(error),'result':'failure'})
+            return None
 
     def warm(self, urls,priority=False):
         urls=list(dict.fromkeys(urls))
@@ -107,6 +122,8 @@ class ImageCache:
                 temporary.write_bytes(content)
                 temporary.replace(path)
             stored = persist_if_current(self.g.DATA_PATH, self.epoch, write)
+            if stored:
+                with self.lock:self.metadata[url]=pixel_dimensions(content)
             self.report({'event': 'artwork_ahead_completed', 'request_id':request_id,'status': status, 'bytes': len(content),
                          'pixel_dimensions':pixel_dimensions(content),'response_address':route(final),'size_limit_bytes':MAX_IMAGE_BYTES,
                          'stage': 'image_download', 'address': route(url),
@@ -135,3 +152,4 @@ class ImageCache:
             self.pending.clear()
             self.failed.clear()
             self.futures.clear();self.priority_signature=None
+            self.metadata.clear()

@@ -18,7 +18,8 @@ NAMES.update(kids='Kids & family',mysteryandthrillers='Mystery & thriller',histo
 
 def published_genres():
     rows=json.loads(Path(__file__).with_name('genre_links.json').read_text(encoding='utf-8'))['rows']
-    return sorted((row for row in rows if safe_url(row.get('address'),STOREFRONT_HOSTS)),key=lambda row:row['title'])
+    return sorted(({'title':row['title'],'address':row['address']} for row in rows
+        if safe_url(row.get('address'),STOREFRONT_HOSTS)),key=lambda row:row['title'])
 
 class GenreSection(HTMLParser):
     def __init__(self,address):
