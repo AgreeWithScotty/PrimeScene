@@ -1,0 +1,411 @@
+{
+  "version": "0.2.55",
+  "sha256": "1e9b19bee420a5635194df65fa476fca195a26f11cc630cef98a6a5eaae1ca3a",
+  "bytes": 4406750,
+  "files": 176,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/account_region.py",
+    "plugin.video.primeinterface/resources/lib/auth_transport.py",
+    "plugin.video.primeinterface/resources/lib/http_transport.py",
+    "plugin.video.primeinterface/resources/lib/media_resources.py",
+    "plugin.video.primeinterface/resources/lib/prime_device.py",
+    "plugin.video.primeinterface/resources/lib/prime_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/prime_login.py",
+    "plugin.video.primeinterface/resources/lib/prime_signin.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/regional_hosts.py"
+  ],
+  "added_files": [
+    "plugin.video.primeinterface/resources/lib/regional_hosts.py"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "regional_routing_audit_and_boundaries": {
+    "policy_inventory": {
+      "revision": "2026-11-24",
+      "country_website_domains": 23,
+      "sign_in_hosts": 48,
+      "security_image_hosts": 51,
+      "catalog_hosts": 3,
+      "native_auth_api_domains": 4,
+      "media_api_hosts": 15,
+      "catalog_sso_path": "/ax/sso/redirect",
+      "country_host_wildcards": false,
+      "cookie_scope": "provider_cookiejar"
+    },
+    "country_host_rows": [
+      {
+        "host": "amazon.ae",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.ae",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.ca",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.ca",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.co.jp",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.co.jp",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.co.uk",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.co.uk",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.co.za",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.co.za",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.com",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.com",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.com.au",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.com.au",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.com.be",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.com.be",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.com.br",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.com.br",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.com.mx",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.com.mx",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.com.tr",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.com.tr",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.de",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.de",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.eg",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.eg",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.es",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.es",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.fr",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.fr",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.ie",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.ie",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.in",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.in",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.it",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.it",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.nl",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.nl",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.pl",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.pl",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.sa",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.sa",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.se",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.se",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "amazon.sg",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      },
+      {
+        "host": "www.amazon.sg",
+        "signin_policy": true,
+        "security_image_policy": true,
+        "catalog_sso_policy": true,
+        "lookalikes_and_body_replay_blocked": true
+      }
+    ],
+    "changed_runtime_files": [
+      "resources/lib/account_region.py",
+      "resources/lib/auth_transport.py",
+      "resources/lib/http_transport.py",
+      "resources/lib/media_resources.py",
+      "resources/lib/prime_device.py",
+      "resources/lib/prime_diagnostics.py",
+      "resources/lib/prime_login.py",
+      "resources/lib/prime_signin.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/regional_hosts.py"
+    ],
+    "cookie_scope_check": true,
+    "api_endpoint_scope_unchanged": true,
+    "api_transport_cannot_use_web_sso": true,
+    "bare_and_www_region_identity_match": true,
+    "diagnostic_authority_context_redacted": true,
+    "private_login_playback_or_bank_verification_tested": false,
+    "provider_login_mocks": false,
+    "scope": "Verified website ownership roster and code/security boundary checks. This does not assert that every country has completed a real account login.",
+    "source_references": [
+      {
+        "url": "https://affiliate-program.amazon.com/creatorsapi/docs/en-us/concepts/common-request-headers-and-parameters",
+        "establishes": "22 Amazon-owned marketplace website domains; not proof of private Prime Video login in each country"
+      },
+      {
+        "url": "https://www.aboutamazon.com/news/retail/amazon-south-africa",
+        "establishes": "Amazon.co.za website ownership"
+      },
+      {
+        "url": "https://developer.amazon.com/docs/login-with-amazon/authorization-code-grant.html",
+        "establishes": "Token regions are separate from customer country website domains; generic LWA uses NA/EU/FE endpoints"
+      },
+      {
+        "url": "https://advertising.amazon.com/API/docs/en-us/guides/account-management/authorization/authorization-grants",
+        "establishes": "Exact eu.account.amazon.com and apac.account.amazon.com authorization website hosts"
+      }
+    ],
+    "confirmed_additional_gaps": [
+      "Only5 retail country domains recognized in54; verified ownership roster has23.",
+      "Security-image allowlist excluded already recognized UK/German/Japanese sign-in hosts.",
+      "Storefront sign-on only allowed amazon.com; scoped HttpTransport blocked all out-of-storefront SSO.",
+      "Bare regional startup hostnames did not receive the same identity defaults as www hostnames.",
+      "Redirect diagnostics omitted URL scheme/port/userinfo presence; security-image failures lacked complete request/route context."
+    ],
+    "not_claimed": "No authenticated country-by-country login or playback verification. No API country names guessed; existing API endpoints stay exact. Retail-country catalog pages outside the narrow SSO handoff remain excluded."
+  }
+}

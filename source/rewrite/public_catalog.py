@@ -25,7 +25,8 @@ ORIGIN = 'https://www.primevideo.com'
 # The broad /movie and /tv feeds also market rentals, channels and free-with-ads.
 PAGES = {'watching': '/storefront', 'home': '/storefront', 'movies': '/storefront/subscription/prime',
          'tv': '/storefront/subscription/prime', 'sports': '/sports', 'channels': '/addons', 'purchases': '/mystuff'}
-STOREFRONT_HOSTS = {'www.primevideo.com', 'primevideo.com', 'na.primevideo.com'}
+from .regional_hosts import PRIME_WEB_HOSTS,storefront_sso,strip_redirect_headers,POLICY_REVISION
+STOREFRONT_HOSTS = PRIME_WEB_HOSTS
 IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
 MAX_PAGE_BYTES = 8 * 1024 * 1024
 MAX_JSON_NODES = 100000
@@ -601,20 +602,19 @@ class StorefrontRedirect(HTTPRedirectHandler):
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         newurl = urljoin(req.full_url, newurl)
-        sso = safe_url(newurl, {'www.amazon.com', 'amazon.com'})
-        is_sso = bool(sso) and urlsplit(sso).path == '/ax/sso/redirect'
+        is_sso = storefront_sso(req.full_url,newurl,code,req.get_method(),req.data is not None)
         allowed = bool(safe_url(newurl, STOREFRONT_HOSTS)) or is_sso
-        _emit(self.observer, {'event': 'catalog_redirect', 'status': code,
-                              'from': route(req.full_url), 'to': route(newurl), 'allowed': allowed})
+        if code in (307,308) and req.data is not None and urlsplit(req.full_url).hostname!=urlsplit(newurl).hostname:
+            allowed=False
+        _emit(self.observer, {'event': 'catalog_redirect', 'stage':'storefront_redirect', 'status': code,
+                              'from': route(req.full_url), 'to': route(newurl), 'allowed': allowed,
+                              'policy_revision':POLICY_REVISION,'regional_sso':is_sso,
+                              'method':req.get_method(),'result':'allowed' if allowed else 'blocked'})
         if not allowed:
             raise PublicCatalogError('Prime Video redirected outside its storefront. The session may need sign-in again.')
         redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
         if redirected is not None:
-            for name in ('Cookie', 'Host', 'Authorization', 'Proxy-Authorization'):
-                redirected.remove_header(name.capitalize())
-            if urlsplit(req.full_url).hostname != urlsplit(newurl).hostname:
-                for name in ('Referer', 'Origin'):
-                    redirected.remove_header(name)
+            strip_redirect_headers(redirected)
         return redirected
 
 

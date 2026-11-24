@@ -10,6 +10,8 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler,HTTPCookieProcessor,Request,build_opener
 from .account_state import current_account
 from .prime_diagnostics import exception_details,route
+from .regional_hosts import (PRIME_WEB_HOSTS,storefront_sso,storefront_transport,
+    strip_redirect_headers,POLICY_REVISION,https_host)
 
 
 class TransportFailure(RuntimeError):pass
@@ -58,16 +60,25 @@ def server_errors(value):
 
 
 class Redirects(HTTPRedirectHandler):
-    def __init__(self,report,hosts,request_id):
+    def __init__(self,report,hosts,request_id,stage='http'):
         self.report,self.hosts,self.request_id,self.hops=report,hosts,request_id,0
+        self.stage=stage
     def redirect_request(self,request,fp,code,msg,headers,newurl):
         self.hops+=1
-        allowed=https_address(newurl,self.hosts) and self.hops<=6
-        self.report({'event':'http_redirect','request_id':self.request_id,'status':code,
-            'from':route(request.full_url),'to':route(newurl),'hop':self.hops,'allowed':allowed})
+        catalog=storefront_transport(self.hosts)
+        sso=catalog and storefront_sso(request.full_url,newurl,code,request.get_method(),request.data is not None)
+        regular=bool(https_host(newurl,self.hosts)) if catalog else https_address(newurl,self.hosts)
+        allowed=(regular or sso) and self.hops<=6
+        if catalog and code in (307,308) and request.data is not None and urlsplit(request.full_url).hostname!=urlsplit(newurl).hostname:
+            allowed=False
+        self.report({'event':'http_redirect','request_id':self.request_id,'stage':self.stage,'status':code,
+            'from':route(request.full_url),'to':route(newurl),'hop':self.hops,'allowed':allowed,
+            'policy_revision':POLICY_REVISION,'regional_sso':bool(sso),
+            'method':request.get_method(),'result':'allowed' if allowed else 'blocked'})
         if not allowed:raise TransportFailure('The provider returned an untrusted redirect')
         result=super().redirect_request(request,fp,code,msg,headers,newurl)
-        if result and urlsplit(request.full_url).hostname!=urlsplit(newurl).hostname:
+        if result and catalog:strip_redirect_headers(result)
+        elif result and urlsplit(request.full_url).hostname!=urlsplit(newurl).hostname:
             for name in ('Authorization','Cookie'):result.remove_header(name)
         return result
 
@@ -98,11 +109,14 @@ class HttpTransport:
         request=Request(address,data=data,headers=combined,method=method)
         self.report({'event':'http_started','request_id':identifier,'stage':stage,
             'method':request.get_method(),'address':route(address),'request_bytes':len(data or b'')})
-        handlers=[Redirects(self.report,self.hosts,identifier)]
+        handlers=[Redirects(self.report,self.hosts,identifier,stage)]
         if self.jar is not None:handlers.append(HTTPCookieProcessor(self.jar))
         try:
             with build_opener(*handlers).open(request,timeout=20) as reply:
-                status=reply.status;final=reply.geturl();raw=reply.read(limit+1)
+                status=reply.status;final=reply.geturl()
+                if storefront_transport(self.hosts) and not https_host(final,PRIME_WEB_HOSTS):
+                    raise TransportFailure('Amazon did not return to its catalog after sign-on. Sign in again.')
+                raw=reply.read(limit+1)
                 if len(raw)>limit:raise TransportFailure('The provider response exceeds its size limit')
                 if reply.headers.get('Content-Encoding','').lower()=='gzip':
                     raw=gzip.GzipFile(fileobj=BytesIO(raw)).read(limit+1)

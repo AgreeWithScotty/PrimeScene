@@ -15,6 +15,7 @@ from .prime_diagnostics import DiagnosticLog, exception_details
 from .account_state import account_epoch, clear_runtime, current_account, store_account, needs_cleanup, is_signed_out
 from .public_catalog import ORIGIN
 from .session_store import begin_signin, discard_pending, retain_challenge
+from .regional_hosts import policy_inventory
 
 
 TITLE = 'Smooth Prime'
@@ -103,6 +104,7 @@ def LogIn(retToken=False):
                  'credential_storage': 'canonical_scoped_cookiejar',
                  'kodi': xbmc.getInfoLabel('System.BuildVersion'), 'token_requested': bool(retToken),
                  'authorization_mode': mode, 'challenge_resumed': resumed,
+                 'regional_host_policy':policy_inventory(),
                  'signed_out_at_start': signed_out_at_start, 'fresh_cookie_jar': not bool(len(cookies)),
                  'user_agent': headers.get('User-Agent'), 'initial_cookie_count': len(cookies)})
         observe({'event': 'territory_lookup_started'})
