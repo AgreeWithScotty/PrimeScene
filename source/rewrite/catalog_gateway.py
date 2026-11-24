@@ -126,6 +126,7 @@ class CatalogGateway:
             text=response.data.decode('utf-8',errors='replace');content_type=response.headers.get_content_type()
             result,structure=_read_page(text,content_type,response.address)
             observe(dict(structure,event='search_response_parsed',stage='search_parse',result='success'))
+            if structure.get('provider_error'):raise PublicCatalogError('Amazon returned a search service error. Open Diagnostics.')
             if structure.get('sign_in_form_present') or structure.get('verification_form_present'):
                 raise CatalogSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
             next_request=collection_paging.discover(text,content_type,response.address,observe)
@@ -171,6 +172,7 @@ class CatalogGateway:
                     text=response.data.decode('utf-8',errors='replace');content_type=response.headers.get_content_type()
                     result,structure=_read_page(text,content_type,response.address)
                     observe(dict(structure,event='search_response_parsed',stage='search_parse',result='success'))
+                    if structure.get('provider_error'):raise PublicCatalogError('Amazon returned a search service error. Open Diagnostics.')
                     if structure.get('sign_in_form_present') or structure.get('verification_form_present'):
                         raise CatalogSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
                     next_request=(collection_paging.advance(address,text,content_type,observe) if isinstance(address,dict) else
@@ -321,7 +323,9 @@ class CatalogGateway:
         personal=page in ('watchlist','purchases','purchased_movies','purchased_tv')
         filtered_empty=bool(result.cards) and wrong_type==len(result.cards) and not next_path
         empty_confirmed=result.empty_confirmed or (filtered_empty if personal else bool(result.cards) and not rows and not next_path)
-        if personal and not rows and not next_path and not empty_confirmed:
+        if page=='watching':
+            empty_confirmed=result.empty_confirmed or bool(result.cards) and len(finished)==len(result.cards) and not next_path
+        if (personal or page=='watching') and not rows and not next_path and not empty_confirmed:
             observe({'event':'personal_collection_unknown','stage':'card_mapping','section':page,
                 'source_cards':len(result.cards),'invalid_detail_rows':invalid_detail,
                 'empty_confirmed':False,'result':'failure'})

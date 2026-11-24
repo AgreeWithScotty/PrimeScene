@@ -1,0 +1,6 @@
+0.2.61
+- Read localized Amazon genre and service links while preserving the exact provider addresses.
+- Preserve In Progress and personal collection scope, empty-state proof and native pagination across regional page layouts.
+- Keep valid titles when artwork is missing and revalidate restored catalogs before reusing continuation tokens.
+- Read declared TV state across document wrappers and retain existing login, playback and interface behavior.
+- Record redacted cookie attachment, request, parser, image-host and provider-error diagnostics.

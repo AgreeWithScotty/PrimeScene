@@ -8,12 +8,8 @@ from .tv_catalog import _info,_kind,parse_tv_page
 
 
 def documents(data,content_type,address):
-    if content_type.endswith('json'):return [json.loads(data)]
-    parser=StorefrontParser(address);parser.feed(data);parser.close();result=[]
-    for value in parser.json_scripts:
-        try:result.append(json.loads(value))
-        except ValueError:continue
-    return result
+    from .provider_documents import read_documents
+    return read_documents(data,content_type)[0]
 
 
 def state_records(docs):

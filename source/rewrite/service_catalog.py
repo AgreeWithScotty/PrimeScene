@@ -5,28 +5,30 @@ from urllib.parse import urlsplit
 from .detail_catalog import documents
 from .public_catalog import ORIGIN,STOREFRONT_HOSTS,IMAGE_HOSTS,safe_url,StorefrontParser,_protocol_shape
 from .prime_diagnostics import route
+from .regional_hosts import storefront_path
+from .provider_documents import objects
 
 def service_address(value,base=ORIGIN):
     address=safe_url(value,STOREFRONT_HOSTS,base)
     if not address:return None
-    path=re.sub(r'^/region/[a-z]{2,4}','',urlsplit(address).path).rstrip('/')
+    path=storefront_path(address).rstrip('/')
     return address if (path.startswith('/channel/') or path.startswith('/storefront/subscription/')) and path not in (
         '/storefront/subscription/default','/storefront/subscription/prime') else None
 
 def read_directory(data,content_type,address,observe):
     docs=documents(data,content_type,address);rows=[];links=[];groups=[];rejected=0
     for document in docs:
-        if not isinstance(document,dict):continue
-        body=((document.get('init') or {}).get('preparations') or {}).get('body') or document
-        for container in body.get('containers') or []:
+        for container,_ in objects([document]):
             if not isinstance(container,dict) or container.get('containerType') not in ('Nodes','Grid'):continue
             count=0
             for node in container.get('entities') or []:
                 if not isinstance(node,dict):continue
-                link=node.get('link') or {};metadata=link.get('metadata') or {}
+                link=node.get('link') or {}
+                if not isinstance(link,dict):rejected+=1;continue
+                metadata=link.get('metadata') or {}
                 target=service_address(link.get('url'),address)
                 label=node.get('displayTitle') or node.get('title') or ''
-                if not target or not isinstance(label,str) or not label.strip() or metadata.get('pageType') not in ('subscription','channel'):
+                if not target or not isinstance(label,str) or not label.strip() or not isinstance(metadata,dict) or metadata.get('pageType') not in ('subscription','channel'):
                     rejected+=1;continue
                 image=next((safe_url((node.get('images',{}).get(k) or {}).get('url'),IMAGE_HOSTS)
                     for k in ('cover','logo','hero') if isinstance(node.get('images',{}).get(k),dict)
@@ -35,7 +37,7 @@ def read_directory(data,content_type,address,observe):
                 count+=1
             more=(container.get('seeMore') or {}).get('link') or {}
             target=safe_url(more.get('url'),STOREFRONT_HOSTS,address)
-            if target and re.fullmatch(r'(?:/region/[a-z]{2,4})?/storefront/subscription/default/?',urlsplit(target).path):links.append(target)
+            if target and storefront_path(target).rstrip('/')=='/storefront/subscription/default':links.append(target)
             groups.append({'container_type':container.get('containerType'),'entities':len(container.get('entities') or []),
                 'services':count,'estimated_total':container.get('estimatedTotal'),'has_pagination_token':bool(container.get('paginationServiceToken'))})
     unique={}
