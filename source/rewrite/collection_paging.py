@@ -19,7 +19,7 @@ def identity(target):
 
 def valid_request(value):
     if not isinstance(value,dict) or value.get('kind')!='collection':return False
-    if value.get('scope') not in (None,'watching','watchlist'):return False
+    if value.get('scope') not in (None,'watching'):return False
     address=safe_url(value.get('address'),STOREFRONT_HOSTS)
     if not address or not re.fullmatch(r'(?:/region/[a-z]{2,4})?/api/paginateCollection',urlsplit(address).path):return False
     if urlsplit(address).query or not safe_url(value.get('source'),STOREFRONT_HOSTS):return False
@@ -71,7 +71,7 @@ def discover(data,content_type,address,observe,scope=None):
             actionScheme='default',payloadScheme='default')
         if grid.get('journeyIngressContext'):payload['journeyIngressContext']=grid['journeyIngressContext']
         result={'kind':'collection','address':endpoint,'source':address,'payload':payload}
-        if scope in ('watching','watchlist'):result['scope']=scope
+        if scope=='watching':result['scope']='watching'
         if not valid_request(result):raise PublicCatalogError('Amazon returned an unsupported genre pagination structure. Open Diagnostics.')
         observe({'event':'collection_continuation_discovered','stage':'collection_discovery',
             'start_index':payload['startIndex'],'entity_count':len(grid.get('entities') or []),

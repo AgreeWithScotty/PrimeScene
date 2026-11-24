@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <window>
     <zorder>20</zorder>
-    <!-- Closing dialogs allow the main window to activate. Keep this cover
-         opaque until interface_ready force-closes it over the identical art. -->
-    <animation effect="fade" start="100" end="100" time="60000">WindowClose</animation>
+    <animation effect="fade" start="100" end="0" delay="100" time="150">WindowClose</animation>
     <controls>
         <control type="image">
             <left>0</left>

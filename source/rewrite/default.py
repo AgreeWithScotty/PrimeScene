@@ -104,21 +104,18 @@ def main():
             cover_closing = True
             report({'event': 'launch_cover_closing', 'stage': 'plugin_window_handoff',
                     'native_busy_closed': True, 'elapsed_ms': round((monotonic() - started) * 1000),
-                    'opaque_handoff_max_ms': 60000, 'fade_out': False,
+                    'close_animation_ms': 250,
                     'result': 'success'})
         elif event.get('event') == 'window_on_init':
             interface_initialized = True
-        elif event.get('event') == 'interface_ready':
             if cover is not None:
-                # Keep the closing cover fully opaque until the application's
-                # own splash and controls are ready underneath it.
+                # End only our own overlay once the application is active. Do
+                # not leave a closing modal around if rendering is suspended.
                 xbmc.executebuiltin('Dialog.Close(%d,true)' % cover_id, True)
                 closed = not xbmc.getCondVisibility('Window.IsVisible(%d)' % cover_id)
                 report({'event': 'launch_cover_closed', 'stage': 'plugin_window_handoff',
                         'current_window_id': xbmcgui.getCurrentWindowId(),
-                        'cover_closed': closed, 'application_controls_ready': True,
-                        'signed_in': event.get('signed_in'),
-                        'result': 'success' if closed else 'failure'})
+                        'cover_closed': closed, 'result': 'success' if closed else 'failure'})
                 if not closed:
                     raise RuntimeError('The application launch overlay did not close')
                 cover = None

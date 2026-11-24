@@ -1,6 +1,0 @@
-0.2.59
-- Keep the launch splash opaque through the handoff to the prepared application window.
-- Open Movies after the first four genre backgrounds are ready; continue remaining artwork in the background.
-- Replace the Purchases top tab with your Amazon Watchlist, refreshed when opened.
-- Move Purchases into the Movies and TV genre rows, filtered to the selected media type.
-- Preserve account isolation, pagination, playback return, genre typography and category-specific diagnostics.

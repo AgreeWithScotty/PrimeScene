@@ -4,14 +4,11 @@ from html.parser import HTMLParser
 from time import monotonic
 
 LIBRARY_LABELS={'purchases','purchasesrentals','purchasesandrentals','yourpurchases','purchasedmedia'}
-WATCHLIST_LABELS={'watchlist','yourwatchlist','mywatchlist'}
 def library_label(value):return isinstance(value,str) and re.sub('[^a-z]','',value.casefold()) in LIBRARY_LABELS
-def watchlist_label(value):return isinstance(value,str) and re.sub('[^a-z]','',value.casefold()) in WATCHLIST_LABELS
 
 class PageDocuments(HTMLParser):
-    def __init__(self, label_matches=library_label):
+    def __init__(self):
         super().__init__();self.capture=False;self.parts=[];self.scripts=[];self.anchor=None;self.library_links=[]
-        self.label_matches=label_matches
         self.signin=False;self.verification=False
     def handle_starttag(self,tag,attrs):
         attributes=dict(attrs)
@@ -27,14 +24,14 @@ class PageDocuments(HTMLParser):
     def handle_endtag(self,tag):
         if tag=='script' and self.capture:self.scripts.append(''.join(self.parts));self.parts=[];self.capture=False
         elif tag=='a' and self.anchor is not None:
-            if self.label_matches(self.anchor[1]) or self.label_matches(self.anchor[2]):self.library_links.append(self.anchor[0])
+            if library_label(self.anchor[1]) or library_label(self.anchor[2]):self.library_links.append(self.anchor[0])
             self.anchor=None
 
-def read_documents(data,content_type,label_matches=library_label):
+def read_documents(data,content_type):
     started=monotonic();parser=None
     if content_type.endswith('json') or content_type.endswith('+json'):scripts=[data]
     else:
-        parser=PageDocuments(label_matches);parser.feed(data);parser.close();scripts=parser.scripts
+        parser=PageDocuments();parser.feed(data);parser.close();scripts=parser.scripts
     extracted=monotonic();documents=[];failures=0;locations=[]
     for value in scripts:
         try:documents.append(json.loads(value))

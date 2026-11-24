@@ -11,9 +11,7 @@ def genres(section,rows):
         'path':genre_path(section,None),'caption':'Included with Prime',
         'grid_label':'ALL MOVIES' if section=='movies' else 'ALL TV SHOWS'}
     result=[dict(row,path=genre_path(section,row['address']),caption='Included with Prime',
-        grid_label=row.get('artwork_label','')) for row in rows]+[all_row,
-        {'title':'Purchases','address':None,'path':'__purchases__/'+section,
-         'caption':'Your purchased movies' if section=='movies' else 'Your purchased TV shows','grid_label':'PURCHASES'}]
+        grid_label=row.get('artwork_label','')) for row in rows]+[all_row]
     for row in result:
         if row.get('artwork_source')!='provider_title_backdrop':
             row.pop('artwork',None)

@@ -10,11 +10,7 @@ playback return use one permanent add-on: plugin.video.primeinterface.
 
 ![Smooth Prime home screen hero for Night of the Zoopocalypse](docs/screenshots/home.png)
 
-![Mystery & Thriller](docs/screenshots/movie-genres.png)
-
-![Kids & Family](docs/screenshots/genre-kids-family.png)
-
-![Horror](docs/screenshots/genre-horror.png)
+![Smooth Prime movie genres grid](docs/screenshots/movie-genres.png)
 
 Install/update through Prime Scene Repository or ScottyWins. Repository file-manager
 address: https://agreewithscotty.github.io/ScottyWins/

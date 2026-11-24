@@ -4,14 +4,12 @@ from .display_text import clean
 def section_intro(section):
     if section=='home':return {'title':'In Progress','message':'Your in-progress movies or TV shows will display here.'}
     if section=='purchases':return {'title':'Purchases','message':'Your purchased movies and TV shows appear here. Visit Amazon to purchase media.'}
-    if section=='watchlist':return {'title':'Watchlist','message':'Movies and TV shows you save to your Amazon Watchlist appear here.'}
     return {'title':'Search Prime Video','message':"Select Search and enter a movie or TV show title. Search Amazon's full Prime Video catalogue, including Prime titles, rentals, purchases and add-on subscriptions."}
 
 def browse_intro(section,path,heading='',query=None,series=None):
     """Own the destination before its first result; do not assert it is empty."""
-    if path in ('__watching__','__prime_purchases__','__prime_watchlist__','search') or path.startswith('__purchases__/'):
-        intro=section_intro('home' if path=='__watching__' else 'watchlist' if path=='__prime_watchlist__' else
-            'purchases' if path=='__prime_purchases__' or path.startswith('__purchases__/') else 'search')
+    if path in ('__watching__','__prime_purchases__','search'):
+        intro=section_intro('home' if path=='__watching__' else 'purchases' if path=='__prime_purchases__' else 'search')
         if query is not None:intro={'title':'Search results','message':"Movies and TV shows matching your search across Amazon's full Prime Video catalogue."}
         return intro
     if series:
@@ -52,14 +50,9 @@ def category_status(section,path='',heading='',query=None,series=None,unavailabl
         title='In Progress';kind='progress'
         empty='Your in-progress movies or TV shows will display here.'
         retry='Your in-progress movies and TV shows are unavailable right now. Please try again.'
-    elif section=='watchlist' or path=='__prime_watchlist__':
-        title='Watchlist';kind='watchlist'
-        empty='Your Amazon Watchlist is empty. Save movies and TV shows to your Watchlist on Prime Video to see them here.'
-        retry='Your Amazon Watchlist could not be retrieved. Please try again.'
-    elif section=='purchases' or path=='__prime_purchases__' or path.startswith('__purchases__/'):
+    elif section=='purchases':
         title='Purchases';kind='purchases'
-        noun='movies' if path=='__purchases__/movies' else 'TV shows' if path=='__purchases__/tv' else 'media'
-        empty='This account has no purchased %s to display. Visit Amazon to purchase media.'%noun
+        empty='This account has no purchased media to display. Visit Amazon to purchase media.'
         retry='Your Amazon purchase library could not be retrieved. Please try again.'
     elif section in ('movies','tv'):
         noun='movies' if section=='movies' else 'TV shows'
