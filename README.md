@@ -6,6 +6,12 @@ SmoothFlix. Native account verification, fresh In Progress, Prime-included Movie
 and TV, Sports, Purchases, description/artwork preloading and originating-card
 playback return use one permanent add-on: plugin.video.primeinterface.
 
+## Screenshots
+
+![Smooth Prime home screen hero for Night of the Zoopocalypse](docs/screenshots/home.png)
+
+![Smooth Prime movie genres grid](docs/screenshots/movie-genres.png)
+
 Install/update through Prime Scene Repository or ScottyWins. Repository file-manager
 address: https://agreewithscotty.github.io/ScottyWins/
 Source and installable releases: packages/plugin.video.primeinterface/

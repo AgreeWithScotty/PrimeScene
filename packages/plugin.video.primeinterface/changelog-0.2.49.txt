@@ -1,0 +1,5 @@
+0.2.49
+- Replace the genre grid with one horizontal row of wide image cards, using Amazon navigation artwork where supplied.
+- Warm the focused genre and its next neighbour in a separate bounded request lane; retain the chooser until the selected first page is ready.
+- Signal return to the selected card directly on the native player terminal callback, before progress reporting and cleanup; remove the fixed one-second return grace.
+- Keep fresh In Progress updates after the final provider progress attempt and add stage timings for genre selection and playback return.
