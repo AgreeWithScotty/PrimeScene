@@ -1,0 +1,6 @@
+0.2.51
+- Replace movie and TV genre cards with a large cinematic plane and narrow previous/next spines carrying vertical names.
+- Animate the outgoing plane into a strip and expand the incoming plane with Kodi native320ms transitions; fill first/last edge space.
+- Use bundled oversized genre typography and existing real artwork without drawing text or waiting for network responses on input.
+- Start with Action & Adventure, Anime and Comedy; keep All Movies/TV available at the end and preserve the existing Extras card layout.
+- Add sanitized native selection, artwork/typography binding and configured motion diagnostics.

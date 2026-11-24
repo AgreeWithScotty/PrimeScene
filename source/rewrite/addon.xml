@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.50" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.51" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.50[CR]- Follow Amazon-declared Continue Watching continuations automatically, publishing each fresh batch without waiting for scrolling.[CR]- Keep TV containers when their previously watched episode is complete, and retain actively resumed re-watches.[CR]- Decode fractional progress and resume position; show played position, remaining time and the progress bar using returned metadata.[CR]- Show full-scene genre artwork immediately instead of plain Amazon category gradients; upgrade from already preloaded genre results without extra catalog fetches.[CR]- Record history batch counts, parser inventory, completion filtering and progress-field availability for actual-account diagnosis.</news>
+    <news>0.2.51[CR]- Replace movie and TV genre cards with a large cinematic plane and narrow previous/next spines carrying vertical names.[CR]- Animate the outgoing plane into a strip and expand the incoming plane with Kodi native320ms transitions; fill first/last edge space.[CR]- Use bundled oversized genre typography and existing real artwork without drawing text or waiting for network responses on input.[CR]- Start with Action &amp; Adventure, Anime and Comedy; keep All Movies/TV available at the end and preserve the existing Extras card layout.[CR]- Add sanitized native selection, artwork/typography binding and configured motion diagnostics.</news>
   </extension>
 </addon>
