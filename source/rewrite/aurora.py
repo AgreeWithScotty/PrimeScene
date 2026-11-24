@@ -27,7 +27,7 @@ from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
 from .description_cache import DescriptionCache
-from .card_presentation import viewing_label, duration_seconds
+from .card_presentation import viewing_label, duration_seconds, position_seconds, progress_label, progress as progress_percent
 from .prime_diagnostics import DiagnosticLog, exception_details, route
 
 _BACK = (9, 10, 92)
@@ -63,13 +63,7 @@ def _http(value):
 
 
 def _progress(info):
-    raw = (info or {}).get('percentplayed')
-    if raw in (None, ''):
-        raw = (info or {}).get('progress') or 0
-    try:
-        return max(0, min(100, int(raw)))
-    except (TypeError, ValueError):
-        return 0
+    return int(progress_percent(info or {}))
 
 
 def _kind(info):
@@ -404,11 +398,12 @@ def _item(row, title_art='', image_cache=None, report=None):
     item.setProperty('Meta', meta)
     item.setProperty('Watched', '%s%% WATCHED' % _progress(info) if _progress(info) else meta)
     item.setProperty('ViewingLabel',viewing_label(info))
+    item.setProperty('ProgressLabel',clean(progress_label(info) or viewing_label(info)))
     card_bits=[]
     if _kind(info)=='episode':card_bits.append('S%sE%s'%(str(info.get('season') or 0).zfill(2),str(info.get('episode') or 0).zfill(2)))
     elif _kind(info)=='season' and info.get('season') is not None:card_bits.append('Season '+str(info['season']))
     elif _year_label(info):card_bits.append(_year_label(info))
-    secondary=viewing_label(info) or _runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
+    secondary=_runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
     if secondary:card_bits.append(secondary)
     item.setProperty('CardMeta',clean('  ·  '.join(card_bits)))
     item.setProperty('Plot', plot)
@@ -426,8 +421,9 @@ def _item(row, title_art='', image_cache=None, report=None):
         tag = item.getVideoInfoTag()
         progress = _progress(info)
         if hasattr(tag, 'setResumePoint'):
-            total=duration_seconds(info) or 100
-            tag.setResumePoint(total*progress/100,total)
+            known_total=duration_seconds(info);total=known_total or 100
+            position=position_seconds(info) if known_total else progress
+            tag.setResumePoint(position if position is not None else total*progress/100,total)
         if title and hasattr(tag, 'setTitle'):
             tag.setTitle(title)
         if plot and hasattr(tag, 'setPlot'):
@@ -614,6 +610,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.genre_jobs = Queue()
         self.preloaded_catalogs = Queue(maxsize=4)
         self._genre_focus = None
+        self._genre_panel_reported = None
         self._genre_selection = None
         self.genre_cache = {}
         self.genre_requested = set()
@@ -703,10 +700,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._reactivation_ready.set()
                 return
         if self.genre_owner is not None and self.getProperty('GenrePanel'):
-            owner=self.genre_owner;selected=self.getControl(410).getSelectedPosition()
+            owner=self.genre_owner;selected=self._browse_list().getSelectedPosition()
             self._genre_rows=[]
             self._populate_genres({301:'movies',302:'tv',303:'extras'}[owner])
-            self.getControl(410).selectItem(max(0,selected));self.setFocusId(owner)
+            self._browse_list().selectItem(max(0,selected));self.setFocusId(owner)
             self.performance({'event':'browse_grid_controls_restored','stage':stage,'owner':owner,
                 'tiles':len(self._genre_rows),'result':'success'})
             self._reactivation_ready.set()
@@ -813,7 +810,8 @@ class AuroraHome(xbmcgui.WindowXML):
             'initial_view':'movie_genres','catalog_pages_requested':0,'result':'success' if self.getFocusId()==301 else 'failure'})
         self.performance({'event':'interface_configuration','stage':'presentation',
             'content_columns':4,'content_rows':1,'content_flow':'horizontal_fixedlist','content_card_ratio':'16:9','base_background':'000000',
-            'genre_artwork':'provider_navigation_preferred','genre_layout':'wide_horizontal_carousel',
+            'genre_artwork':'preloaded_title_or_local_landscape','genre_layout':'expanding_cinematic_planes',
+            'genre_plane_width':1600,'genre_edge_plane_width':1760,'genre_spine_width':160,'genre_transition_ms':320,
             'genre_preview_first_pages':2,'genre_preview_lane':'separate_from_startup_pagination',
             'native_binding_retained_when_confirmed':True,'result':'success'})
         self.worker.start()
@@ -1172,7 +1170,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('SectionNotice','')
         # Kodi cannot focus an empty list. Park on this section's selector
         # before clearing it, then focus the new cards when they arrive.
-        if not refreshing_progress and self.getFocusId() in (200,410):
+        if not refreshing_progress and self.getFocusId() in (200,410,415):
             self._focus_first_generation=token
             self.setFocusId(self._menu_control())
         self._section_label()
@@ -1252,7 +1250,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
         self.jobs.put((token, path, query, selection))
 
-    def _personal_ready(self,token,path,loader,future):
+    def _personal_ready(self,token,path,loader,future,page_path=None,visited=()):
+        page_path=page_path or path;continued=False
         try:
             if self.stop.is_set() or token!=self.generation:
                 self.performance({'event':'personal_result_discarded','stage':'direct_personal_request',
@@ -1260,15 +1259,30 @@ class AuroraHome(xbmcgui.WindowXML):
             packet=future.result()
             if packet is None:raise RuntimeError('The personal list ended without a provider result')
             self._publish(token,packet)
+            if path=='__watching__' and packet.get('next'):
+                next_page=packet['next']
+                if next_page in visited or next_page==page_path or len(visited)>=99:
+                    raise RuntimeError('The In Progress continuation repeated or exceeded its page limit')
+                if self.stop.is_set() or token!=self.generation:return
+                next_future=loader.request(next_page)
+                continued=True
+                next_future.add_done_callback(lambda result:self._personal_ready(token,path,loader,result,
+                    next_page,visited+(page_path,)))
+                self.performance({'event':'progress_next_batch_requested','stage':'fresh_history_paging',
+                    'generation':token,'page_number':len(visited)+2,'cards_visible':len(self.rows),
+                    'user_scroll_required':False,'result':'started'})
             with self.lock:
                 if token!=self.generation or self.stop.is_set():return
-                if not self.rows and not self.next_path:self._display_category_state()
+                if not self.rows and not self.next_path and not continued:self._display_category_state()
             self.performance({'event':'personal_screen_ready','stage':'direct_personal_request',
                 'section':self.nav,'generation':token,'cards':len(self.rows),
-                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
+                'page_number':len(visited)+1,'history_complete':path=='__watching__' and not continued,
+                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),
+                'result':'partial' if continued else 'success'})
         except Exception as error:
             self.performance({'event':'personal_request_failed','stage':'direct_personal_request',
-                'generation':token,'exception':exception_details(error),'result':'failure'})
+                'generation':token,'page_number':len(visited)+1,'cards_retained':len(self.rows),
+                'exception':exception_details(error),'result':'failure'})
             with self.lock:
                 if token==self.generation and not self.stop.is_set():
                     if not self.rows:
@@ -1278,12 +1292,13 @@ class AuroraHome(xbmcgui.WindowXML):
                         'Your Amazon session needs verification. Use Sign out, then sign in again.' if isinstance(error,CatalogSigninRequired) else
                         'Your In Progress list could not be refreshed. Select In Progress to try again.')
                     self._progress_refresh_generation=None
-                    if path=='__watching__':self._pending_progress_return=None
+                    if path=='__watching__':
+                        self._pending_progress_return=None;self.next_path=None
                     self.setProperty('ProgressRefreshing','')
         finally:
-            if path=='__watching__':loader.release(path,future)
+            if path=='__watching__':loader.release(page_path,future)
             with self.lock:
-                if token==self.generation:
+                if token==self.generation and not continued:
                     self.busy=False;self.pending_path=None
 
     def _selected_index(self):
@@ -1448,10 +1463,11 @@ class AuroraHome(xbmcgui.WindowXML):
                 if key in keys:
                     old=keys.index(key);existing=items[old]
                     existing.setLabel(item.getLabel())
-                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
+                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','ProgressLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
                         existing.setProperty(prop,item.getProperty(prop))
-                    values=row.get('info') or {};total=duration_seconds(values) or 100
-                    try:existing.getVideoInfoTag().setResumePoint(total*_progress(values)/100,total)
+                    values=row.get('info') or {};known_total=duration_seconds(values);total=known_total or 100
+                    position=position_seconds(values) if known_total else _progress(values)
+                    try:existing.getVideoInfoTag().setResumePoint(position if position is not None else total*_progress(values)/100,total)
                     except Exception as error:self.performance({'event':'progress_indicator_update_failed','stage':'in_place_refresh',
                         'exception':exception_details(error),'result':'failure'})
                     existing.setArt({name:item.getArt(name) for name in ('thumb','landscape','poster','icon','fanart') if item.getArt(name)})
@@ -1960,6 +1976,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'prepare_elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
 
     def _preload_grid_focus(self):
+        self._observe_genre_panel()
         self._dispatch_genre_selection()
         if self.loader is None or self.genre_owner not in (301,302):return
         index=self.getControl(410).getSelectedPosition()
@@ -2232,6 +2249,7 @@ class AuroraHome(xbmcgui.WindowXML):
             refreshed=_item(painted,image_cache=self.image_cache,report=self.performance)
             item.setProperty('CardMeta',refreshed.getProperty('CardMeta'))
             item.setProperty('ViewingLabel',refreshed.getProperty('ViewingLabel'))
+            item.setProperty('ProgressLabel',refreshed.getProperty('ProgressLabel'))
             item.setProperty('Meta', _meta(painted))
             item.setProperty('Plot', _plain(current.get('plot') or ''))
             item.setProperty('Year', _year_label(current))
@@ -2365,7 +2383,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if owner==303 and self._service_future is False:
             self._service_future=None
         if self.genre_owner==owner and self.getProperty('GenrePanel'):
-            if focus_grid:self.setFocusId(410)
+            if focus_grid:self.setFocusId(self._browse_control_id())
             return
         section={301:'movies',302:'tv',303:'extras'}[owner]
         with self.lock:
@@ -2389,7 +2407,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('GenreHeading',{'movies':'Movie genres','tv':'TV genres','extras':'Extras'}[section])
         self.setProperty('GenrePanel','1')
         self._populate_genres(section)
-        if focus_grid:self.setFocusId(410)
+        if focus_grid:self.setFocusId(self._browse_control_id())
         if section!='extras' and section not in self.genre_requested:
             self.genre_requested.add(section);self.genre_jobs.put(section)
         self.performance({'event':'browse_grid_opened','section':section,'tiles':len(self._genre_rows),
@@ -2397,9 +2415,10 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _populate_genres(self,section):
         from .browse_tiles import genres,extras
+        from .genre_type import assets as genre_type
         with self.lock:
             if self.genre_owner!={'movies':301,'tv':302,'extras':303}[section]:return
-            listing=self.getControl(410);selected=max(0,listing.getSelectedPosition())
+            listing=self._browse_list();selected=max(0,listing.getSelectedPosition())
             title=self._genre_rows[selected]['title'] if selected<len(self._genre_rows) else None
             rows=extras(self.service_rows) if section=='extras' else genres(section,self.genre_cache.get(section,[]))
             if rows==self._genre_rows:return
@@ -2422,11 +2441,43 @@ class AuroraHome(xbmcgui.WindowXML):
                     item.setArt({'thumb':self.image_cache.local(fitted) if self.image_cache else fitted,
                         'fanart':_fit_art(artwork,_HERO_ART) if artwork.startswith('https://') else artwork})
                 item.setProperty('GridLabel',clean(row.get('grid_label') or (row['title'] if not artwork else '')))
+                if section!='extras':
+                    typography=genre_type(row['title'])
+                    item.setProperty('PanelKey',row['title'])
+                    item.setProperty('PanelTitle',typography.get('title',''))
+                    item.setProperty('PanelSpine',typography.get('spine',''))
                 item.setProperty('Caption',clean(row['caption']));items.append(item)
                 self._tile_items[row['path']]=item
             listing.reset();listing.addItems(items);listing.selectItem(selected)
             self.performance({'event':'browse_grid_updated','section':section,'tiles':len(rows),
                 'selection_preserved':bool(title and rows[selected]['title']==title),'result':'success'})
+
+    def _browse_control_id(self):
+        return 415 if self.genre_owner==303 else 410
+
+    def _browse_list(self):
+        return self.getControl(self._browse_control_id())
+
+    def _observe_genre_panel(self):
+        if self.genre_owner not in (301,302) or not self.getProperty('GenrePanel'):return
+        listing=self.getControl(410);index=listing.getSelectedPosition()
+        signature=(self.generation,self.genre_owner,index,len(self._genre_rows))
+        if signature==self._genre_panel_reported:return
+        previous=self._genre_panel_reported;self._genre_panel_reported=signature
+        row=self._genre_rows[index] if 0<=index<len(self._genre_rows) else {}
+        item=self._tile_items.get(row.get('path'))
+        self.performance({'event':'genre_plane_focus','stage':'native_genre_presentation',
+            'generation':self.generation,'section':self.nav,'selected_index':index,
+            'previous_index':previous[2] if previous and previous[:2]==signature[:2] else None,
+            'native_items':xbmc.getInfoLabel('Container(410).NumItems'),
+            'focused_control':self.getFocusId(),'previous_spine':index>0,
+            'next_spine':index+1<len(self._genre_rows),
+            'configured_plane_width':1760 if index in (0,len(self._genre_rows)-1) else 1600,
+            'configured_spine_width':160,'configured_transition_ms':320,
+            'title_bound':bool(item and item.getProperty('PanelTitle')),
+            'spine_title_bound':bool(item and item.getProperty('PanelSpine')),
+            'image_bound':bool(item and item.getArt('fanart')),
+            'catalog_request_for_presentation':False,'result':'configured'})
 
     def _hide_genres(self,restore=True):
         self._cancel_genre_selection('chooser_closed')
@@ -2436,7 +2487,7 @@ class AuroraHome(xbmcgui.WindowXML):
     def _choose_genre(self):
         if self.genre_owner not in (301,302,303):return
         owner=self.genre_owner;section={301:'movies',302:'tv',303:'extras'}[owner]
-        index=self.getControl(410).getSelectedPosition()
+        index=self._browse_list().getSelectedPosition()
         if not 0<=index<len(self._genre_rows):return
         row=self._genre_rows[index]
         if section=='extras':path=row['path']
@@ -2503,7 +2554,7 @@ class AuroraHome(xbmcgui.WindowXML):
         with self.lock:
             if (self._genre_selection is not pending or self.stop.is_set() or pending['generation']!=self.generation
                     or pending['owner']!=self.genre_owner):return
-            if self.getControl(410).getSelectedPosition()!=pending['index']:
+            if self._browse_list().getSelectedPosition()!=pending['index']:
                 self._cancel_genre_selection('focus_changed');return
             self._genre_selection=None
             row=pending['row'];self._hide_genres(restore=False)
@@ -2559,10 +2610,10 @@ class AuroraHome(xbmcgui.WindowXML):
         for row in list(self._genre_rows):
             if owner!=self.genre_owner or self.stop.is_set():return
             path=row['path'];item=self._tile_items.get(path);artwork=row.get('artwork')
-            if owner in (301,302) and not row.get('address'):
+            if owner in (301,302):
                 packet=loader.peek(path) or {}
                 first=next((entry.get('info') or {} for entry in packet.get('rows') or [] if _rail_art(entry.get('info') or {})),{})
-                artwork=_rail_art(first) or artwork
+                artwork=first.get('fanart') or _rail_art(first) or artwork
                 if artwork:row.update(artwork=artwork,artwork_source='catalog_preload')
             if item is None or not artwork:continue
             if self._tile_art.get(path)!=artwork:
@@ -2573,7 +2624,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 backdrop=_fit_art(artwork,_HERO_ART) if artwork.startswith('https://') else artwork
                 item.setArt({'thumb':fitted,'fanart':backdrop});item.setProperty('TileArt',fitted);updated+=1
         if updated:self.performance({'event':'navigation_artwork_bound','stage':'tile_artwork','section':self.nav,
-            'tiles_updated':updated,'source':'provider_navigation_with_bundled_fallback' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
+            'tiles_updated':updated,'source':'preloaded_title_or_local_landscape' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
             'image_loader':'kodi_background_texture_cache','result':'success'})
 
     def _genre_loop(self):
@@ -2613,7 +2664,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if control_id in primary:
             path = primary[control_id]
             self._activate_section(control_id,focus_cards=True)
-        elif control_id == 410:
+        elif control_id in (410,415):
             self._choose_genre()
         elif control_id == 304:
             self._search()
@@ -2672,6 +2723,7 @@ class AuroraHome(xbmcgui.WindowXML):
         # so updating it from here only delays the move.
         action_id = action.getId()
         focus=self.getFocusId()
+        if focus==410 and action_id in (1,2):self._observe_genre_panel()
         if action_id in (1,2,3,4) and self.worker is not None and self.worker.is_alive():
             if focus in (309,301,302,303,308):
                 self._focus_first_generation=None
@@ -2686,7 +2738,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if action_id==4 and focus in (301,302,303):
             self._show_genres(focus)
             return
-        if self.getProperty('GenrePanel') and action_id in _BACK and focus==410:
+        if self.getProperty('GenrePanel') and action_id in _BACK and focus in (410,415):
             if self._genre_selection:
                 self._cancel_genre_selection('back_pressed');return
             self.setFocusId(self.genre_owner)

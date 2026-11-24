@@ -29,6 +29,7 @@ def _card_info(card):
         info['landscape'] = card.landscape_url
     info['primeincluded'] = prime_included(card.access_evidence)
     info['access_evidence'] = card.access_evidence
+    if card.resume_seconds is not None:info['resume_seconds']=card.resume_seconds
     if card.fanart_url:
         info['fanart'] = card.fanart_url
     if card.plot:
@@ -288,9 +289,16 @@ class CatalogGateway:
         if page == 'watching':
             from .watch_home import complete
             from .home_catalog import unique_progress_rows
-            rows, duplicates = unique_progress_rows([row for row in rows if not complete(row.get('info') or {})])
+            # A completed episode does not complete its containing TV series.
+            finished=[row for row in rows if (row.get('info') or {}).get('mediatype') in ('movie','episode')
+                      and complete(row.get('info') or {})]
+            rows, duplicates = unique_progress_rows([row for row in rows if row not in finished])
             observe({'event':'progress_snapshot_ready','fresh':True,'source':'amazon_only',
-                'duplicates_removed':duplicates,'rows':len(rows),'result':'success'})
+                'duplicates_removed':duplicates,'completed_titles_removed':len(finished),
+                'movie_rows':sum((row.get('info') or {}).get('mediatype')=='movie' for row in rows),
+                'tv_rows':sum((row.get('info') or {}).get('mediatype') in ('tvshow','season','episode') for row in rows),
+                'position_fields':sum('resume_seconds' in (row.get('info') or {}) for row in rows),
+                'rows':len(rows),'result':'success'})
             for row in rows: row['watching_only'] = True
         visited = previous_urls + ((continuation_identity(continuation),) if continuation else ())
         next_path = self._continuation(page, result.next_request or result.next_url, visited)

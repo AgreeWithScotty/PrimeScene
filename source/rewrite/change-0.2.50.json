@@ -1,0 +1,522 @@
+{
+  "version": "0.2.50",
+  "sha256": "94ee3870702992f42d51130795b24987dddf01ff5c75ce6bda7fd0d139121962",
+  "bytes": 3959417,
+  "files": 117,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_tiles.py",
+    "plugin.video.primeinterface/resources/lib/card_presentation.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/collection_paging.py",
+    "plugin.video.primeinterface/resources/lib/home_catalog.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/watch_home.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "source_scope_and_actual_catalog_replay": {
+    "runtime_changed": [
+      "resources/lib/aurora.py",
+      "resources/lib/browse_tiles.py",
+      "resources/lib/card_presentation.py",
+      "resources/lib/catalog_gateway.py",
+      "resources/lib/collection_paging.py",
+      "resources/lib/home_catalog.py",
+      "resources/lib/navigation.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/watch_home.py",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml"
+    ],
+    "syntax_xml_valid": true,
+    "source_sha256": {
+      "resources/lib/aurora.py": "f61de86712eb21710a813915a116491edb4ecf73ff4f5ee8f2df8d62d8ab361c",
+      "resources/lib/browse_tiles.py": "0d97442e5710248634d396208c3aa5e791c3ca9ae436a6744822588f059f4d7d",
+      "resources/lib/card_presentation.py": "9185ded36c1b46ff93bc18dd375737d3a0325929a51d9348a163c494306c6baa",
+      "resources/lib/catalog_gateway.py": "4b9981fa14e84cf1f40a9f5265100aaa783c93ef14b50a8a11f8517c3511504b",
+      "resources/lib/collection_paging.py": "838a6ab81317e93b7ca31107666dd9a0eef16c295a8a563d8656c78a5fae0c90",
+      "resources/lib/home_catalog.py": "23dbac91374b98882dad92d8b7df0e149617bd69e26514a09ecfd97da38c437a",
+      "resources/lib/navigation.py": "0783453bbb6b50e4f4ad7f3f05a7f4c935c569d1cb4aabd1e7cae3b7c5d3e389",
+      "resources/lib/public_catalog.py": "e06ebb21943db869e35155a4605799867e958f951ab99973939f0ba42e6f0354",
+      "resources/lib/watch_home.py": "391f247ae3254ccee8bd2a31e41b4f1dd6c29ac6d8c48ad3ded198ed19cf389c",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml": "17c8d2551b64745fdef9b0cbcc0c67042de3cb5f10d360f97d9d3457b56538fb"
+    },
+    "preserved_previous_repairs": [
+      "native video plugin registration/entry",
+      "owned launch overlay",
+      "early playback return",
+      "login/security unchanged"
+    ],
+    "actual_catalog_replay": [
+      {
+        "source": "saved_actual_provider_response",
+        "section": "fantasy-movies",
+        "cards": 20,
+        "continuation_valid": true,
+        "next_page_entities": 40,
+        "has_more": false
+      },
+      {
+        "source": "saved_actual_provider_response",
+        "section": "fantasy-tv",
+        "cards": 20,
+        "continuation_valid": true,
+        "next_page_entities": 40,
+        "has_more": false
+      }
+    ],
+    "live_account_in_progress_exercised": false,
+    "current_user_report": "The latest movie appears; older TV shows and a previous-week unfinished movie are missing. No current account report attached.",
+    "confirmed_source_defects": [
+      "Continue Watching continuation discarded",
+      "completed episode state could exclude its entire TV container",
+      "fractional progress and action resumeTime dropped",
+      "genre background gradients treated as illustration artwork"
+    ],
+    "provider_protocol_reference": {
+      "source": "saved actual DVWebClient page-browse JS from public Amazon storefront",
+      "sha256": "5219c02291e9987133d3af369ef49563d0fedc86a1e876809b819cd7c92b15d6",
+      "observed_fields": [
+        "container.isContinueWatching",
+        "PaginateCollection collectionType Container",
+        "progress.percentage fraction times100",
+        "playbackActions resumeTime passed as player start position; out-of-duration values rejected in favor of percentage"
+      ]
+    }
+  },
+  "actual_presentation_assets_and_formatting": {
+    "formatter_cases": [
+      {
+        "label": "23:14 played  \u00b7  1h 12m left",
+        "duration": 5700.0
+      },
+      {
+        "label": "~23:45 played  \u00b7  1h 12m left",
+        "duration": 5700.0
+      },
+      {
+        "label": "23:14 played  \u00b7  1h 12m left",
+        "duration": 5700.0
+      }
+    ],
+    "scope": "Deterministic label/unit handling and actual bundled image decoding only. No live account/history or playback confirmation.",
+    "native_genre_tiles_with_actual_images": 26,
+    "images": [
+      {
+        "section": "movies",
+        "genre": "All movies",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          49.167743633963624,
+          44.41595671109046,
+          43.327309805776935
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Action & adventure",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          61.45791897092462,
+          59.01794540502649,
+          56.72744258341727
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Anime",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          49.167743633963624,
+          44.41595671109046,
+          43.327309805776935
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Comedy",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          76.07859125889955,
+          61.81234605781045,
+          52.36883545759053
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Documentary",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          87.53226292576453,
+          97.00850116024895,
+          95.86697526002214
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Drama",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          67.49081558450511,
+          52.239825810035995,
+          45.57253516889116
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Fantasy",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          56.71187781117475,
+          55.47494850155564,
+          62.22469163815837
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Historical",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          71.15141604479724,
+          66.73393783430681,
+          55.22293141609146
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Horror",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          64.7751346544165,
+          57.152593157351305,
+          48.88039321131357
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Kids & family",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          77.45022332226361,
+          69.93716820545836,
+          71.75958613625068
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Mystery & thriller",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          76.07859125889955,
+          61.81234605781045,
+          52.36883545759053
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Romance",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          67.49081558450511,
+          52.239825810035995,
+          45.57253516889116
+        ]
+      },
+      {
+        "section": "movies",
+        "genre": "Science fiction",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          59.1129739887637,
+          48.19484728722002,
+          50.75343706554505
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "All TV shows",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          65.43707454296306,
+          64.1394908484451,
+          63.428222353943625
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Action & adventure",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          68.58152271579647,
+          47.25833515446133,
+          31.251038580290356
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Anime",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          65.43707454296306,
+          64.1394908484451,
+          63.428222353943625
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Comedy",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          81.23271289788156,
+          76.56731467813376,
+          94.86835819029449
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Documentary",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          72.99918066383871,
+          65.56842868455695,
+          66.90526074040774
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Drama",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          68.58152271579647,
+          47.25833515446133,
+          31.251038580290356
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Fantasy",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          68.58152271579647,
+          47.25833515446133,
+          31.251038580290356
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Historical",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          52.75554789216193,
+          44.794498594113314,
+          36.36341923102946
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Horror",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          60.67198243451193,
+          54.570758765675244,
+          44.73629554983886
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Kids & family",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          71.98263309253889,
+          61.62884906905738,
+          54.81060219662669
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Mystery & thriller",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          69.28253957574827,
+          58.004325740730586,
+          53.332558056644324
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Romance",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          69.43551630096611,
+          73.85679489556709,
+          69.4135711266608
+        ]
+      },
+      {
+        "section": "tv",
+        "genre": "Science fiction",
+        "dimensions": [
+          720,
+          405
+        ],
+        "rgb_stddev": [
+          68.13467904287648,
+          56.494699142471504,
+          52.24009325224413
+        ]
+      }
+    ]
+  },
+  "public_category_images": [
+    {
+      "genre": "Action & adventure",
+      "variant": "provider_original",
+      "status": 200,
+      "format": "PNG",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 460273,
+      "rgb_mean": [
+        20.6883878279321,
+        29.861625192901233,
+        35.71766975308642
+      ],
+      "sha256": "a112fa3d9ce95ca8e09542d5ef0a47f640e763a9a6df2fbe7dbfa313f28b0d3c"
+    },
+    {
+      "genre": "Action & adventure",
+      "variant": "rewritten_720",
+      "status": 200,
+      "format": "JPEG",
+      "dimensions": [
+        720,
+        405
+      ],
+      "bytes": 2631,
+      "rgb_mean": [
+        20.417376543209876,
+        29.557061042524005,
+        36.135123456790126
+      ],
+      "sha256": "4811bcc732b3796972de0754a0722624feeea3c1fcfea061fd72bcfdd66264f3"
+    },
+    {
+      "genre": "Anime",
+      "variant": "provider_original",
+      "status": 200,
+      "format": "PNG",
+      "dimensions": [
+        1920,
+        1080
+      ],
+      "bytes": 459590,
+      "rgb_mean": [
+        26.818790027006173,
+        23.40698543595679,
+        35.71766975308642
+      ],
+      "sha256": "5d6bc9992934eaf6b92157868a92f14a77d869914e2fa17d9bf6e5aef5320396"
+    },
+    {
+      "genre": "Anime",
+      "variant": "rewritten_720",
+      "status": 200,
+      "format": "JPEG",
+      "dimensions": [
+        720,
+        405
+      ],
+      "bytes": 2394,
+      "rgb_mean": [
+        26.610672153635118,
+        23.312774348422497,
+        35.779883401920436
+      ],
+      "sha256": "5991c796107da0356219f0f67393eaafffb86640c158c7fdb03d81cfee499504"
+    }
+  ]
+}

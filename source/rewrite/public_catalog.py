@@ -42,7 +42,8 @@ def _protocol_shape(document):
                  'emptyState errorCode errorType entitlementCues offerClassification providerLogo '
                  'entitlementType offerType').split())
     known.update(('entities','hasMoreItems','startIndex','serviceToken','paginationServiceToken',
-        'paginationTargetId','paginationStartIndex','swiftPageParameters','primeVideoCapability'))
+        'paginationTargetId','paginationStartIndex','swiftPageParameters','primeVideoCapability',
+        'isContinueWatching','containerType','progress','percentage','resumeTime','playbackActions','runtime','entityType'))
     stack, result = [('$', document, 0)], []
     while stack and len(result) < 60:
         path, value, depth = stack.pop()
@@ -80,6 +81,7 @@ class Card:
     access_evidence: str = ''
     percentplayed: float = 0
     playcount: int = 0
+    resume_seconds: float = None
 
 
 @dataclass(frozen=True)
@@ -745,7 +747,14 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 return fetch_page(page,opener=opener,continuation=scoped,observer=observer,_library_depth=_library_depth+1)
             _emit(observer,{'event':'genre_section_link_unavailable','stage':'genre_scope','section':page,
                 'fallback':'typed_prime_filtered_genre_page','result':'unavailable'})
-        if page == 'watching':
+        if page == 'watching' and collection:
+            if continuation.get('scope')!='watching':
+                raise PublicCatalogError('The In Progress continuation has no confirmed watch-history scope.')
+            result, details = _read_page(data,content_type,final_url)
+            next_request=collection_paging.advance(continuation,data,content_type,observer)
+            result=replace(result,next_request=next_request,empty_confirmed=not result.cards and next_request is None)
+            details.update(history_confirmed=True,progress_continuation=True)
+        elif page == 'watching':
             from .home_catalog import read_home
             try:
                 result, details = read_home(data, content_type, final_url, observer)
@@ -755,6 +764,8 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                     'protocol_structure':_protocol_shape(json.loads(data)) if content_type.endswith('json') else
                         {'format':'html','json_script_count':data.count('application/json')}})
                 raise
+            next_request=collection_paging.discover(data,content_type,final_url,observer,scope='watching')
+            if next_request:result=replace(result,next_request=next_request,empty_confirmed=False)
         elif page == 'purchases':
             from .purchases_catalog import read_library
             result, details, library_link = read_library(data, content_type, final_url,

@@ -22,13 +22,12 @@ def genres(section,rows):
     all_row={'title':'All movies' if section=='movies' else 'All TV shows','address':None,
         'path':genre_path(section,None),'caption':'Included with Prime',
         'grid_label':'ALL MOVIES' if section=='movies' else 'ALL TV SHOWS'}
-    result=[all_row]+[dict(row,path=genre_path(section,row['address']),caption='Included with Prime',
-        grid_label=row.get('artwork_label','')) for row in rows]
+    result=[dict(row,path=genre_path(section,row['address']),caption='Included with Prime',
+        grid_label=row.get('artwork_label','')) for row in rows]+[all_row]
     for row in result:
-        if row.get('artwork'):
+        if row.get('artwork') and '/genre_background_' not in row['artwork']:
             row['artwork_source']='provider_navigation'
             continue
-        if row is all_row:continue
         images=genre_art(section,'*' if row is all_row else row['title'])
         if images:row.update(artwork=images[0],artwork_source='bundled_landscape',grid_label=row['title'])
     return result

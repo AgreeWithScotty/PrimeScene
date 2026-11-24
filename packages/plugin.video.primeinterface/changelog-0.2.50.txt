@@ -1,0 +1,6 @@
+0.2.50
+- Follow Amazon-declared Continue Watching continuations automatically, publishing each fresh batch without waiting for scrolling.
+- Keep TV containers when their previously watched episode is complete, and retain actively resumed re-watches.
+- Decode fractional progress and resume position; show played position, remaining time and the progress bar using returned metadata.
+- Show full-scene genre artwork immediately instead of plain Amazon category gradients; upgrade from already preloaded genre results without extra catalog fetches.
+- Record history batch counts, parser inventory, completion filtering and progress-field availability for actual-account diagnosis.
