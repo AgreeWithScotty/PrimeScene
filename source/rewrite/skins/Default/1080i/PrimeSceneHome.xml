@@ -2076,6 +2076,12 @@
                         <label>$INFO[ListItem.Property(CardMeta)]</label>
                         <textcolor>FF969EA6</textcolor>
                     </control>
+                    <control type="label">
+                        <left>10</left><top>308</top><width>388</width><height>28</height>
+                        <font>Meta</font><textcolor>FFE7EDF1</textcolor>
+                        <label>$INFO[ListItem.Property(ProgressLabel)]</label>
+                        <visible>!String.IsEmpty(ListItem.Property(ProgressLabel))</visible>
+                    </control>
                     <control type="progress">
                         <left>10</left>
                         <top>228</top>
@@ -2158,6 +2164,12 @@
                         <font>Meta</font>
                         <label>$INFO[ListItem.Property(CardMeta)]</label>
                         <textcolor>FFD5DAE0</textcolor>
+                    </control>
+                    <control type="label">
+                        <left>10</left><top>308</top><width>388</width><height>28</height>
+                        <font>Meta</font><textcolor>FFE7EDF1</textcolor>
+                        <label>$INFO[ListItem.Property(ProgressLabel)]</label>
+                        <visible>!String.IsEmpty(ListItem.Property(ProgressLabel))</visible>
                     </control>
                     <control type="progress">
                         <left>10</left>

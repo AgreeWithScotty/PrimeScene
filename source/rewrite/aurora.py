@@ -27,7 +27,7 @@ from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
 from .description_cache import DescriptionCache
-from .card_presentation import viewing_label, duration_seconds
+from .card_presentation import viewing_label, duration_seconds, position_seconds, progress_label, progress as progress_percent
 from .prime_diagnostics import DiagnosticLog, exception_details, route
 
 _BACK = (9, 10, 92)
@@ -63,13 +63,7 @@ def _http(value):
 
 
 def _progress(info):
-    raw = (info or {}).get('percentplayed')
-    if raw in (None, ''):
-        raw = (info or {}).get('progress') or 0
-    try:
-        return max(0, min(100, int(raw)))
-    except (TypeError, ValueError):
-        return 0
+    return int(progress_percent(info or {}))
 
 
 def _kind(info):
@@ -404,11 +398,12 @@ def _item(row, title_art='', image_cache=None, report=None):
     item.setProperty('Meta', meta)
     item.setProperty('Watched', '%s%% WATCHED' % _progress(info) if _progress(info) else meta)
     item.setProperty('ViewingLabel',viewing_label(info))
+    item.setProperty('ProgressLabel',clean(progress_label(info) or viewing_label(info)))
     card_bits=[]
     if _kind(info)=='episode':card_bits.append('S%sE%s'%(str(info.get('season') or 0).zfill(2),str(info.get('episode') or 0).zfill(2)))
     elif _kind(info)=='season' and info.get('season') is not None:card_bits.append('Season '+str(info['season']))
     elif _year_label(info):card_bits.append(_year_label(info))
-    secondary=viewing_label(info) or _runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
+    secondary=_runtime_label(info.get('duration') if info.get('duration') not in (None,'') else info.get('runtime'))
     if secondary:card_bits.append(secondary)
     item.setProperty('CardMeta',clean('  ·  '.join(card_bits)))
     item.setProperty('Plot', plot)
@@ -426,8 +421,9 @@ def _item(row, title_art='', image_cache=None, report=None):
         tag = item.getVideoInfoTag()
         progress = _progress(info)
         if hasattr(tag, 'setResumePoint'):
-            total=duration_seconds(info) or 100
-            tag.setResumePoint(total*progress/100,total)
+            known_total=duration_seconds(info);total=known_total or 100
+            position=position_seconds(info) if known_total else progress
+            tag.setResumePoint(position if position is not None else total*progress/100,total)
         if title and hasattr(tag, 'setTitle'):
             tag.setTitle(title)
         if plot and hasattr(tag, 'setPlot'):
@@ -813,7 +809,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'initial_view':'movie_genres','catalog_pages_requested':0,'result':'success' if self.getFocusId()==301 else 'failure'})
         self.performance({'event':'interface_configuration','stage':'presentation',
             'content_columns':4,'content_rows':1,'content_flow':'horizontal_fixedlist','content_card_ratio':'16:9','base_background':'000000',
-            'genre_artwork':'provider_navigation_preferred','genre_layout':'wide_horizontal_carousel',
+            'genre_artwork':'preloaded_title_or_local_landscape','genre_layout':'wide_horizontal_carousel',
             'genre_preview_first_pages':2,'genre_preview_lane':'separate_from_startup_pagination',
             'native_binding_retained_when_confirmed':True,'result':'success'})
         self.worker.start()
@@ -1252,7 +1248,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 return
         self.jobs.put((token, path, query, selection))
 
-    def _personal_ready(self,token,path,loader,future):
+    def _personal_ready(self,token,path,loader,future,page_path=None,visited=()):
+        page_path=page_path or path;continued=False
         try:
             if self.stop.is_set() or token!=self.generation:
                 self.performance({'event':'personal_result_discarded','stage':'direct_personal_request',
@@ -1260,15 +1257,30 @@ class AuroraHome(xbmcgui.WindowXML):
             packet=future.result()
             if packet is None:raise RuntimeError('The personal list ended without a provider result')
             self._publish(token,packet)
+            if path=='__watching__' and packet.get('next'):
+                next_page=packet['next']
+                if next_page in visited or next_page==page_path or len(visited)>=99:
+                    raise RuntimeError('The In Progress continuation repeated or exceeded its page limit')
+                if self.stop.is_set() or token!=self.generation:return
+                next_future=loader.request(next_page)
+                continued=True
+                next_future.add_done_callback(lambda result:self._personal_ready(token,path,loader,result,
+                    next_page,visited+(page_path,)))
+                self.performance({'event':'progress_next_batch_requested','stage':'fresh_history_paging',
+                    'generation':token,'page_number':len(visited)+2,'cards_visible':len(self.rows),
+                    'user_scroll_required':False,'result':'started'})
             with self.lock:
                 if token!=self.generation or self.stop.is_set():return
-                if not self.rows and not self.next_path:self._display_category_state()
+                if not self.rows and not self.next_path and not continued:self._display_category_state()
             self.performance({'event':'personal_screen_ready','stage':'direct_personal_request',
                 'section':self.nav,'generation':token,'cards':len(self.rows),
-                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
+                'page_number':len(visited)+1,'history_complete':path=='__watching__' and not continued,
+                'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),
+                'result':'partial' if continued else 'success'})
         except Exception as error:
             self.performance({'event':'personal_request_failed','stage':'direct_personal_request',
-                'generation':token,'exception':exception_details(error),'result':'failure'})
+                'generation':token,'page_number':len(visited)+1,'cards_retained':len(self.rows),
+                'exception':exception_details(error),'result':'failure'})
             with self.lock:
                 if token==self.generation and not self.stop.is_set():
                     if not self.rows:
@@ -1278,12 +1290,13 @@ class AuroraHome(xbmcgui.WindowXML):
                         'Your Amazon session needs verification. Use Sign out, then sign in again.' if isinstance(error,CatalogSigninRequired) else
                         'Your In Progress list could not be refreshed. Select In Progress to try again.')
                     self._progress_refresh_generation=None
-                    if path=='__watching__':self._pending_progress_return=None
+                    if path=='__watching__':
+                        self._pending_progress_return=None;self.next_path=None
                     self.setProperty('ProgressRefreshing','')
         finally:
-            if path=='__watching__':loader.release(path,future)
+            if path=='__watching__':loader.release(page_path,future)
             with self.lock:
-                if token==self.generation:
+                if token==self.generation and not continued:
                     self.busy=False;self.pending_path=None
 
     def _selected_index(self):
@@ -1448,10 +1461,11 @@ class AuroraHome(xbmcgui.WindowXML):
                 if key in keys:
                     old=keys.index(key);existing=items[old]
                     existing.setLabel(item.getLabel())
-                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
+                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','ProgressLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
                         existing.setProperty(prop,item.getProperty(prop))
-                    values=row.get('info') or {};total=duration_seconds(values) or 100
-                    try:existing.getVideoInfoTag().setResumePoint(total*_progress(values)/100,total)
+                    values=row.get('info') or {};known_total=duration_seconds(values);total=known_total or 100
+                    position=position_seconds(values) if known_total else _progress(values)
+                    try:existing.getVideoInfoTag().setResumePoint(position if position is not None else total*_progress(values)/100,total)
                     except Exception as error:self.performance({'event':'progress_indicator_update_failed','stage':'in_place_refresh',
                         'exception':exception_details(error),'result':'failure'})
                     existing.setArt({name:item.getArt(name) for name in ('thumb','landscape','poster','icon','fanart') if item.getArt(name)})
@@ -2232,6 +2246,7 @@ class AuroraHome(xbmcgui.WindowXML):
             refreshed=_item(painted,image_cache=self.image_cache,report=self.performance)
             item.setProperty('CardMeta',refreshed.getProperty('CardMeta'))
             item.setProperty('ViewingLabel',refreshed.getProperty('ViewingLabel'))
+            item.setProperty('ProgressLabel',refreshed.getProperty('ProgressLabel'))
             item.setProperty('Meta', _meta(painted))
             item.setProperty('Plot', _plain(current.get('plot') or ''))
             item.setProperty('Year', _year_label(current))
@@ -2559,7 +2574,7 @@ class AuroraHome(xbmcgui.WindowXML):
         for row in list(self._genre_rows):
             if owner!=self.genre_owner or self.stop.is_set():return
             path=row['path'];item=self._tile_items.get(path);artwork=row.get('artwork')
-            if owner in (301,302) and not row.get('address'):
+            if owner in (301,302):
                 packet=loader.peek(path) or {}
                 first=next((entry.get('info') or {} for entry in packet.get('rows') or [] if _rail_art(entry.get('info') or {})),{})
                 artwork=_rail_art(first) or artwork
@@ -2573,7 +2588,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 backdrop=_fit_art(artwork,_HERO_ART) if artwork.startswith('https://') else artwork
                 item.setArt({'thumb':fitted,'fanart':backdrop});item.setProperty('TileArt',fitted);updated+=1
         if updated:self.performance({'event':'navigation_artwork_bound','stage':'tile_artwork','section':self.nav,
-            'tiles_updated':updated,'source':'provider_navigation_with_bundled_fallback' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
+            'tiles_updated':updated,'source':'preloaded_title_or_local_landscape' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
             'image_loader':'kodi_background_texture_cache','result':'success'})
 
     def _genre_loop(self):

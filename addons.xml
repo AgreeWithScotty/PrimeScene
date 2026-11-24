@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.49" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.50" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.49[CR]- Replace the genre grid with one horizontal row of wide image cards, using Amazon navigation artwork where supplied.[CR]- Warm the focused genre and its next neighbour in a separate bounded request lane; retain the chooser until the selected first page is ready.[CR]- Signal return to the selected card directly on the native player terminal callback, before progress reporting and cleanup; remove the fixed one-second return grace.[CR]- Keep fresh In Progress updates after the final provider progress attempt and add stage timings for genre selection and playback return.</news>
+    <news>0.2.50[CR]- Follow Amazon-declared Continue Watching continuations automatically, publishing each fresh batch without waiting for scrolling.[CR]- Keep TV containers when their previously watched episode is complete, and retain actively resumed re-watches.[CR]- Decode fractional progress and resume position; show played position, remaining time and the progress bar using returned metadata.[CR]- Show full-scene genre artwork immediately instead of plain Amazon category gradients; upgrade from already preloaded genre results without extra catalog fetches.[CR]- Record history batch counts, parser inventory, completion filtering and progress-field availability for actual-account diagnosis.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

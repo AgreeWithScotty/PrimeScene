@@ -127,7 +127,7 @@ class StorefrontLoader:
                 raise RuntimeError('The catalog session has ended')
             if background:self.background_paths.add(path)
             else:self.background_paths.discard(path)
-            executor=self.personal if path in ('__watching__','__prime_purchases__') else self.preview if priority else self.background if background else self.pool
+            executor=self.personal if path=='__prime_purchases__' or self.routes.get(path)=='__watching__' else self.preview if priority else self.background if background else self.pool
             self.futures[path] = executor.submit(
                 self._load,path,monotonic(),token_hex(8),background,priority)
             return self.futures[path]
@@ -190,9 +190,11 @@ class StorefrontLoader:
                          'exception': exception_details(error), 'result': 'failure'})
 
     def release(self, path, future):
-        if path == '__watching__':
-            with self.lock:
-                if self.futures.get(path) is future: self.futures.pop(path,None)
+        with self.lock:
+            if self.routes.get(path)=='__watching__' and self.futures.get(path) is future:
+                self.futures.pop(path,None)
+                if path!='__watching__':
+                    self.routes.pop(path,None);self.readers.pop(path,None)
 
     @staticmethod
     def _valid_continuation(value):
@@ -222,17 +224,17 @@ class StorefrontLoader:
         started = monotonic()
         self.report({'event':'catalog_load_started','stage':'preload' if background else 'navigation',
             'attempt_id':attempt,'section':self.diagnostic_section(path),
-            'request_lane':'personal' if path in ('__watching__','__prime_purchases__') else 'genre_preview' if priority else 'background' if background else 'catalog',
+            'request_lane':'personal' if path=='__prime_purchases__' or self.routes.get(path)=='__watching__' else 'genre_preview' if priority else 'background' if background else 'catalog',
             'queue_wait_ms':round((started-queued)*1000),'background':background,'result':'started'})
         if path.startswith('__genre__/') and path not in self.saved_checked:
             self._load_saved(path)
         with self.lock:
             root = self.routes[path]
             entry = self.cache.get(path)
-        bridge, reader_lock = self.readers[root]
+        with self.lock:bridge, reader_lock = self.readers.get(path,self.readers[root])
         fresh = root == '__watching__'
         try:
-            if fresh:
+            if path=='__watching__':
                 from .progress_cache import discard_stored
                 discard_stored(self.g.DATA_PATH,self.epoch,self.report)
                 bridge,reader_lock=CatalogGateway(self.g),Lock()
@@ -268,6 +270,7 @@ class StorefrontLoader:
                     if not fresh: self.cache[path] = (saved, deepcopy(packet))
                     if packet.get('next'):
                         self.routes[packet['next']] = root
+                        if fresh:self.readers[packet['next']]=(bridge,reader_lock)
                 if (path in ROOTS or path.startswith('__genre__/')) and not fresh:
                     try:
                         self._save(root, packet, bridge, saved)
