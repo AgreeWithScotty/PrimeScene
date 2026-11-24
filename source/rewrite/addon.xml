@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.60" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.61" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.60[CR]- Read selected Watchlist and Purchases collections without looping through tracking-link variants.[CR]- Distinguish confirmed empty account lists from unreadable, unfinished or failed responses; preserve collection pagination.[CR]- Choose distinct original Amazon backdrops for genres, All Movies/TV and Purchases without loading entire categories.[CR]- Prepare the first four genre backdrops concurrently and make each movie image available before TV metadata finishes.[CR]- Reuse verified regional artwork cache entries and continue background retries after bounded startup recovery.[CR]- Record collection parsing and per-image startup stages, timings and redacted failures.</news>
+    <news>0.2.61[CR]- Read localized Amazon genre and service links while preserving the exact provider addresses.[CR]- Preserve In Progress and personal collection scope, empty-state proof and native pagination across regional page layouts.[CR]- Keep valid titles when artwork is missing and revalidate restored catalogs before reusing continuation tokens.[CR]- Read declared TV state across document wrappers and retain existing login, playback and interface behavior.[CR]- Record redacted cookie attachment, request, parser, image-host and provider-error diagnostics.</news>
   </extension>
 </addon>

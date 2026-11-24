@@ -1,8 +1,6 @@
-# Regional data retrieval source draft
+# Regional data retrieval fixes — Smooth Prime 0.2.61
 
-Uploaded to main on 2026-11-24 at the user's request. This is a source-only
-update on 0.2.60: no version bump, new installer, repository index update or
-public release promotion. The immutable 0.2.60 installer does not contain this draft.
+The complete regional retrieval draft is now included in the 0.2.61 installer. Main-branch upload only; no public release promotion. The earlier 0.2.60 source-only state is superseded by this packaged update.
 
 Fifteen existing modules repair localized genre/service routing and genre scope,
 personal collection discovery/empty proof, native continuation contexts, title

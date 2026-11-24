@@ -1,0 +1,184 @@
+{
+  "version": "0.2.61",
+  "sha256": "d0e734b229059472aab04d27b95f88403c3257778fe22c5d5d6c3ac5a0f958ed",
+  "bytes": 3760037,
+  "files": 160,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/collection_paging.py",
+    "plugin.video.primeinterface/resources/lib/detail_catalog.py",
+    "plugin.video.primeinterface/resources/lib/genre_backdrops.py",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/home_catalog.py",
+    "plugin.video.primeinterface/resources/lib/http_transport.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/prime_signin.py",
+    "plugin.video.primeinterface/resources/lib/provider_documents.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/purchases_catalog.py",
+    "plugin.video.primeinterface/resources/lib/regional_hosts.py",
+    "plugin.video.primeinterface/resources/lib/service_catalog.py",
+    "plugin.video.primeinterface/resources/lib/tv_catalog.py"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "regional_draft_checks": {
+    "baseline_version": "0.2.60",
+    "private_lists_tested": false,
+    "geographic_egress_verified": false,
+    "kodi_tested": false,
+    "package_created": false,
+    "uploaded": false,
+    "checks": [
+      {
+        "check": "Python 3.8 syntax",
+        "result": "passed",
+        "modules": 57
+      },
+      {
+        "check": "Exact source delta",
+        "result": "passed",
+        "changed": [
+          "resources/lib/catalog_gateway.py",
+          "resources/lib/collection_paging.py",
+          "resources/lib/detail_catalog.py",
+          "resources/lib/genre_backdrops.py",
+          "resources/lib/genre_catalog.py",
+          "resources/lib/home_catalog.py",
+          "resources/lib/http_transport.py",
+          "resources/lib/navigation.py",
+          "resources/lib/prime_signin.py",
+          "resources/lib/provider_documents.py",
+          "resources/lib/public_catalog.py",
+          "resources/lib/purchases_catalog.py",
+          "resources/lib/regional_hosts.py",
+          "resources/lib/service_catalog.py",
+          "resources/lib/tv_catalog.py"
+        ],
+        "unchanged": 145,
+        "added": [],
+        "login_challenge_and_verification_functions_unchanged": true,
+        "playback_and_native_ui_unchanged": true
+      },
+      {
+        "check": "Actual localized genre response",
+        "result": "passed",
+        "capture": "eu-de",
+        "before": 6,
+        "after": 12,
+        "original_links_preserved": true
+      },
+      {
+        "check": "Actual localized movie pages",
+        "result": "passed",
+        "capture": "eu-de",
+        "first_cards": 20,
+        "next_cards": 40,
+        "exact_provider_tokens_retained": true,
+        "distinct_next_page_titles": true
+      },
+      {
+        "check": "Actual localized genre response",
+        "result": "passed",
+        "capture": "fe-ja",
+        "before": 0,
+        "after": 12,
+        "original_links_preserved": true
+      },
+      {
+        "check": "Actual localized movie pages",
+        "result": "passed",
+        "capture": "fe-ja",
+        "first_cards": 20,
+        "next_cards": 40,
+        "exact_provider_tokens_retained": true,
+        "distinct_next_page_titles": true
+      },
+      {
+        "check": "Actual localized genre response",
+        "result": "passed",
+        "capture": "www-fr",
+        "before": 3,
+        "after": 12,
+        "original_links_preserved": true
+      },
+      {
+        "check": "Actual localized movie pages",
+        "result": "passed",
+        "capture": "www-fr",
+        "first_cards": 20,
+        "next_cards": 40,
+        "exact_provider_tokens_retained": true,
+        "distinct_next_page_titles": true
+      },
+      {
+        "check": "Historical actual English pagination regression",
+        "result": "passed",
+        "media": "movies",
+        "first": 20,
+        "next": 40
+      },
+      {
+        "check": "Historical actual English pagination regression",
+        "result": "passed",
+        "media": "tv",
+        "first": 20,
+        "next": 40
+      },
+      {
+        "check": "Actual Japanese service navigation",
+        "result": "passed",
+        "services": 48,
+        "localized_directory_link_recognized": true,
+        "full_directory_verified": false,
+        "provider_followup_status": 503
+      },
+      {
+        "check": "Historical actual TV detail regression",
+        "result": "passed",
+        "capture": 0,
+        "episodes": 6,
+        "seasons": 1,
+        "exact_rows_seasons_metadata_and_paging_preserved": true
+      },
+      {
+        "check": "Historical actual TV detail regression",
+        "result": "passed",
+        "capture": 1,
+        "episodes": 22,
+        "seasons": 5,
+        "exact_rows_seasons_metadata_and_paging_preserved": true
+      },
+      {
+        "check": "Historical actual TV detail regression",
+        "result": "passed",
+        "capture": 2,
+        "episodes": 8,
+        "seasons": 1,
+        "exact_rows_seasons_metadata_and_paging_preserved": true
+      },
+      {
+        "check": "Actual anonymous home remains unavailable, never empty history",
+        "result": "passed",
+        "capture": "www-en"
+      },
+      {
+        "check": "Actual anonymous home remains unavailable, never empty history",
+        "result": "passed",
+        "capture": "eu-en"
+      },
+      {
+        "check": "Direct URL security boundary",
+        "result": "passed",
+        "rejections": 5,
+        "host_allowlists_unchanged": true
+      }
+    ],
+    "baseline_sha256": "bc2e91f5dda734e55970c57a419ea91c31b23f0897708935deb8d8bdf10b9574"
+  }
+}
