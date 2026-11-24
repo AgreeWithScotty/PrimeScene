@@ -254,7 +254,7 @@
                 <height>260</height>
                 <aspectratio>stretch</aspectratio>
                 <fadetime>0</fadetime>
-                <texture>nav-glow-purchases.png</texture>
+                <texture>nav-glow-watchlist.png</texture>
                 <visible>Control.HasFocus(308)</visible>
                 <animation effect="fade" start="0" end="100" time="150" tween="sine" easing="out">Visible</animation>
                 <animation effect="fade" start="100" end="0" time="150" tween="sine" easing="in">Hidden</animation>
@@ -267,7 +267,7 @@
                 <width>170</width>
                 <height>44</height>
                 <font>Nav</font>
-                <label>PURCHASES</label>
+                <label>WATCHLIST</label>
                 <textcolor>FFB7BEC6</textcolor>
                 <focusedcolor>FFFFFFFF</focusedcolor>
                 <align>center</align>
@@ -2038,7 +2038,7 @@
                 <onup condition="String.IsEqual(Window.Property(Nav),movies)">301</onup>
                 <onup condition="String.IsEqual(Window.Property(Nav),tv)">302</onup>
                 <onup condition="String.IsEqual(Window.Property(Nav),extras)">303</onup>
-                <onup condition="String.IsEqual(Window.Property(Nav),purchases)">308</onup>
+                <onup condition="String.IsEqual(Window.Property(Nav),watchlist)">308</onup>
                 <onup condition="String.IsEmpty(Window.Property(Nav))">304</onup>
                 <visible>String.IsEmpty(Window.Property(GenrePanel))</visible>
                 <itemlayout width="420" height="360">

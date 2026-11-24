@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.58" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.59" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.58[CR]- Load genre backgrounds from Amazon at startup and remove all bundled genre photos.[CR]- Keep the splash visible for at least three seconds and until the initial Movies and TV backdrops are cached.[CR]- Preload original movie/show hero images in a separate queue; avoid stretched cover thumbnails.[CR]- Keep the expanded genre card steady when focus enters from the top menu.[CR]- Allow Back to cancel startup, and report artwork readiness, dimensions, request stages and failures.</news>
+    <news>0.2.59[CR]- Keep the launch splash opaque through the handoff to the prepared application window.[CR]- Open Movies after the first four genre backgrounds are ready; continue remaining artwork in the background.[CR]- Replace the Purchases top tab with your Amazon Watchlist, refreshed when opened.[CR]- Move Purchases into the Movies and TV genre rows, filtered to the selected media type.[CR]- Preserve account isolation, pagination, playback return, genre typography and category-specific diagnostics.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
