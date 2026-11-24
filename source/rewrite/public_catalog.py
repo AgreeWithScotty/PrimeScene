@@ -183,27 +183,35 @@ def _continuation_link(value, page_url):
 
 
 def _image(value, depth=0):
+    from .image_quality import declared_resolution
     if depth > 6:
         return ''
     if isinstance(value, str):
         return safe_url(value, IMAGE_HOSTS)
     if isinstance(value, dict):
+        candidates=[]
         for key in ('url', 'src', 'imageUrl', 'imageURL', 'packshot', 'poster',
                     'thumbnail', 'cover', 'wide', 'tall', 'square'):
             found = _image(value.get(key), depth + 1)
             if found:
-                return found
+                candidates.append((declared_resolution(found,value.get('width'),value.get('height')),found))
         # Image dimension/locale maps contain image values, never title-card subtrees.
         for child in value.values():
             if isinstance(child, str):
                 found = safe_url(child, IMAGE_HOSTS)
                 if found:
-                    return found
+                    candidates.append((declared_resolution(found),found))
+            elif isinstance(child,(dict,list)):
+                found=_image(child,depth+1)
+                if found:candidates.append((declared_resolution(found,child.get('width') if isinstance(child,dict) else None,child.get('height') if isinstance(child,dict) else None),found))
+        if candidates:return max(candidates,key=lambda candidate:candidate[0])[1]
     elif isinstance(value, list):
+        candidates=[]
         for child in value:
             found = _image(child, depth + 1)
             if found:
-                return found
+                candidates.append((declared_resolution(found,child.get('width') if isinstance(child,dict) else None,child.get('height') if isinstance(child,dict) else None),found))
+        if candidates:return max(candidates,key=lambda candidate:candidate[0])[1]
     return ''
 
 
@@ -231,6 +239,10 @@ def _shot_map(node):
 
 
 def _first_shot(shots, names):
+    if names and set(names).issubset({'heroshot','hero','fanart','background','backdrop'}):
+        from .image_quality import declared_resolution
+        candidates=[shots[name] for name in names if shots.get(name)]
+        return max(candidates,key=declared_resolution) if candidates else ''
     for name in names:
         if shots.get(name):
             return shots[name]

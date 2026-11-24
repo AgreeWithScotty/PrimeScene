@@ -85,8 +85,9 @@ def navigation(data,content_type,address,observer):
                 safe_url(node.get('href'),STOREFRONT_HOSTS,address),safe_url(linked,STOREFRONT_HOSTS,address),
                 safe_url(node.get('targetUrl'),STOREFRONT_HOSTS,address)) if target),None)
             images=node.get('images') or {}
-            artwork=next((target for key in ('cover','hero','logo') if isinstance(images,dict) and isinstance(images.get(key),dict)
-                for target in [safe_url(images[key].get('url'),IMAGE_HOSTS)] if target),'')
+            from .public_catalog import _image
+            artwork=next((target for key in ('hero','cover','logo') if isinstance(images,dict)
+                for target in [_image(images.get(key))] if target),'')
             if link:
                 candidates.append((link,label,artwork,bool(node.get('overlayTextPosition'))))
                 if node.get('enrichNav')=='GET_CATEGORIES' or label.casefold() in ('categories','genres'):categories.append(link)

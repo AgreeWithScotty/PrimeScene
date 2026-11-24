@@ -26,6 +26,7 @@ from .interface_diagnostics import record
 from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
+from .image_quality import source_image
 from .description_cache import DescriptionCache
 from .card_presentation import viewing_label, duration_seconds, position_seconds, progress_label, progress as progress_percent
 from .prime_diagnostics import DiagnosticLog, exception_details, route
@@ -45,14 +46,13 @@ ADDON_ID = 'plugin.video.primeinterface'
 # Estuary always ships Home.xml, so that name loads the skin window. These
 # names are not skin windows, so the add-on files are the ones that open.
 _HOME_XML = 'PrimeSceneHome.xml'
-# Amazon's public image service. A width suffix keeps the texture cache on a
-# predictable file instead of the full master.
+# Cards use a small delivery variant; full-screen backgrounds use the master.
 _AMAZON_IMAGE = compile_re(
     r'^(https://(?:m\.media-amazon\.com|images-na\.ssl-images-amazon\.com)/images/.+?)'
     r'(?:\._[^./]+_)?(\.(?:jpe?g|png|webp))$',
     IGNORECASE)
 _CARD_ART = 720
-_HERO_ART = 1920
+_HERO_ART = None
 _DESCRIPTION_AHEAD = 10
 _DESCRIPTION_BEHIND = 2
 _BACKDROP_AHEAD = 2
@@ -281,6 +281,8 @@ def _fit_art(url, width):
     url = _http(url)
     if not url:
         return ''
+    if width is None:
+        return source_image(url)
     base, _, query = url.partition('?')
     match = _AMAZON_IMAGE.match(base)
     if not match:
@@ -1933,6 +1935,7 @@ class AuroraHome(xbmcgui.WindowXML):
                             self._reported_background_signature=signature
                             self.performance({'event':'background_artwork_selected','stage':'hero_binding',
                                 'generation':token,'index':position,'requested_width':_HERO_ART,
+                                'resolution_policy':'provider_original_master','artificial_width_cap':False,
                                 'source':'provider_heroshot' if info.get('fanart') else 'cover_preview',
                                 'address':route(hero) if hero else None,'local_cache_used':bool(local and local!=hero),
                                 'result':'success' if hero else 'unavailable'})
@@ -2479,7 +2482,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'next_spine':index+1<len(self._genre_rows),
             'configured_plane_width':1760 if index in (0,len(self._genre_rows)-1) else 1600,
             'configured_spine_width':160,'configured_transition_ms':320,
-            'configured_title_width':760,'configured_title_height':350,
+            'configured_title_width':1440,'configured_title_height':600,
             'configured_typography':genre_type_layout(),'title_inherits_edge_stretch':False,
             'title_bound':bool(item and item.getProperty('PanelTitle')),
             'spine_title_bound':bool(item and item.getProperty('PanelSpine')),
@@ -2650,6 +2653,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 item.setArt({'thumb':fitted,'fanart':backdrop});item.setProperty('TileArt',fitted);updated+=1
         if updated:self.performance({'event':'navigation_artwork_bound','stage':'tile_artwork','section':self.nav,
             'tiles_updated':updated,'source':'preloaded_title_or_local_landscape' if owner in (301,302) else 'provider_navigation','catalog_requests':0,
+            'resolution_policy':'provider_original_master','artificial_width_cap':False,
             'image_loader':'kodi_background_texture_cache','result':'success'})
 
     def _genre_loop(self):
