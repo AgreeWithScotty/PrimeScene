@@ -2463,8 +2463,10 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _observe_genre_panel(self):
         if self.genre_owner not in (301,302) or not self.getProperty('GenrePanel'):return
+        from .genre_type import layout as genre_type_layout
         listing=self.getControl(410);index=listing.getSelectedPosition()
-        signature=(self.generation,self.genre_owner,index,len(self._genre_rows))
+        signature=(self.generation,self.genre_owner,index,len(self._genre_rows),
+            self.getFocusId(),xbmc.getInfoLabel('Container(410).NumItems'))
         if signature==self._genre_panel_reported:return
         previous=self._genre_panel_reported;self._genre_panel_reported=signature
         row=self._genre_rows[index] if 0<=index<len(self._genre_rows) else {}
@@ -2472,12 +2474,13 @@ class AuroraHome(xbmcgui.WindowXML):
         self.performance({'event':'genre_plane_focus','stage':'native_genre_presentation',
             'generation':self.generation,'section':self.nav,'selected_index':index,
             'previous_index':previous[2] if previous and previous[:2]==signature[:2] else None,
-            'native_items':xbmc.getInfoLabel('Container(410).NumItems'),
-            'focused_control':self.getFocusId(),'previous_spine':index>0,
+            'native_items':signature[5],
+            'focused_control':signature[4],'previous_spine':index>0,
             'next_spine':index+1<len(self._genre_rows),
             'configured_plane_width':1760 if index in (0,len(self._genre_rows)-1) else 1600,
             'configured_spine_width':160,'configured_transition_ms':320,
             'configured_title_width':760,'configured_title_height':350,
+            'configured_typography':genre_type_layout(),'title_inherits_edge_stretch':False,
             'title_bound':bool(item and item.getProperty('PanelTitle')),
             'spine_title_bound':bool(item and item.getProperty('PanelSpine')),
             'image_bound':bool(item and item.getArt('fanart')),
@@ -2583,6 +2586,7 @@ class AuroraHome(xbmcgui.WindowXML):
         loader=self.loader
         if loader is None or not loader.current():return
         owner=self.genre_owner
+        if owner in (301,302):self._observe_genre_panel()
         if owner==303:
             if self._service_future is None:self._service_future=loader.request('__service_directory__')
             future=self._service_future

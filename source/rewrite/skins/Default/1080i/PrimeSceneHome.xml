@@ -2261,30 +2261,43 @@
                     </itemlayout>
                     <focusedlayout width="1600" height="880" condition="!String.IsEqual(Window.Property(Nav),extras)">
                         <control type="group">
-                            <control type="image">
-                                <left>0</left>
-                                <top>0</top>
-                                <width>1600</width>
-                                <height>880</height>
-                                <texture background="true">white.png</texture>
-                                <colordiffuse>FF000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <left>0</left>
-                                <top>0</top>
-                                <width>1600</width>
-                                <height>880</height>
-                                <texture background="true">$INFO[ListItem.Art(fanart)]</texture>
-                                <colordiffuse>FFACACAC</colordiffuse>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="image">
-                                <left>0</left>
-                                <top>0</top>
-                                <width>1600</width>
-                                <height>880</height>
-                                <texture background="true">white.png</texture>
-                                <colordiffuse>3F000000</colordiffuse>
+                            <control type="group">
+                                <control type="image">
+                                    <left>0</left>
+                                    <top>0</top>
+                                    <width>1600</width>
+                                    <height>880</height>
+                                    <texture background="true">white.png</texture>
+                                    <colordiffuse>FF000000</colordiffuse>
+                                </control>
+                                <control type="image">
+                                    <left>0</left>
+                                    <top>0</top>
+                                    <width>1600</width>
+                                    <height>880</height>
+                                    <texture background="true">$INFO[ListItem.Art(fanart)]</texture>
+                                    <colordiffuse>FFACACAC</colordiffuse>
+                                    <aspectratio>scale</aspectratio>
+                                </control>
+                                <control type="image">
+                                    <left>0</left>
+                                    <top>0</top>
+                                    <width>1600</width>
+                                    <height>880</height>
+                                    <texture background="true">white.png</texture>
+                                    <colordiffuse>3F000000</colordiffuse>
+                                </control>
+                                <control type="image">
+                                    <left>48</left>
+                                    <top>853</top>
+                                    <width>1504</width>
+                                    <height>4</height>
+                                    <texture background="true">white.png</texture>
+                                    <colordiffuse>FFFFFFFF</colordiffuse>
+                                    <visible>Control.HasFocus(410)</visible>
+                                </control>
+                                <animation effect="zoom" start="100,100" end="110,100" center="0,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + [Integer.IsEqual(Container(410).CurrentItem,1) | String.IsEqual(Container(410).CurrentItem,Container(410).NumItems)]">Conditional</animation>
+                                <animation effect="slide" start="0,0" end="-160,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + Integer.IsEqual(Container(410).CurrentItem,1)">Conditional</animation>
                             </control>
                             <control type="image">
                                 <left>420</left>
@@ -2294,15 +2307,8 @@
                                 <texture background="true">$INFO[ListItem.Property(PanelTitle)]</texture>
                                 <colordiffuse>FFFFFFFF</colordiffuse>
                                 <aspectratio align="center" aligny="center">keep</aspectratio>
-                            </control>
-                            <control type="image">
-                                <left>48</left>
-                                <top>853</top>
-                                <width>1504</width>
-                                <height>4</height>
-                                <texture background="true">white.png</texture>
-                                <colordiffuse>FFFFFFFF</colordiffuse>
-                                <visible>Control.HasFocus(410)</visible>
+                                <animation effect="slide" start="0,0" end="-80,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + Integer.IsEqual(Container(410).CurrentItem,1)">Conditional</animation>
+                                <animation effect="slide" start="0,0" end="80,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + String.IsEqual(Container(410).CurrentItem,Container(410).NumItems)">Conditional</animation>
                             </control>
                             <control type="label">
                                 <left>80</left>
@@ -2313,11 +2319,11 @@
                                 <align>center</align>
                                 <label>$INFO[ListItem.Label]</label>
                                 <visible>String.IsEmpty(ListItem.Property(PanelTitle))</visible>
+                                <animation effect="slide" start="0,0" end="-80,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + Integer.IsEqual(Container(410).CurrentItem,1)">Conditional</animation>
+                                <animation effect="slide" start="0,0" end="80,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + String.IsEqual(Container(410).CurrentItem,Container(410).NumItems)">Conditional</animation>
                             </control>
                             <animation effect="zoom" start="10.0000,100" end="100,100" center="0,0" time="320" tween="cubic" easing="out" condition="Control.HasFocus(410)">Focus</animation>
                             <animation effect="zoom" start="100,100" end="10.0000,100" center="0,0" time="320" tween="cubic" easing="out" condition="Control.HasFocus(410)">UnFocus</animation>
-                            <animation effect="zoom" start="100,100" end="110,100" center="0,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + [Integer.IsEqual(Container(410).CurrentItem,1) | String.IsEqual(Container(410).CurrentItem,Container(410).NumItems)]">Conditional</animation>
-                            <animation effect="slide" start="0,0" end="-160,0" time="0" condition="String.IsEqual(ListItem.Property(PanelKey),Container(410).ListItem.Property(PanelKey)) + Integer.IsEqual(Container(410).CurrentItem,1)">Conditional</animation>
                         </control>
                     </focusedlayout>
                     <visible>!String.IsEqual(Window.Property(Nav),extras)</visible>
