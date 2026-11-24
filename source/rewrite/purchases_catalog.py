@@ -2,15 +2,20 @@
 from dataclasses import replace
 import re
 from urllib.parse import parse_qsl, urlsplit
-from .provider_documents import read_documents,library_label
+from .provider_documents import read_documents,library_label,watchlist_label
 
 
-def read_library(data, content_type, page_url, selected=False):
+def read_library(data, content_type, page_url, selected=False, collection='purchases'):
+    """Keep Watchlist membership separate from evidence of owning a purchase."""
+    if collection not in ('purchases','watchlist'):raise ValueError('Unknown personal collection')
+    matches=watchlist_label if collection=='watchlist' else library_label
+    identifiers=('watchlist','yourwatchlist','mywatchlist') if collection=='watchlist' else ('library','purchases','purchasesandrentals')
     from .public_catalog import (CatalogPage, PublicCatalogError,
         STOREFRONT_HOSTS, _direct_next_links, _json_card, _json_content, _link,
         _next_url, _protocol_shape, _remember_card, safe_url, _text)
     from .catalog_access import merge_evidence
-    documents,extraction,html_links=read_documents(data,content_type)
+    documents,extraction,html_links=read_documents(data,content_type,matches)
+    extraction['personal_collection']=collection
     payloads, candidates, shapes = [], [], []
     active_library = False;explicit_payload=False
     inventory={'library_labels':0,'watchlist_labels':0,'native_containers':0,'explicit_empty_states':0,
@@ -42,17 +47,16 @@ def read_library(data, content_type, page_url, selected=False):
             if nodes > 100000 or depth > 40:
                 raise PublicCatalogError('The library response exceeded its structural limit.')
             if isinstance(node, dict):
-                identifier = str(node.get('viewType') or node.get('id') or '')
-                normalized = re.sub(r'[^a-z]', '', identifier.casefold())
+                identifiers_here=[re.sub(r'[^a-z]','',str(node.get(k) or '').casefold())
+                    for k in ('viewType','id','filterId')]
                 label=next((_text(node.get(k)) for k in ('label','text','title','displayTitle') if _text(node.get(k))),'')
                 inventory['native_containers']+=node.get('containerType') in ('Grid','StandardCarousel')
                 inventory['explicit_empty_states']+='emptyState' in node
                 inventory['library_labels']+=library_label(label)
                 inventory['watchlist_labels']+=re.sub('[^a-z]','',label.casefold()) in ('watchlist','yourwatchlist')
-                library_filter = (normalized.endswith(('library', 'purchases', 'purchasesandrentals'))
-                    or library_label(label))
+                library_filter = (any(name.endswith(identifiers) for name in identifiers_here) or matches(label))
                 if library_filter:
-                    active_library |= any(node.get(key) is True for key in ('active', 'applied', 'isCurrentlyApplied'))
+                    active_library |= any(node.get(key) is True for key in ('active', 'applied', 'isCurrentlyApplied','selected','isSelected'))
                     for key in ('apiUrl', 'href', 'url','link'):
                         found = _link(node.get(key), page_url)
                         if found and safe_url(found, STOREFRONT_HOSTS):
@@ -63,9 +67,11 @@ def read_library(data, content_type, page_url, selected=False):
                         explicit_payload=True
                     if node.get('containerType') in ('Grid','StandardCarousel') and isinstance(node.get('entities'),list):
                         payloads.append(node);explicit_payload=True
+                    elif isinstance(node.get('emptyState'),dict):
+                        payloads.append({'emptyState':node['emptyState']});explicit_payload=True
                 for key, value in node.items():
                     name = re.sub(r'[^a-z]', '', str(key).casefold())
-                    if name in ('legacylibrary', 'library', 'purchases', 'purchasesandrentals') and content_node(value):
+                    if name in (identifiers if collection=='watchlist' else ('legacylibrary',)+identifiers) and content_node(value):
                         payloads.append(value)
                         explicit_payload=True
                     if isinstance(value, (dict, list)):
@@ -74,6 +80,19 @@ def read_library(data, content_type, page_url, selected=False):
                 stack.extend((value, depth + 1) for value in node if isinstance(value, (dict, list)))
     extraction['library_inventory']=inventory
     confirmed = selected or active_library or explicit_payload
+    if active_library and not payloads:
+        for document in documents:
+            if isinstance(document,dict):
+                for field in ('results','content'):
+                    if content_node(document.get(field)):payloads.append(document[field])
+    if confirmed and not payloads:
+        # An applied collection filter scopes the page-owned Grid. Do not read
+        # unrelated recommendation carousels when no collection was selected.
+        for document in documents:
+            if not isinstance(document,dict):continue
+            body=((document.get('init') or {}).get('preparations') or {}).get('body') or {}
+            grids=[node for node in body.get('containers') or [] if isinstance(node,dict) and node.get('containerType')=='Grid']
+            if len(grids)==1:payloads.append(grids[0])
     provider_error=False
     for document in documents:
         if not isinstance(document,dict):continue
@@ -81,7 +100,9 @@ def read_library(data, content_type, page_url, selected=False):
         if any(isinstance(node,dict) and (node.get('hasFailed') is True or bool(node.get('error') or node.get('errors') or node.get('errorCode')))
             for node in (document,body)):provider_error=True
     if provider_error:
+        from .http_transport import server_errors
         return None, {**extraction,'library_confirmed': confirmed, 'library_provider_error': True,
+                      'server_error_codes':list(dict.fromkeys(code for document in documents for code in server_errors(document))),
                       'protocol_structure': shapes}, None
     if extraction.get('sign_in_form_present') or extraction.get('verification_form_present'):
         return None,{**extraction,'library_confirmed':False,'library_authentication_required':True,'protocol_structure':shapes},None
@@ -91,7 +112,7 @@ def read_library(data, content_type, page_url, selected=False):
             found, direct, _ = _json_content(payload, page_url)
             for key, card in found.items():
                 _remember_card(cards, key, replace(card,
-                    access_evidence=merge_evidence(card.access_evidence, 'account_library')))
+                    access_evidence=merge_evidence(card.access_evidence, 'account_library')) if collection=='purchases' else card)
             links.update(direct)
             # The library's own nested collection is a page, unlike unrelated
             # recommendation carousels, which are not part of these payloads.
@@ -109,7 +130,8 @@ def read_library(data, content_type, page_url, selected=False):
         if count > 1:
             return None, {**extraction,'library_confirmed': True, 'continuation_candidates': count,
                           'library_pagination_ambiguous': True, 'protocol_structure': shapes}, None
-        return CatalogPage(list(cards.values()), next_url, library_confirmed=True,empty_confirmed=not cards and not next_url), {
+        return CatalogPage(list(cards.values()), next_url, library_confirmed=collection=='purchases',
+            watchlist_confirmed=collection=='watchlist',empty_confirmed=not cards and not next_url), {
             **extraction,'explicit_library_payload':explicit_payload,
             'library_confirmed': True, 'library_payloads': len(payloads), 'cards': len(cards),
             'continuation_candidates': count, 'protocol_structure': shapes,

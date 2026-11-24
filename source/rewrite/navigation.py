@@ -13,7 +13,10 @@ from .catalog_gateway import CatalogGateway
 from .prime_diagnostics import DiagnosticLog, exception_details
 from .public_catalog import STOREFRONT_HOSTS, safe_url
 
-ROOTS = ('__watching__', '__prime_movies__', '__prime_tv__', '__prime_sports__', '__service_directory__', '__prime_purchases__')
+ROOTS = ('__watching__', '__prime_movies__', '__prime_tv__', '__prime_sports__', '__service_directory__',
+    '__prime_purchases__','__prime_watchlist__','__purchases__/movies','__purchases__/tv')
+PERSONAL_ROOTS=('__watching__','__prime_watchlist__','__prime_purchases__','__purchases__/movies','__purchases__/tv')
+FRESH_ROOTS=('__watching__','__prime_watchlist__')
 FRESH_SECONDS = 15 * 60
 MAX_AGE = 24 * 60 * 60
 
@@ -99,7 +102,7 @@ class StorefrontLoader:
 
     def peek(self, path):
         """Memory lookup only: no filesystem, account database or network on click."""
-        if self.canonical(path) == '__watching__':
+        if self.canonical(path) in FRESH_ROOTS:
             return None
         with self.lock:
             entry = self.cache.get(self.canonical(path))
@@ -109,17 +112,17 @@ class StorefrontLoader:
         path = self.canonical(path)
         with self.lock:
             future = self.futures.get(path)
-            if path == '__watching__':
+            if path in FRESH_ROOTS:
                 self.cache.pop(path,None)
                 if future is not None and not future.done(): future.cancel()
-            if path != '__watching__' and future is not None and not future.done():
+            if path not in FRESH_ROOTS and future is not None and not future.done():
                 # A click bypasses queued speculation. An already running exact
                 # request is shared, never duplicated or put behind another root.
                 if background or path not in self.background_paths or not future.cancel():return future
                 self.report({'event':'catalog_preload_promoted','stage':'preload_queue',
                     'section':self.diagnostic_section(path),'result':'success'})
             entry = self.cache.get(path)
-            if (path != '__watching__' and future is not None and future.done() and not future.cancelled()
+            if (path not in FRESH_ROOTS and future is not None and future.done() and not future.cancelled()
                     and future.exception() is None and entry and time() - entry[0] < FRESH_SECONDS
                     and (path!='__service_directory__' or entry[1].get('directory_complete'))):
                 if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and entry[1].get('next'):self.request(entry[1]['next'],background=True)
@@ -128,7 +131,7 @@ class StorefrontLoader:
                 raise RuntimeError('The catalog session has ended')
             if background:self.background_paths.add(path)
             else:self.background_paths.discard(path)
-            executor=self.personal if path=='__prime_purchases__' or self.routes.get(path)=='__watching__' else self.preview if priority else self.background if background else self.pool
+            executor=self.personal if self.routes.get(path) in PERSONAL_ROOTS else self.preview if priority else self.background if background else self.pool
             self.futures[path] = executor.submit(
                 self._load,path,monotonic(),token_hex(8),background,priority)
             return self.futures[path]
@@ -138,6 +141,7 @@ class StorefrontLoader:
 
     def _load_saved(self, root):
         self.saved_checked.add(root)
+        if root=='__prime_watchlist__':return
         if root == '__watching__':
             try:
                 from .progress_cache import discard_stored
@@ -157,7 +161,7 @@ class StorefrontLoader:
                 return
             packet = saved['packet']
             policy = ('prime_only' if root in ('__prime_movies__', '__prime_tv__') or root.startswith('__genre__/') else
-                      'account_library' if root == '__prime_purchases__' else 'watch_progress' if root == '__watching__' else
+                      'account_library' if root == '__prime_purchases__' or root.startswith('__purchases__/') else 'watch_progress' if root == '__watching__' else
                       'services' if root=='__service_directory__' else 'sports')
             if packet.get('catalog_policy') != policy:
                 return
@@ -206,7 +210,7 @@ class StorefrontLoader:
         return bool(safe_url(value,STOREFRONT_HOSTS))
 
     def _save(self, root, packet, bridge, saved):
-        if root == '__watching__' or root=='__service_directory__' and not packet.get('directory_complete'):return
+        if root in FRESH_ROOTS or root=='__service_directory__' and not packet.get('directory_complete'):return
         # Only root/genre first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
         content = json.dumps({'schema': 7, 'epoch': self.epoch, 'root': root,
@@ -226,7 +230,7 @@ class StorefrontLoader:
         started = monotonic()
         self.report({'event':'catalog_load_started','stage':'preload' if background else 'navigation',
             'attempt_id':attempt,'section':self.diagnostic_section(path),
-            'request_lane':'personal' if path=='__prime_purchases__' or self.routes.get(path)=='__watching__' else 'genre_preview' if priority else 'background' if background else 'catalog',
+            'request_lane':'personal' if self.routes.get(path) in PERSONAL_ROOTS else 'genre_preview' if priority else 'background' if background else 'catalog',
             'queue_wait_ms':round((started-queued)*1000),'background':background,'result':'started'})
         if path.startswith('__genre__/') and path not in self.saved_checked:
             self._load_saved(path)
@@ -234,7 +238,7 @@ class StorefrontLoader:
             root = self.routes[path]
             entry = self.cache.get(path)
         with self.lock:bridge, reader_lock = self.readers.get(path,self.readers[root])
-        fresh = root == '__watching__'
+        fresh = root=='__watching__' or path=='__prime_watchlist__'
         try:
             if path=='__watching__':
                 from .progress_cache import discard_stored
@@ -242,6 +246,9 @@ class StorefrontLoader:
                 bridge,reader_lock=CatalogGateway(self.g),Lock()
                 bridge.operation_observer=DiagnosticLog(self.g.DATA_PATH,self.g.addon.getAddonInfo('version'),
                     active=self.current,operation='in_progress')
+                entry=None
+            elif path=='__prime_watchlist__':
+                bridge,reader_lock=CatalogGateway(self.g),Lock()
                 entry=None
             if (entry and 0 <= time() - entry[0] < FRESH_SECONDS
                     and (path!='__service_directory__' or entry[1].get('directory_complete'))):
@@ -266,7 +273,7 @@ class StorefrontLoader:
                 reader_started=monotonic()
                 with reader_lock:
                     observe=DiagnosticLog(self.g.DATA_PATH,self.g.addon.getAddonInfo('version'),
-                        active=self.current,operation='in_progress' if fresh else 'catalog_preload' if background else 'catalog')
+                        active=self.current,operation='watchlist' if root=='__prime_watchlist__' else 'in_progress' if fresh else 'catalog_preload' if background else 'catalog')
                     observe({'event':'catalog_reader_started','stage':'reader',
                         'parent_attempt_id':attempt,'section':self.diagnostic_section(root),
                         'reader_wait_ms':round((monotonic()-reader_started)*1000),'result':'started'})
@@ -281,7 +288,7 @@ class StorefrontLoader:
                     if not fresh: self.cache[path] = (saved, deepcopy(packet))
                     if packet.get('next'):
                         self.routes[packet['next']] = root
-                        if fresh:self.readers[packet['next']]=(bridge,reader_lock)
+                        if root in FRESH_ROOTS:self.readers[packet['next']]=(bridge,reader_lock)
                 if (path in ROOTS or path.startswith('__genre__/')) and not fresh:
                     try:
                         self._save(root, packet, bridge, saved)
@@ -290,14 +297,15 @@ class StorefrontLoader:
                                      'exception': exception_details(error), 'result': 'failure'})
             self.report({'event': 'catalog_page_ready', 'section': self.diagnostic_section(root), 'source': source,
                          'attempt_id':attempt,'background':background,
-                         'cards': len(packet.get('rows') or []), 'has_next': bool(packet.get('next')), 'fresh_provider_request':fresh,
+                         'cards': len(packet.get('rows') or []), 'has_next': bool(packet.get('next')),
+                         'fresh_provider_request':source=='network','fresh_required':fresh,
                          'service_tiles':len(packet.get('tiles') or []),
                          'saved_or_memory_cache_used':not fresh and source == 'cache',
                          'load_elapsed_ms': round((monotonic() - started) * 1000), 'result': 'success'})
             # Warm exactly the first two actual pages. Page three is requested
             # by the UI on entering page two, and so on for later pages.
             if self.ready is not None and self.current():self.ready(path,deepcopy(packet))
-            if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and not fresh and packet.get('next') and self.current():
+            if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and (not fresh or path=='__prime_watchlist__') and packet.get('next') and self.current():
                 if not background or path in ROOTS or path==self.focus_path:
                     self.request(packet['next'],background=True)
             return deepcopy(packet)
