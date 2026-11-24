@@ -12,10 +12,11 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .prime_diagnostics import exception_details, route
 from .prime_signin import SignInError, SignInHTTPError
+from .regional_hosts import AUTH_API_DOMAINS,AUTH_API_HOSTS
 
 LIMIT = 1024 * 1024
-AUTH_DOMAINS = frozenset(('amazon.com', 'amazon.co.uk', 'amazon.de', 'amazon.co.jp'))
-HOSTS = frozenset('api.' + domain for domain in AUTH_DOMAINS) | {'atv-ps.amazon.com'}
+AUTH_DOMAINS = AUTH_API_DOMAINS
+HOSTS = AUTH_API_HOSTS
 KNOWN = frozenset(('customerConfig territoryConfig homeRegion locale uxLocale defaultVideoWebsite '
     'primeSignupBaseUrl avMarketplace access_token refresh_token expires_in token_type error '
     'error_description errorCode errorMessage message type code response success').split())

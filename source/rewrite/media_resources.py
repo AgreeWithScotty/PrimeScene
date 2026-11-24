@@ -10,6 +10,7 @@ from .http_transport import HttpTransport,TransportFailure,https_address,shape,s
 from .prime_diagnostics import exception_details
 from .prime_signin import has_authentication_cookie
 from .session_store import load_session,persist_session,session_headers
+from .regional_hosts import MEDIA_API_HOSTS
 
 WEB_DEVICE='AOAGZA014O5RE'
 
@@ -29,8 +30,7 @@ class MediaAPI:
         self.material=material;self.hardware_level=hardware_level
         self.jar=load_session(g.DATA_PATH);self.auth='website';self.device_type=WEB_DEVICE
         endpoint=self.account.get('atvurl','').rstrip('/')
-        hosts={'atv-ps'+suffix+'.'+domain for suffix in ('','-eu','-fe')
-            for domain in ('amazon.com','amazon.de','amazon.co.uk','amazon.co.jp','primevideo.com')}
+        hosts=MEDIA_API_HOSTS
         if not https_address(endpoint,hosts):
             self.jar.clear();raise TransportFailure('The verified account has no trusted media API endpoint')
         self.endpoint=endpoint
