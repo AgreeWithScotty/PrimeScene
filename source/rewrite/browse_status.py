@@ -55,12 +55,12 @@ def category_status(section,path='',heading='',query=None,series=None,unavailabl
     elif section=='watchlist' or path=='__prime_watchlist__':
         title='Watchlist';kind='watchlist'
         empty='Your Amazon Watchlist is empty. Save movies and TV shows to your Watchlist on Prime Video to see them here.'
-        retry='Your Amazon Watchlist could not be retrieved. Please try again.'
+        retry='Your Amazon Watchlist could not be read. We could not determine whether it is empty. Please try again.'
     elif section=='purchases' or path=='__prime_purchases__' or path.startswith('__purchases__/'):
         title='Purchases';kind='purchases'
         noun='movies' if path=='__purchases__/movies' else 'TV shows' if path=='__purchases__/tv' else 'media'
         empty='This account has no purchased %s to display. Visit Amazon to purchase media.'%noun
-        retry='Your Amazon purchase library could not be retrieved. Please try again.'
+        retry='Your purchase library could not be read. We could not determine whether this account has purchases. Please try again.'
     elif section in ('movies','tv'):
         noun='movies' if section=='movies' else 'TV shows'
         genre=path.startswith('__genre__/')
@@ -79,4 +79,4 @@ def category_status(section,path='',heading='',query=None,series=None,unavailabl
         empty='No titles are available in %s right now.'%title
         retry='%s titles are unavailable right now. Please try again.'%title
     return {'title':clean(title),'message':clean(retry if unavailable else empty),'kind':kind,
-        'state':'unavailable' if unavailable else 'empty'}
+        'state':('unknown' if kind in ('watchlist','purchases') else 'unavailable') if unavailable else 'empty'}

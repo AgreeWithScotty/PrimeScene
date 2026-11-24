@@ -824,7 +824,8 @@ class AuroraHome(xbmcgui.WindowXML):
             'genre_artwork':'preloaded_amazon_title_backdrops','genre_layout':'expanding_cinematic_planes',
             'startup_splash_min_seconds':3,'startup_artwork_notice_after_seconds':25,'bundled_genre_backgrounds':False,
             'startup_artwork_section':'movies','startup_artwork_count':4,'remaining_genres_continue':True,
-            'presentation_revision':'four-genres-watchlist-draft','genre_artwork_metadata_pages_per_genre':1,
+            'presentation_revision':'personal-lists-distinct-art-recovery-draft','genre_artwork_metadata_pages_per_genre':1,
+            'startup_artwork_max_wait_seconds':45,'startup_waits_for_tv_metadata':False,
             'genre_plane_width':1600,'genre_edge_plane_width':1760,'genre_spine_width':160,'genre_transition_ms':320,
             'genre_preview_first_pages':2,'genre_preview_lane':'separate_from_startup_pagination',
             'native_binding_retained_when_confirmed':True,'result':'success'})
@@ -844,7 +845,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else 'Sign out' if name else 'Sign in')
 
     def show_signed_out(self):
-        self._startup=None;self.setProperty('StartupSplash','')
+        self._startup=None;self.setProperty('StartupSplash','');self.setProperty('ArtworkRecovery','')
         self._genre_warm_signature=None;self._genre_panel_reported=None;self.artwork.clear()
         self._signed_out_view = True
         self._cancel_genre_selection('account_changed')
@@ -902,7 +903,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('HeroTitleArt',plate)
 
     def pause_catalog(self, status='Signing out...'):
-        self._startup=None;self.setProperty('StartupSplash','')
+        self._startup=None;self.setProperty('StartupSplash','');self.setProperty('ArtworkRecovery','')
         self._genre_warm_signature=None;self._genre_panel_reported=None;self.artwork.clear()
         self._cancel_genre_selection('account_changed')
         self.setProperty('NavigationBackdrop','')
@@ -1898,8 +1899,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 try:
                     self._preload_grid_focus()
                     self._refresh_tile_art()
-                    self._advance_startup()
                 except Exception as error:self.performance({'event':'browse_tile_art_failed','stage':'tile_artwork','exception':exception_details(error),'result':'failure'})
+                try:self._advance_startup()
+                except Exception as error:self.performance({'event':'startup_progress_failed','stage':'startup_preload',
+                    'exception':exception_details(error),'result':'failure'})
                 self.stop.wait(.1)
                 continue
             with self.lock:
@@ -2023,7 +2026,11 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _warm_genre_backdrops(self):
         gallery,cache=self.genre_backdrops,self.genre_image_cache
-        if gallery is None or cache is None or self._genre_discovery!='complete':return
+        if gallery is None or cache is None:return
+        if self._genre_discovery=='failed' and self._startup is None and monotonic()>=getattr(self,'_genre_retry_at',0):
+            self._genre_retry_at=monotonic()+60;self._genre_discovery='pending'
+            self.genre_requested.add('movies');self.genre_jobs.put('movies')
+            self.performance({'event':'background_genre_discovery_retry','stage':'genre_grid','result':'retrying'})
         with self.lock:rows=list(self.genre_cache.get('movies',[]))
         gallery.request(rows)
         priority=[];remaining=[]
@@ -2032,6 +2039,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 image=gallery.image(section,row['address'])
                 if image:(priority if section=='movies' and index<4 else remaining).append(image)
         signature=tuple(dict.fromkeys(priority))
+        for section,paths in (('movies',('__prime_movies__','__purchases__/movies')),('tv',('__prime_tv__','__purchases__/tv'))):
+            remaining.extend(gallery.image(section,path) for path in paths if gallery.image(section,path))
         cache.warm(priority,priority=signature!=self._genre_warm_signature)
         self._genre_warm_signature=signature;cache.warm(remaining)
         for image in dict.fromkeys(priority+remaining):
@@ -2041,44 +2050,72 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._track_tile_art(image);self._track_tile_art(local)
 
     def _advance_startup(self):
+        if self.stop.is_set():return
         startup=self._startup
-        if startup is None:return
-        now=monotonic();elapsed=now-startup['started'];required=ready=pending=unavailable=0
+        if startup is None and not self.getProperty('ArtworkRecovery'):return
+        now=monotonic();elapsed=now-startup['started'] if startup else 0
+        required=ready=pending=unavailable=0;images=[]
         gallery,cache=self.genre_backdrops,self.genre_image_cache
-        if self._genre_discovery=='complete' and gallery is not None and cache is not None:
+        if gallery is not None and cache is not None:
             for row in self.genre_cache.get('movies',[])[:4]:
                 required+=1;address=row['address'];image=gallery.image('movies',address)
-                if not image and gallery.pending(address):pending+=1
-                elif not image:unavailable+=1
-                elif cache.local(image)==image:pending+=1
-                else:ready+=1
+                status=gallery.state('movies',address)
+                if image:
+                    try:status=cache.state(image)
+                    except Exception as error:status={'state':'image_cache_error','exception':exception_details(error)}
+                if status['state']=='ready_original':ready+=1
+                elif status['state'] in ('metadata_pending','metadata_received_resolving_backdrop','image_download_pending','image_not_queued'):pending+=1
+                else:unavailable+=1
+                images.append(dict(status,genre=row['title'],genre_address=route(address),image_address=route(image) if image else None))
         else:pending=1
+        complete=required>0 and pending==0 and unavailable==0
+        if startup is None:
+            if complete:
+                self.setProperty('ArtworkRecovery','')
+                if self.getProperty('GenreMessage')=='Some Prime Video artwork is not available yet. You can browse while it retries.':self.setProperty('GenreMessage','')
+            return
         signature=(self._genre_discovery,required,ready,pending,unavailable)
         if signature!=startup['signature']:
             startup['signature']=signature
             self.performance({'event':'startup_artwork_progress','stage':'startup_preload','discovery':signature[0],
-                'section':'movies','target_images':4,'visible_images_required':required,'visible_images_ready':ready,'pending':pending,'unavailable':unavailable,
+                'section':'movies','target_images':4,'visible_images_required':required,'visible_images_ready':ready,
+                'pending':pending,'unavailable':unavailable,'images':images,
                 'elapsed_ms':round(elapsed*1000),'result':'preparing'})
-        complete=self._genre_discovery=='complete' and required>0 and pending==0 and unavailable==0
+        if self._genre_discovery=='failed' and elapsed<45 and startup.get('discovery_retries',0)<2:
+            if now>=startup.get('retry_at',0):
+                startup['discovery_retries']=startup.get('discovery_retries',0)+1;startup['retry_at']=now+5
+                self._genre_discovery='pending';self.genre_requested.add('movies');self.genre_jobs.put('movies')
+                self.performance({'event':'startup_discovery_retried','stage':'startup_preload',
+                    'artwork_attempt':startup['discovery_retries']+1,'elapsed_ms':round(elapsed*1000),'result':'retrying'})
         if complete and startup['bound_at'] is None:startup['bound_at']=now
         if not complete:startup['bound_at']=None
         settled=complete and now-startup['bound_at']>=.2
-        failed=self._genre_discovery=='failed'
-        if (failed or unavailable or elapsed>=25) and not startup.get('unavailable_reported'):
-            startup['unavailable_reported']=True
-            self.setProperty('StartupNotice','Prime Video artwork could not be prepared yet. Press Back to return to Kodi.')
-            self.performance({'event':'startup_artwork_unavailable','stage':'startup_preload','elapsed_ms':round(elapsed*1000),
-                'visible_images_required':required,'visible_images_ready':ready,'pending':pending,'unavailable':unavailable,
-                'discovery':self._genre_discovery,'exit_available':True,'result':'failure' if failed or unavailable else 'pending'})
-        if elapsed<3 or not settled:return
+        if elapsed<3 or not settled and elapsed<45:return
         if self._startup is not startup:return
-        result='success' if settled and not unavailable else 'partial' if ready else 'failure'
-        self._startup=None;self.setFocusId(301);self.setProperty('StartupSplash','');self.setProperty('StartupNotice','')
+        if not settled:
+            try:
+                available=[i for i,row in enumerate(self._genre_rows)
+                    if self._tile_items.get(row['path']) is not None and self._tile_items[row['path']].getProperty('TileArt')]
+                if available:
+                    listing=self.getControl(410);selected=listing.getSelectedPosition()
+                    if selected not in available:listing.selectItem(available[0])
+            except Exception as error:self.performance({'event':'startup_recovery_selection_failed','stage':'startup_preload',
+                'exception':exception_details(error),'result':'failure'})
+            self.setProperty('ArtworkRecovery','1')
+            self.setProperty('GenreMessage','Some Prime Video artwork is not available yet. You can browse while it retries.')
+            self.performance({'event':'startup_artwork_recovery','stage':'startup_preload',
+                'elapsed_ms':round(elapsed*1000),'visible_images_required':required,'visible_images_ready':ready,
+                'pending':pending,'unavailable':unavailable,'images':images,'discovery':self._genre_discovery,
+                'navigation_unblocked':True,'metadata_retries_continue':True,'result':'partial' if ready else 'unavailable'})
+        self._startup=None;self.setProperty('StartupSplash','');self.setProperty('StartupNotice','')
+        try:self.setFocusId(301)
+        except Exception as error:self.performance({'event':'startup_focus_failed','stage':'startup_preload',
+            'exception':exception_details(error),'result':'failure'})
         self.performance({'event':'startup_splash_released','stage':'startup_preload','elapsed_ms':round(elapsed*1000),
             'visible_images_required':required,'visible_images_ready':ready,'unavailable':unavailable,
-            'pending':pending,'minimum_display_seconds':3,
-            'backgrounds_bundled':False,'background_preload_continues':True,
-            'selected_control':self.getFocusId(),'result':result})
+            'pending':pending,'minimum_display_seconds':3,'maximum_artwork_wait_seconds':45,
+            'backgrounds_bundled':False,'background_preload_continues':True,'selected_control':self.getFocusId(),
+            'result':'success' if settled else 'partial' if ready else 'unavailable'})
 
     def _detail_loop(self):
         while not self.stop.is_set():
@@ -2530,8 +2567,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 item=xbmcgui.ListItem(label=clean(row['title']))
                 artwork=row.get('artwork') or self._tile_art.get(row['path'],'')
                 if section!='extras' and self.genre_backdrops is not None and self.genre_image_cache is not None:
-                    address=row.get('address') or next((r['address'] for r in self.genre_cache.get(section,[])
-                        if self.genre_backdrops.image(section,r['address'])),None)
+                    address=row.get('address') or row['path']
                     source=self.genre_backdrops.image(section,address) if address else ''
                     cached=self.genre_image_cache.local(source) if source else ''
                     if cached and cached!=source:
@@ -2655,7 +2691,10 @@ class AuroraHome(xbmcgui.WindowXML):
         with self.lock:
             if self._genre_selection is not pending:return
             self._genre_selection=None
-            self.setProperty('GenreMessage',clean(pending['row']['title'])+' is temporarily unavailable. Choose another category or try again.')
+            if pending['path'].startswith('__purchases__/'):
+                from .browse_status import category_status
+                self.setProperty('GenreMessage',category_status(pending['section'],pending['path'],unavailable=True)['message'])
+            else:self.setProperty('GenreMessage',clean(pending['row']['title'])+' is temporarily unavailable. Choose another category or try again.')
         self.performance({'event':'genre_selection_failed','stage':'genre_selection',
             'selection_id':pending['selection_id'],'chooser_retained':True,
             'elapsed_ms':round((monotonic()-pending['started'])*1000),'exception':exception_details(error),'result':'failure'})
@@ -2742,9 +2781,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 gallery,cache=self.genre_backdrops,self.genre_image_cache
                 if gallery is None or cache is None or item is None:continue
                 section='movies' if owner==301 else 'tv'
-                address=row.get('address')
-                if not address:
-                    address=next((r['address'] for r in self.genre_cache.get(section,[]) if gallery.image(section,r['address'])),None)
+                address=row.get('address') or row['path']
                 artwork=gallery.image(section,address) if address else ''
                 if not artwork:continue
                 original=source_image(artwork);local=cache.local(original)
