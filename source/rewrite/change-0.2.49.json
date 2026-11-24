@@ -1,0 +1,70 @@
+{
+  "version": "0.2.49",
+  "sha256": "9f3abb3625db44ad322c2a426a6ac9dd1fe325ea7272b03b4c55316d6648f575",
+  "bytes": 3956280,
+  "files": 117,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/browse_tiles.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/playback_engine.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": true,
+  "mocked_provider_or_kodi_tests": false,
+  "navigation_and_native_return": {
+    "native_component": {
+      "kodi": "22.0-RC2 (21.90.902) Git:20261109-d686683a55d",
+      "provider_exercised": false,
+      "initial_focus": 200,
+      "callback_reason": "stopped",
+      "return_queued": true,
+      "stop_to_card_ms": 76,
+      "returned_to_same_window": true,
+      "returned_index": 2,
+      "return_focus": 200,
+      "genre_right_index": 2,
+      "genre_left_clamped": true,
+      "genre_up_focus": 301,
+      "result": "success"
+    },
+    "scope": {
+      "real_kodi_player_callbacks": true,
+      "real_kodi_skin_controls": true,
+      "amazon_login_or_drm_playback_exercised": false,
+      "provider_fetch_latency_measured": false,
+      "physical_display_mode_switch_measured": false,
+      "rendered_pixels_captured": false
+    },
+    "preserved_previous_release": {
+      "native_pluginsource_registration": true,
+      "default_entry_bytes_unchanged": true,
+      "owned_launch_overlay_bytes_unchanged": true
+    },
+    "source_sha256": {
+      "resources/lib/aurora.py": "120179f3b62a8038ea3a081ed56ada26c9b3508602ecf59462563f431c4e438c",
+      "resources/lib/playback_engine.py": "fc52ad0500df0151846294d90006db4fb7b24a955939036db2926ef338ea119d",
+      "resources/lib/navigation.py": "9d494e8ec5f702c8381c1f1740baca134b04bc16cbbf4ef63860e12561cc5b8b",
+      "resources/lib/browse_tiles.py": "e728a695edc7b5adc3f6542856247bba9750ec9104148071f806c98af2c31eba",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml": "ee9b0421f2c59ee849510fec70bacc97ceb15281e7d30810f24640a75a1909c7"
+    },
+    "python38_syntax_and_xml_valid": true,
+    "wide_genre_row": {
+      "visible_full_cards": 3,
+      "next_card_preview": true,
+      "focused_border_pixels": 8,
+      "provider_navigation_art_preferred": true
+    },
+    "removed_intentional_return_grace_ms": 1000,
+    "preload_policy": {
+      "focused_and_next_genre_first_pages": 2,
+      "separate_preview_workers": 2,
+      "content_pages": "First two actual pages; request the following page on entering the last loaded page."
+    }
+  }
+}

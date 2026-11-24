@@ -27,6 +27,7 @@ class StorefrontLoader:
         self.lock = RLock()
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimePages')
         self.background = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimePreload')
+        self.preview = ThreadPoolExecutor(max_workers=2, thread_name_prefix='PrimeGenrePreview')
         self.personal = ThreadPoolExecutor(max_workers=2,thread_name_prefix='PrimePersonal')
         self.ready = ready
         self.readers = {root: (CatalogGateway(g), Lock()) for root in ROOTS}
@@ -34,6 +35,7 @@ class StorefrontLoader:
         self.cache, self.futures = {}, {}
         self.background_paths, self.saved_checked = set(), set()
         self.focus_path = None
+        self.focus_paths = ()
         self.folder = Path(g.DATA_PATH) / 'navigation-cache'
         self.report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'),
                                     active=self.current, operation='navigation')
@@ -67,22 +69,29 @@ class StorefrontLoader:
         self.report({'event':'startup_catalog_preload_started','stage':'preload',
             'sections':['movies','tv'],'background_workers':2,'foreground_workers':2,'result':'success'})
 
-    def preload_focus(self,path):
-        """Bound speculative work to the currently highlighted genre."""
+    def preload_focus(self,path,adjacent=()):
+        """Warm first pages for the focused genre and at most one neighbour."""
         if path.startswith('__genre__/'):self.register_genre(path)
         if not self.handles(path):return
+        paths=tuple(dict.fromkeys((path,)+tuple(adjacent[:1])))
+        for candidate in paths:
+            if candidate.startswith('__genre__/'):self.register_genre(candidate)
         with self.lock:
-            previous=self.focus_path
-            if previous==path:return
+            previous=self.focus_paths
+            if previous==paths:return
             self.focus_path=path
-            if previous in self.background_paths:
-                future=self.futures.get(previous)
+            self.focus_paths=paths
+            for old in previous:
+                if old in paths or old not in self.background_paths:continue
+                future=self.futures.get(old)
                 if future is not None and future.cancel():
                     self.report({'event':'catalog_preload_cancelled','stage':'preload_queue',
-                        'section':self.diagnostic_section(previous),'reason':'focus_changed','result':'cancelled'})
-        self.request(path,background=True)
+                        'section':self.diagnostic_section(old),'reason':'focus_changed','result':'cancelled'})
+        for candidate in paths:
+            if self.handles(candidate):self.request(candidate,background=True,priority=True)
         self.report({'event':'focused_catalog_preload_requested','stage':'preload',
-            'section':self.diagnostic_section(path),'result':'success'})
+            'section':self.diagnostic_section(path),'bounded_first_pages':len(paths),
+            'startup_queue_bypassed':True,'result':'success'})
 
     def handles(self, path):
         with self.lock:
@@ -96,7 +105,7 @@ class StorefrontLoader:
             entry = self.cache.get(self.canonical(path))
             return deepcopy(entry[1]) if entry else None
 
-    def request(self, path, background=False):
+    def request(self, path, background=False, priority=False):
         path = self.canonical(path)
         with self.lock:
             future = self.futures.get(path)
@@ -118,9 +127,9 @@ class StorefrontLoader:
                 raise RuntimeError('The catalog session has ended')
             if background:self.background_paths.add(path)
             else:self.background_paths.discard(path)
-            executor=self.personal if path in ('__watching__','__prime_purchases__') else self.background if background else self.pool
+            executor=self.personal if path in ('__watching__','__prime_purchases__') else self.preview if priority else self.background if background else self.pool
             self.futures[path] = executor.submit(
-                self._load,path,monotonic(),token_hex(8),background)
+                self._load,path,monotonic(),token_hex(8),background,priority)
             return self.futures[path]
 
     def _filename(self, path):
@@ -209,11 +218,11 @@ class StorefrontLoader:
         stored = persist_if_current(self.g.DATA_PATH, self.epoch, write)
         self.report({'event': 'catalog_cache_saved', 'section': self.diagnostic_section(root), 'stored': stored})
 
-    def _load(self, path, queued, attempt, background):
+    def _load(self, path, queued, attempt, background, priority=False):
         started = monotonic()
         self.report({'event':'catalog_load_started','stage':'preload' if background else 'navigation',
             'attempt_id':attempt,'section':self.diagnostic_section(path),
-            'request_lane':'personal' if path in ('__watching__','__prime_purchases__') else 'background' if background else 'catalog',
+            'request_lane':'personal' if path in ('__watching__','__prime_purchases__') else 'genre_preview' if priority else 'background' if background else 'catalog',
             'queue_wait_ms':round((started-queued)*1000),'background':background,'result':'started'})
         if path.startswith('__genre__/') and path not in self.saved_checked:
             self._load_saved(path)
@@ -292,6 +301,7 @@ class StorefrontLoader:
                 future.cancel()
         self.pool.shutdown(wait=True)
         self.background.shutdown(wait=True)
+        self.preview.shutdown(wait=True)
         self.personal.shutdown(wait=True)
         with self.lock:
             self.cache.clear()
@@ -299,5 +309,6 @@ class StorefrontLoader:
             self.routes.clear()
             self.readers.clear()
             self.background_paths.clear()
+            self.focus_paths=()
             self.saved_checked.clear()
             self.ready=None
