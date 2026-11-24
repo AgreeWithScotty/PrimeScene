@@ -24,7 +24,8 @@ ORIGIN = 'https://www.primevideo.com'
 # Use Amazon's published Prime membership storefront, then split by title type.
 # The broad /movie and /tv feeds also market rentals, channels and free-with-ads.
 PAGES = {'watching': '/storefront', 'home': '/storefront', 'movies': '/storefront/subscription/prime',
-         'tv': '/storefront/subscription/prime', 'sports': '/sports', 'channels': '/addons', 'purchases': '/mystuff'}
+         'tv': '/storefront/subscription/prime', 'sports': '/sports', 'channels': '/addons',
+         'purchases': '/mystuff', 'watchlist': '/mystuff'}
 from .regional_hosts import (PRIME_WEB_HOSTS,CATALOG_NAV_HOSTS,storefront_sso,storefront_relay,
     strip_redirect_headers,POLICY_REVISION,https_host)
 STOREFRONT_HOSTS = CATALOG_NAV_HOSTS
@@ -93,6 +94,7 @@ class CatalogPage:
     library_confirmed: bool = False
     next_request: dict = None
     empty_confirmed: bool = False
+    watchlist_confirmed: bool = False
 
 
 def _remember_card(cards, key, card):
@@ -722,7 +724,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                          'continuation': continuation is not None, 'address': route(address), 'method': 'POST' if collection else 'GET',
                          'collection_request':collection})
         request_headers={'Accept':'text/html, application/json;q=0.9',**extra_headers}
-        if page == 'watching':request_headers.update({'Cache-Control':'no-cache, no-store','Pragma':'no-cache'})
+        if page in ('watching','watchlist'):request_headers.update({'Cache-Control':'no-cache, no-store','Pragma':'no-cache'})
         request = Request(address, data=request_data, headers=request_headers)
         opener = opener if opener is not None else build_opener(StorefrontRedirect(observer))
         stage = 'fetch'
@@ -731,7 +733,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             status = response.getcode()
             content_type = response.headers.get_content_type()
             _emit(observer, {'event': 'catalog_response_received', 'stage': stage, 'status': status,
-                             'address': route(final_url), 'content_type': content_type, 'fresh_requested':page == 'watching',
+                             'address': route(final_url), 'content_type': content_type, 'fresh_requested':page in ('watching','watchlist'),
                              'cache_age':response.headers.get('Age'),'cache_control':response.headers.get('Cache-Control'),
                              'server_date':response.headers.get('Date'),
                              'server_request_id': response.headers.get('x-amzn-requestid') or response.headers.get('x-amz-rid'),
@@ -780,10 +782,20 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 raise
             next_request=collection_paging.discover(data,content_type,final_url,observer,scope='watching')
             if next_request:result=replace(result,next_request=next_request,empty_confirmed=False)
-        elif page == 'purchases':
+        elif page == 'watchlist' and collection:
+            if continuation.get('scope')!='watchlist':
+                raise PublicCatalogError('The Watchlist continuation has no confirmed collection scope.')
+            result,details=_read_page(data,content_type,final_url)
+            next_request=collection_paging.advance(continuation,data,content_type,observer)
+            result=replace(result,watchlist_confirmed=True,next_request=next_request,
+                empty_confirmed=not result.cards and next_request is None)
+        elif page in ('purchases','watchlist'):
             from .purchases_catalog import read_library
             result, details, library_link = read_library(data, content_type, final_url,
-                                                       selected=continuation is not None)
+                                                       selected=continuation is not None,collection=page)
+            details.update(collection_confirmed=details.get('library_confirmed',False),
+                watchlist_confirmed=bool(result and result.watchlist_confirmed),
+                library_confirmed=bool(result and result.library_confirmed))
             _emit(observer, dict(details, event='library_response_parsed', stage=stage,
                 status=status, address=route(final_url), bytes=len(raw),
                 elapsed_ms=round((perf_counter() - started) * 1000)))
@@ -796,7 +808,11 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 return fetch_page(page, opener=opener, continuation=library_link, observer=observer,
                                   _library_depth=_library_depth + 1)
             if result is None:
-                raise PublicCatalogError('Amazon did not expose a recognized Purchases & Rentals library. Open Diagnostics for the report.')
+                raise PublicCatalogError('Amazon did not expose a recognized %s collection. Open Diagnostics for the report.'%
+                    ('Watchlist' if page=='watchlist' else 'Purchases & Rentals'))
+            if page=='watchlist':
+                next_request=collection_paging.discover(data,content_type,final_url,observer,scope='watchlist')
+                if next_request:result=replace(result,next_request=next_request,empty_confirmed=False)
         else:
             result, details = _read_page(data, content_type, final_url)
             next_request=(collection_paging.advance(continuation,data,content_type,lambda value:_emit(observer,value)) if collection
@@ -808,7 +824,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                              elapsed_ms=round((perf_counter() - started) * 1000)))
         if details.get('sign_in_form_present') or details.get('verification_form_present'):
             raise PublicSigninRequired('Use Sign out, then sign in again to reconnect your Amazon session.')
-        if not result.cards and result.next_url is None and result.next_request is None and not result.library_confirmed and not result.empty_confirmed and not collection:
+        if not result.cards and result.next_url is None and result.next_request is None and not result.library_confirmed and not result.watchlist_confirmed and not result.empty_confirmed and not collection:
             raise PublicCatalogError('No title cards or page continuation were found in the catalog response.')
         _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'success',
                          'cards': len(result.cards), 'has_next': bool(result.next_url or result.next_request),'empty_confirmed':result.empty_confirmed,
