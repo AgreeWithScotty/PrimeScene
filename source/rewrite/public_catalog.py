@@ -10,7 +10,7 @@ from time import perf_counter
 from secrets import token_hex
 from urllib.error import HTTPError
 from urllib.parse import urljoin, urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, HTTPCookieProcessor, Request, build_opener
 
 try:
     from .prime_diagnostics import exception_details, route
@@ -27,7 +27,7 @@ PAGES = {'watching': '/storefront', 'home': '/storefront', 'movies': '/storefron
          'tv': '/storefront/subscription/prime', 'sports': '/sports', 'channels': '/addons',
          'purchases': '/mystuff', 'watchlist': '/mystuff'}
 from .regional_hosts import (PRIME_WEB_HOSTS,CATALOG_NAV_HOSTS,storefront_sso,storefront_relay,
-    strip_redirect_headers,POLICY_REVISION,https_host)
+    strip_redirect_headers,POLICY_REVISION,https_host,storefront_path,url_rejection)
 STOREFRONT_HOSTS = CATALOG_NAV_HOSTS
 IMAGE_HOSTS = {'m.media-amazon.com', 'images-na.ssl-images-amazon.com'}
 MAX_PAGE_BYTES = 8 * 1024 * 1024
@@ -409,7 +409,10 @@ def _json_card(node, page_url):
                 break
     if not poster:
         poster = artwork
-    if title and artwork:
+    # A regional card with missing/unrecognized artwork still has a usable
+    # provider title/link. Do not silently erase those real titles from a list.
+    entity=bool(node.get('titleID') or node.get('titleId') or _media_value(node))
+    if title and (artwork or entity):
         return Card(title, detail, artwork, fanart_url=fanart, poster_url=poster or artwork,
                     plot=_plot_value(node), year=_year_value(node), duration=_duration_value(node),
                     rating=_rating_value(node), genres=_genre_value(node), mediatype=_media_value(node),
@@ -427,6 +430,7 @@ def _direct_next_links(node, page_url):
     candidates = []
     if not isinstance(node, dict):
         return candidates
+    if node.get('hasMoreItems') is False:return candidates
     if node.get('disabled') is True or node.get('isEnabled') is False:
         return candidates
     for key in ('nextPage', 'nextPageUrl', 'nextPageURL', 'paginationTargetUrl'):
@@ -480,6 +484,7 @@ def _json_content(document, page_url, *, page_continuation=True):
         page_scope(document)
     stack = [(document, 0)]
     nodes, limited, card_candidates, token_only = 0, False, 0, 0
+    raw_records=0;unreadable=[];image_hosts={}
     while stack:
         node, depth = stack.pop()
         nodes += 1
@@ -491,10 +496,30 @@ def _json_content(document, page_url, *, page_continuation=True):
             continue
         if isinstance(node, dict):
             all_links.update(_direct_next_links(node, page_url))
+            for key in ('url','src','imageUrl','imageURL'):
+                value=node.get(key)
+                if not isinstance(value,str) or not value.startswith('https://'):continue
+                try:
+                    image_parts=urlsplit(value)
+                    if not re.search(r'\.(?:jpe?g|png|webp|avif)$',image_parts.path,re.I):continue
+                    host=image_parts.hostname
+                    if not host or not re.fullmatch(r'[a-z0-9.-]{1,253}',host):continue
+                    reason=url_rejection(value,IMAGE_HOSTS)
+                    identity=(host,reason)
+                    if identity in image_hosts or len(image_hosts)<16:image_hosts[identity]=image_hosts.get(identity,0)+1
+                except ValueError:continue
             token_only += sum(1 for key in ('nextPage', 'paginationToken', 'paginationServiceToken', 'nextToken')
                               if isinstance(node.get(key), str) and node[key]
                               and not _continuation_link(node[key], page_url))
             card = _json_card(node, page_url)
+            if node.get('titleID') or node.get('titleId') or node.get('entityType'):
+                raw_records+=1
+                if not card and len(unreadable)<4:
+                    known={'title','titleID','titleId','entityType','images','link','detailUrl','detailURL','displayTitle','progress','playbackActions'}
+                    unreadable.append({'known_fields':sorted(set(node)&known),'other_field_count':len(set(node)-known),
+                        'title_present':any(bool(_text(node.get(k))) for k in ('title','displayTitle','heading','name','label')),
+                        'trusted_detail_present':any(bool(detail_id(u)) for k in ('detailUrl','detailURL','detailPageUrl','href','url','link','titleLink') for u in [_link(node.get(k),page_url)] if u),
+                        'recognized_image_present':bool(_shot_map(node))})
             if card:
                 card_candidates += 1
                 _remember_card(cards, detail_id(card.detail_url), card)
@@ -504,6 +529,10 @@ def _json_content(document, page_url, *, page_continuation=True):
             stack.extend((child, depth + 1) for child in reversed(node) if isinstance(child, (dict, list)))
     return cards, page_links, {'json_nodes': nodes, 'json_traversal_limited': limited,
                               'json_card_candidates': card_candidates,
+                              'raw_title_records':raw_records,'unreadable_record_inventory':unreadable,
+                              'cards_without_artwork':sum(not card.artwork_url for card in cards.values()),
+                              'image_host_inventory':[{'host':host,'policy_reason':reason,'references':count}
+                                  for (host,reason),count in image_hosts.items()],
                               'ignored_nested_continuations': len(all_links - page_links),
                               'unsupported_token_continuations': token_only,
                               'json_root_type': type(document).__name__, 'protocol_structure': _protocol_shape(document)}
@@ -612,7 +641,26 @@ def parse_cards(html, *, page_url=ORIGIN):
     return list(parser.cards.values())
 
 
+class CatalogCookies(HTTPCookieProcessor):
+    """Observe what the canonical jar actually attaches; never log cookie data."""
+    def __init__(self,jar,observer):
+        super().__init__(jar);self.observer=observer
+
+    def http_request(self,request):
+        result=super().http_request(request)
+        names=[part.partition('=')[0].strip() for part in (result.get_header('Cookie') or '').split(';') if '=' in part]
+        _emit(self.observer,{'event':'catalog_cookie_scope','stage':getattr(request,'_prime_stage','catalog_cookie_scope'),
+            'request_id':getattr(request,'_prime_request_id',None),'address':route(request.full_url),
+            'cookie_count_attached':len(names),'authentication_cookies_attached':sum(name.startswith('at-') for name in names),
+            'scope_policy':'canonical_cookiejar','result':'attached' if names else 'no_matching_cookies'})
+        return result
+
+    https_request=http_request
+
+
 class StorefrontRedirect(HTTPRedirectHandler):
+    # urllib on supported older Kodi Python does not register 308 itself.
+    http_error_308=HTTPRedirectHandler.http_error_302
     def __init__(self, observer=None):
         self.observer = observer
 
@@ -624,6 +672,7 @@ class StorefrontRedirect(HTTPRedirectHandler):
         if code in (307,308) and req.data is not None and urlsplit(req.full_url).hostname!=urlsplit(newurl).hostname:
             allowed=False
         _emit(self.observer, {'event': 'catalog_redirect', 'stage':'storefront_redirect', 'status': code,
+                              'request_id':getattr(req,'_prime_request_id',None),
                               'from': route(req.full_url), 'to': route(newurl), 'allowed': allowed,
                               'policy_revision':POLICY_REVISION,'regional_sso':is_sso,'regional_relay':is_relay,
                               'method':req.get_method(),'result':'allowed' if allowed else 'blocked'})
@@ -632,6 +681,8 @@ class StorefrontRedirect(HTTPRedirectHandler):
         redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
         if redirected is not None:
             strip_redirect_headers(redirected)
+            redirected._prime_request_id=getattr(req,'_prime_request_id',None)
+            redirected._prime_stage=getattr(req,'_prime_stage','storefront_redirect')
         return redirected
 
 
@@ -661,9 +712,13 @@ def _read_page(data, content_type, page_url):
     empty_confirmed=False
     if content_type == 'application/json' or content_type.endswith('+json'):
         document = json.loads(data)
+        from .http_transport import server_errors
         empty_confirmed=_provider_empty(document)
         cards, links, details = _json_content(document, page_url)
         details['format'] = 'json'
+        details['server_error_codes']=server_errors(document)
+        details['provider_error']=isinstance(document,dict) and (document.get('hasFailed') is True or
+            any(bool(document.get(k)) for k in ('error','errors','errorCode')))
     elif content_type in ('text/html', 'application/xhtml+xml'):
         parser = StorefrontParser(page_url)
         parser.feed(data)
@@ -686,6 +741,10 @@ def _read_page(data, content_type, page_url):
             details['ignored_nested_continuations'] += structure['ignored_nested_continuations']
             details['unsupported_token_continuations'] += structure['unsupported_token_continuations']
             details['json_traversal_limited'] = details.get('json_traversal_limited', False) or structure['json_traversal_limited']
+            inventory=details.setdefault('unreadable_record_inventory',[])
+            inventory.extend(structure['unreadable_record_inventory'][:max(0,4-len(inventory))])
+            image_inventory=details.setdefault('image_host_inventory',[])
+            image_inventory.extend(structure['image_host_inventory'][:max(0,16-len(image_inventory))])
             shapes = details.setdefault('embedded_protocol_structures', [])
             if len(shapes) < 5:
                 shapes.append(structure['protocol_structure'])
@@ -694,6 +753,7 @@ def _read_page(data, content_type, page_url):
     else:
         raise PublicCatalogError('Prime Video returned an unsupported catalog content type.')
     next_url, count = _next_url(links, page_url)
+    if details.get('provider_error'):empty_confirmed=False
     empty_confirmed=(empty_confirmed and not cards and not next_url
         and not details.get('sign_in_form_present') and not details.get('verification_form_present'))
     details.update(cards=len(cards), empty_confirmed=empty_confirmed, descriptions_ready=sum(bool(card.plot) for card in cards.values()),
@@ -727,6 +787,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
         request_headers={'Accept':'text/html, application/json;q=0.9',**extra_headers}
         if page in ('watching','watchlist'):request_headers.update({'Cache-Control':'no-cache, no-store','Pragma':'no-cache'})
         request = Request(address, data=request_data, headers=request_headers)
+        request._prime_request_id=request_id;request._prime_stage='catalog_fetch'
         opener = opener if opener is not None else build_opener(StorefrontRedirect(observer))
         stage = 'fetch'
         with opener.open(request, timeout=15) as response:
@@ -755,7 +816,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 'content_encoding':response.headers.get('Content-Encoding','identity'),
                 'elapsed_ms':round((perf_counter()-started)*1000),'result':'success'})
         stage = 'parse_response'
-        if page in ('movies','tv') and continuation is not None and urlsplit(final_url).path.startswith(('/genre/','/kids')):
+        if page in ('movies','tv') and continuation is not None and storefront_path(final_url).startswith(('/genre/','/kids')):
             from .genre_catalog import section_link
             scoped=section_link(data,final_url,page,observer=lambda value:_emit(observer,value))
             if scoped and scoped!=final_url and _library_depth<3:
@@ -769,7 +830,10 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 raise PublicCatalogError('The In Progress continuation has no confirmed watch-history scope.')
             result, details = _read_page(data,content_type,final_url)
             next_request=collection_paging.advance(continuation,data,content_type,observer)
-            result=replace(result,next_request=next_request,empty_confirmed=not result.cards and next_request is None)
+            if not result.cards and not result.empty_confirmed and next_request is None:
+                _emit(observer,dict(details,event='progress_continuation_unreadable',stage=stage,result='failure'))
+                raise PublicCatalogError('Amazon returned unreadable In Progress records; no empty history was confirmed.')
+            result=replace(result,next_request=next_request)
             details.update(history_confirmed=True,progress_continuation=True)
         elif page == 'watching':
             from .home_catalog import read_home
@@ -783,6 +847,9 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 raise
             next_request=collection_paging.discover(data,content_type,final_url,observer,scope='watching')
             if next_request:result=replace(result,next_request=next_request,empty_confirmed=False)
+            if details.get('native_continuation_pending') and not (result.next_url or next_request):
+                _emit(observer,dict(details,event='progress_continuation_missing',stage=stage,result='failure'))
+                raise PublicCatalogError('Amazon declared more In Progress data without a usable continuation. Open Diagnostics.')
         elif page in ('purchases','watchlist') and collection:
             if continuation.get('scope')!=page:
                 raise PublicCatalogError('The personal continuation has no confirmed collection scope.')
@@ -824,6 +891,9 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 else collection_paging.discover(data,content_type,final_url,lambda value:_emit(observer,value)))
             if next_request:result=replace(result,next_request=next_request)
             details['collection_continuation']=bool(next_request)
+        if details.get('provider_error'):
+            _emit(observer,dict(details,event='catalog_provider_error',stage=stage,status=status,address=route(final_url),result='failure'))
+            raise PublicCatalogError('Amazon returned a catalog service error. Open Diagnostics for its code and structure.')
         _emit(observer, dict(details, event='catalog_page_parsed', stage=stage, bytes=len(raw),
                              status=status, address=route(final_url),
                              elapsed_ms=round((perf_counter() - started) * 1000)))
@@ -851,7 +921,10 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                 body = error.read(MAX_PAGE_BYTES + 1)
                 details['response_bytes'] = len(body)
                 if len(body) <= MAX_PAGE_BYTES and details['content_type'] == 'application/json':
-                    details['protocol_structure'] = _protocol_shape(json.loads(body))
+                    from .http_transport import server_errors
+                    document=json.loads(body)
+                    details['protocol_structure'] = _protocol_shape(document)
+                    details['server_error_codes']=server_errors(document)
             except Exception as reading_error:
                 details['error_response_read_failure'] = exception_details(reading_error)
             error.close()

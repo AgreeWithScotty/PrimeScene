@@ -1,5 +1,6 @@
 """Extract provider JSON, collection navigation and visible empty-state evidence."""
 import json,re
+import hashlib
 from html.parser import HTMLParser
 from time import monotonic
 
@@ -7,8 +8,85 @@ LIBRARY_LABELS={'purchases','purchasesrentals','purchasesandrentals','yourpurcha
 WATCHLIST_LABELS={'watchlist','yourwatchlist','mywatchlist'}
 _VOID={'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
 
+_PATH_FIELDS=set(('init preparations body props pageProps state widgets collections items results result data '
+    'content viewOutput page components resources entities features containers config selected baseOutput '
+    'swiftPageParameters sitewide sitewide-alexa primeVideoCapability pagination emptyState').split())
+
+
+def objects(documents):
+    """Bounded objects and redacted structural locations, across page wrappers."""
+    stack=[(document,'$',0) for document in reversed(documents)];visited=0
+    while stack:
+        node,path,depth=stack.pop();visited+=1
+        if visited>100000 or depth>40:
+            from .public_catalog import PublicCatalogError
+            raise PublicCatalogError('Amazon returned a document beyond the structural limit.')
+        if isinstance(node,dict):
+            yield node,path
+            for key,value in reversed(list(node.items())):
+                if isinstance(value,(dict,list)):
+                    name=key if key in _PATH_FIELDS else '#'+hashlib.sha256(str(key).encode()).hexdigest()[:8]
+                    stack.append((value,path+'.'+name,depth+1))
+        elif isinstance(node,list):
+            stack.extend((value,path+'[]',depth+1) for value in reversed(node) if isinstance(value,(dict,list)))
+
+
+def page_contexts(documents):
+    """Keep each native container list with its own page/capability metadata."""
+    groups=[list(objects([document])) for document in documents]
+    global_pages={json.dumps(n['swiftPageParameters'],sort_keys=True):n['swiftPageParameters']
+        for group in groups for n,_ in group if isinstance(n.get('swiftPageParameters'),dict)}
+    global_caps={json.dumps(n['primeVideoCapability'],sort_keys=True):n['primeVideoCapability']
+        for group in groups for n,_ in group if isinstance(n.get('primeVideoCapability'),dict)}
+    for all_nodes in groups:
+        pages={json.dumps(n['swiftPageParameters'],sort_keys=True):n['swiftPageParameters']
+            for n,_ in all_nodes if isinstance(n.get('swiftPageParameters'),dict)}
+        caps={json.dumps(n['primeVideoCapability'],sort_keys=True):n['primeVideoCapability']
+            for n,_ in all_nodes if isinstance(n.get('primeVideoCapability'),dict)}
+        if not pages:pages=global_pages
+        if not caps:caps=global_caps
+        for node,path in all_nodes:
+            containers=node.get('containers')
+            if not isinstance(containers,list):continue
+            page=node.get('swiftPageParameters')
+            site=node.get('sitewide') or {}
+            site=site.get('sitewide-alexa') or {} if isinstance(site,dict) else {}
+            cap=site.get('primeVideoCapability') if isinstance(site,dict) else None
+            page=page if isinstance(page,dict) else next(iter(pages.values())) if len(pages)==1 else {}
+            cap=cap if isinstance(cap,dict) else next(iter(caps.values())) if len(caps)==1 else {}
+            yield containers,page,cap,path
+
+
+def response_context(documents,address):
+    """Public routing facts, never customer/profile IDs or arbitrary text."""
+    from .regional_hosts import region_prefix
+    languages=set();regions=set();signed_in=set();visited=0
+    for node,_ in objects(documents):
+        visited+=1
+        for key in ('currentLanguage','currentLocale','uxLocale'):
+            value=node.get(key)
+            if isinstance(value,str) and re.fullmatch(r'[a-z]{2,3}(?:[_-][A-Za-z]{2,4})?',value):languages.add(value)
+        value=node.get('homeRegion')
+        if value in ('NA','EU','FE'):regions.add(value)
+        for key in ('isAuthenticated','isSignedIn','isLoggedIn'):
+            if type(node.get(key)) is bool:signed_in.add(node[key])
+    return {'provider_current_languages':sorted(languages),'provider_home_regions':sorted(regions),
+        'provider_signed_in_flags':sorted(signed_in),'regional_path_present':bool(region_prefix(address)),
+        'language_path_present':bool(re.search(r'/-/[a-z]{2,3}(?:/|$)',address)),
+        'context_nodes':visited}
+
 def library_label(value):return isinstance(value,str) and re.sub('[^a-z]','',value.casefold()) in LIBRARY_LABELS
 def watchlist_label(value):return isinstance(value,str) and re.sub('[^a-z]','',value.casefold()) in WATCHLIST_LABELS
+
+
+def collection_route(value):
+    """Recognize a declared personal link independently of translated labels."""
+    from .regional_hosts import storefront_path
+    try:path=storefront_path(value).rstrip('/')
+    except (TypeError,ValueError):return None
+    if path in ('/mystuff/watchlist','/watchlist'):return 'watchlist'
+    if path in ('/mystuff/library','/mystuff/purchases'):return 'purchases'
+    return None
 
 def empty_copy(text,collection):
     """Only an explicit absence statement in the rendered main content qualifies."""
@@ -27,9 +105,10 @@ def empty_copy(text,collection):
     return next(('visible_main_absence_'+str(i+1) for i,pattern in enumerate(patterns) if re.search(pattern,text)),None)
 
 class PageDocuments(HTMLParser):
-    def __init__(self,label_matches=library_label):
+    def __init__(self,label_matches=library_label,collection=None):
         super().__init__();self.capture=False;self.parts=[];self.scripts=[];self.anchor=None;self.library_links=[]
         self.label_matches=label_matches;self.signin=False;self.verification=False
+        self.collection=collection
         self.frames=[];self.main_text=[];self.main_characters=0;self.selected_links=0;self.script_types={}
     def handle_starttag(self,tag,attrs):
         attributes=dict(attrs)
@@ -57,7 +136,8 @@ class PageDocuments(HTMLParser):
     def handle_endtag(self,tag):
         if tag=='script' and self.capture:self.scripts.append(''.join(self.parts));self.parts=[];self.capture=False
         elif tag=='a' and self.anchor is not None:
-            if self.label_matches(self.anchor[1]) or self.label_matches(self.anchor[2]):
+            if (self.label_matches(self.anchor[1]) or self.label_matches(self.anchor[2])
+                    or self.collection is not None and collection_route(self.anchor[0])==self.collection):
                 self.library_links.append(self.anchor[0]);self.selected_links+=bool(self.anchor[3])
             self.anchor=None
         for index in range(len(self.frames)-1,-1,-1):
@@ -68,7 +148,7 @@ def read_documents(data,content_type,label_matches=library_label,collection=None
     started=monotonic();parser=None
     if content_type.endswith('json') or content_type.endswith('+json'):scripts=[data]
     else:
-        parser=PageDocuments(label_matches);parser.feed(data);parser.close();scripts=parser.scripts
+        parser=PageDocuments(label_matches,collection);parser.feed(data);parser.close();scripts=parser.scripts
     extracted=monotonic();documents=[];failures=0;locations=[]
     for value in scripts:
         try:documents.append(json.loads(value))

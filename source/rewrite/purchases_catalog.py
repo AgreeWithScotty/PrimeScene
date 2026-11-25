@@ -2,7 +2,7 @@
 from dataclasses import replace
 import hashlib,re
 from urllib.parse import parse_qsl,urlsplit
-from .provider_documents import read_documents,library_label,watchlist_label
+from .provider_documents import read_documents,library_label,watchlist_label,collection_route
 
 def navigation_identity(address):
     """Tracking markers do not turn a collection's own link into another page."""
@@ -20,7 +20,8 @@ def _empty_evidence(payload):
             else:records+=len(node)
             continue
         if not isinstance(node,dict):continue
-        pending|=bool(node.get('paginationServiceToken') or node.get('nextPage') or node.get('nextToken')
+        pending|=bool(node.get('hasMoreItems') is not False and
+            (node.get('paginationServiceToken') or node.get('nextPage') or node.get('nextToken'))
             or node.get('isLoading') is True or node.get('loading') is True or node.get('hasMoreItems') is True)
         if node.get('isEmpty') is True:proof.append('provider_is_empty')
         if isinstance(node.get('emptyState'),dict) and node['emptyState']:proof.append('selected_empty_state')
@@ -86,7 +87,8 @@ def read_library(data,content_type,page_url,selected=False,collection='purchases
                         inventory['grid_inventory'].append({'path':path,'entity_count':len(node['entities']) if isinstance(node.get('entities'),list) else None,
                             'entity_fields':sorted(set(node['entities'][0]) & {'title','titleID','titleId','images','link','entityType','type','contentType'}) if node.get('entities') and isinstance(node['entities'][0],dict) else [],
                             'continuation_present':bool(node.get('paginationServiceToken'))})
-                matched=any(n.endswith(identifiers) for n in names) or matches(label)
+                declared=next((_link(node.get(key),page_url) for key in ('apiUrl','href','url','link') if _link(node.get(key),page_url)),None)
+                matched=any(n.endswith(identifiers) for n in names) or matches(label) or bool(declared and collection_route(declared)==collection)
                 if matched:
                     active|=any(node.get(k) is True for k in ('active','applied','isCurrentlyApplied','selected','isSelected'))
                     for key in ('apiUrl','href','url','link'):
