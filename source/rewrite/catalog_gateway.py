@@ -321,7 +321,7 @@ class CatalogGateway:
         visited = previous_urls + ((continuation_identity(continuation),) if continuation else ())
         next_path = self._continuation(page, result.next_request or result.next_url, visited)
         personal=page in ('watchlist','purchases','purchased_movies','purchased_tv')
-        filtered_empty=bool(result.cards) and wrong_type==len(result.cards) and not next_path
+        filtered_empty=bool(result.cards) and wrong_type==len(result.cards) and not next_path and not result.pagination_unavailable
         empty_confirmed=result.empty_confirmed or (filtered_empty if personal else bool(result.cards) and not rows and not next_path)
         if page=='watching':
             empty_confirmed=result.empty_confirmed or bool(result.cards) and len(finished)==len(result.cards) and not next_path
@@ -337,11 +337,15 @@ class CatalogGateway:
                  'type_excluded': wrong_type,
                  'library_confirmed': result.library_confirmed,
                  'watchlist_confirmed':result.watchlist_confirmed,
-                 'has_next': bool(next_path), 'result': 'success'})
+                 'pagination_unavailable':result.pagination_unavailable,
+                 'has_next': bool(next_path), 'result': 'partial' if result.pagination_unavailable else 'success'})
         return {'rows': rows, 'next': next_path, 'library_confirmed': result.library_confirmed,
                 'watchlist_confirmed':result.watchlist_confirmed,
                 'empty_confirmed':empty_confirmed,
                 'personal_schema':2 if personal else None,
-                'collection_state':'items' if rows else 'empty' if empty_confirmed else 'continuation' if next_path else 'unknown',
+                'pagination_unavailable':result.pagination_unavailable,
+                'notice':('Some titles are shown, but more could not be retrieved. Select Watchlist again to retry.' if page=='watchlist' else
+                    'Some titles are shown, but more could not be retrieved. Reopen Purchases to retry.') if result.pagination_unavailable else '',
+                'collection_state':'partial' if result.pagination_unavailable else 'items' if rows else 'empty' if empty_confirmed else 'continuation' if next_path else 'unknown',
                 'catalog_policy': 'prime_only' if page in ('movies', 'tv') else
                                   'account_library' if page == 'purchases' or page.startswith('purchased_') else 'watch_progress' if page == 'watching' else page}

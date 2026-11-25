@@ -44,9 +44,15 @@ def _info(node):
     return {key: value for key, value in result.items() if value not in (None, '', [], {})}
 
 
-def parse_tv_page(data, content_type, address, pluginid, observer=None):
+def parse_tv_page(data, content_type, address, pluginid, observer=None, *, decoded_documents=None,document_extraction=None):
     from .provider_documents import read_documents
-    documents,extraction,_=read_documents(data,content_type)
+    if decoded_documents is None:
+        documents,extraction,_=read_documents(data,content_type)
+        extraction['document_reused']=False
+    else:
+        documents=decoded_documents
+        extraction=dict(document_extraction or {},document_reused=True,
+            document_extract_ms=0,document_decode_ms=0,json_documents=len(documents))
     _emit(observer,dict(extraction,event='tv_document_extracted',stage='tv_document_extract',result='success'))
     if extraction.get('sign_in_form_present') or extraction.get('verification_form_present'):
         from .public_catalog import PublicSigninRequired

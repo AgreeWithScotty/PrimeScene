@@ -15,6 +15,20 @@ from .regional_hosts import MEDIA_API_HOSTS
 WEB_DEVICE='AOAGZA014O5RE'
 
 
+class MediaServiceError(TransportFailure):
+    """A provider refusal with safe codes and an actionable, fixed UI message."""
+    def __init__(self,codes,status,stage):
+        self.server_error_codes=tuple(codes);self.status=status;self.stage=stage
+        self.category='location' if 'PRS.NoRights.InvalidGeoIP' in codes else 'provider_refusal'
+        self.user_message=(
+            'Amazon refused playback for this network location (PRS.NoRights.InvalidGeoIP). '
+            'If a VPN or proxy is enabled, disconnect it and try again. '
+            'If this continues on a normal connection, contact Amazon.'
+            if self.category=='location' else
+            'Amazon refused the playback request. Open Settings > Diagnostics for the provider error code and complete report.')
+        super().__init__(self.user_message)
+
+
 @dataclass
 class MediaResources:
     manifest:str
@@ -93,7 +107,7 @@ class MediaAPI:
         self.report({'event':'media_response_parsed','stage':stage,'status':response.status,
             'protocol_structure':shape(value),'server_error_codes':server_errors(value),
             'result':'failure' if errors else 'success'})
-        if errors:raise TransportFailure('Amazon refused the media request. Open Diagnostics for the provider error code.')
+        if errors:raise MediaServiceError(server_errors(errors),response.status,stage)
         if current_account(self.g.DATA_PATH,self.epoch):persist_session(self.g.DATA_PATH,self.epoch,self.jar)
         return value
 
@@ -102,6 +116,9 @@ class MediaAPI:
         wanted='PlaybackUrls,SubtitleUrls,ForcedNarratives,TransitionTimecodes'
         try:value=self.json(self.address('catalog/GetPlaybackResources',identifier,wanted),stage='playback_resources')
         except Exception as error:
+            # A declared location refusal is not repaired by swapping this
+            # account's credentials. Preserve Amazon's decision and exact URL.
+            if isinstance(error,MediaServiceError) and error.category=='location':raise
             if self.auth!='device' or not has_authentication_cookie(self.jar) or not self.client.active():raise
             self.report({'event':'media_credential_retry','stage':'media_authorization','from':'device','to':'website',
                 'same_account_and_title':True,'source_changed':False,'exception':exception_details(error),'result':'retry'})

@@ -6,6 +6,7 @@ from html.parser import HTMLParser
 import json
 import logging
 import re
+from .image_quality import choose_image,html_image,source_image,POLICY_REVISION as ARTWORK_POLICY
 from time import perf_counter
 from secrets import token_hex
 from urllib.error import HTTPError
@@ -48,6 +49,7 @@ def _protocol_shape(document):
         'entities','hasMoreItems','startIndex','serviceToken','paginationServiceToken',
         'paginationTargetId','paginationStartIndex','swiftPageParameters','primeVideoCapability',
         'isContinueWatching','containerType','progress','percentage','resumeTime','playbackActions','runtime','entityType'))
+    known.update(('__type','sharedArgs','pageType','pageId','pageContext','swiftRequestParameters','myStuffViewType'))
     stack, result = [('$', document, 0)], []
     while stack and len(result) < 60:
         path, value, depth = stack.pop()
@@ -96,6 +98,16 @@ class CatalogPage:
     next_request: dict = None
     empty_confirmed: bool = False
     watchlist_confirmed: bool = False
+    pagination_unavailable: bool = False
+
+
+def _personal_partial(result,page,observer,status,address,error,stage):
+    """Retain confirmed cards without claiming the collection is complete."""
+    if not result.cards:raise error
+    _emit(observer,{'event':'personal_pagination_unavailable','stage':stage,
+        'collection':page,'status':status,'address':route(address),'retained_cards':len(result.cards),
+        'empty_confirmed':False,'exception':exception_details(error),'result':'partial'})
+    return replace(result,pagination_unavailable=True,empty_confirmed=False)
 
 
 def _remember_card(cards, key, card):
@@ -185,37 +197,8 @@ def _continuation_link(value, page_url):
     return _link(value, page_url)
 
 
-def _image(value, depth=0):
-    from .image_quality import declared_resolution
-    if depth > 6:
-        return ''
-    if isinstance(value, str):
-        return safe_url(value, IMAGE_HOSTS)
-    if isinstance(value, dict):
-        candidates=[]
-        for key in ('url', 'src', 'imageUrl', 'imageURL', 'packshot', 'poster',
-                    'thumbnail', 'cover', 'wide', 'tall', 'square'):
-            found = _image(value.get(key), depth + 1)
-            if found:
-                candidates.append((declared_resolution(found,value.get('width'),value.get('height')),found))
-        # Image dimension/locale maps contain image values, never title-card subtrees.
-        for child in value.values():
-            if isinstance(child, str):
-                found = safe_url(child, IMAGE_HOSTS)
-                if found:
-                    candidates.append((declared_resolution(found),found))
-            elif isinstance(child,(dict,list)):
-                found=_image(child,depth+1)
-                if found:candidates.append((declared_resolution(found,child.get('width') if isinstance(child,dict) else None,child.get('height') if isinstance(child,dict) else None),found))
-        if candidates:return max(candidates,key=lambda candidate:candidate[0])[1]
-    elif isinstance(value, list):
-        candidates=[]
-        for child in value:
-            found = _image(child, depth + 1)
-            if found:
-                candidates.append((declared_resolution(found,child.get('width') if isinstance(child,dict) else None,child.get('height') if isinstance(child,dict) else None),found))
-        if candidates:return max(candidates,key=lambda candidate:candidate[0])[1]
-    return ''
+def _image(value, depth=0, *, original=True):
+    return choose_image(value,lambda address:safe_url(address,IMAGE_HOSTS),depth,original)
 
 
 def _shot_map(node):
@@ -230,12 +213,12 @@ def _shot_map(node):
         if not isinstance(blob, dict):
             continue
         for name, value in blob.items():
-            url = safe_url(value, IMAGE_HOSTS) if isinstance(value, str) else _image(value)
+            url = _image(value,original=False)
             if url:
                 found[str(name).casefold()] = url
     for name in ('landscape', 'thumbnail', 'thumb', 'packshot', 'wide', 'poster', 'fanart', 'heroshot'):
         if name not in found:
-            url = _image(node.get(name))
+            url = _image(node.get(name),original=False)
             if url:
                 found[name] = url
     return found
@@ -245,10 +228,10 @@ def _first_shot(shots, names):
     if names and set(names).issubset({'heroshot','hero','fanart','background','backdrop'}):
         from .image_quality import declared_resolution
         candidates=[shots[name] for name in names if shots.get(name)]
-        return max(candidates,key=declared_resolution) if candidates else ''
+        return source_image(max(candidates,key=declared_resolution)) if candidates else ''
     for name in names:
         if shots.get(name):
-            return shots[name]
+            return source_image(shots[name])
     return ''
 
 
@@ -531,6 +514,7 @@ def _json_content(document, page_url, *, page_continuation=True):
                               'json_card_candidates': card_candidates,
                               'raw_title_records':raw_records,'unreadable_record_inventory':unreadable,
                               'cards_without_artwork':sum(not card.artwork_url for card in cards.values()),
+                              'artwork_policy':ARTWORK_POLICY,'artificial_artwork_width_cap':False,
                               'image_host_inventory':[{'host':host,'policy_reason':reason,'references':count}
                                   for (host,reason),count in image_hosts.items()],
                               'ignored_nested_continuations': len(all_links - page_links),
@@ -593,7 +577,7 @@ class StorefrontParser(HTMLParser):
                 self.text = []
                 self.label = attrs.get('aria-label') or self.label
         elif tag == 'img' and not self.artwork:
-            self.artwork = safe_url(attrs.get('src') or attrs.get('data-src') or '', IMAGE_HOSTS)
+            self.artwork = html_image(attrs,lambda value:safe_url(value,IMAGE_HOSTS,self.page_url))
             if not self.label and self.artwork:
                 self.label = attrs.get('alt') or ''
 
@@ -757,6 +741,7 @@ def _read_page(data, content_type, page_url):
     empty_confirmed=(empty_confirmed and not cards and not next_url
         and not details.get('sign_in_form_present') and not details.get('verification_form_present'))
     details.update(cards=len(cards), empty_confirmed=empty_confirmed, descriptions_ready=sum(bool(card.plot) for card in cards.values()),
+                   artwork_policy=ARTWORK_POLICY,artificial_artwork_width_cap=False,
                    landscape_variants=sum(bool(card.landscape_url) for card in cards.values()),
                    prime_confirmed=sum(prime_included(card.access_evidence) for card in cards.values()),
                    access_unknown=sum(not card.access_evidence for card in cards.values()),
@@ -854,7 +839,13 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             if continuation.get('scope')!=page:
                 raise PublicCatalogError('The personal continuation has no confirmed collection scope.')
             result,details=_read_page(data,content_type,final_url)
-            next_request=collection_paging.advance(continuation,data,content_type,observer)
+            try:
+                next_request=collection_paging.advance(continuation,data,content_type,observer)
+            except PublicCatalogError as error:
+                # A provider service failure is not usable collection content.
+                if details.get('provider_error'):raise
+                result=_personal_partial(result,page,observer,status,final_url,error,'collection_parse')
+                next_request=None
             if page=='purchases':result=replace(result,cards=[replace(card,access_evidence=merge_evidence(card.access_evidence,'account_library')) for card in result.cards])
             result=replace(result,watchlist_confirmed=page=='watchlist',library_confirmed=page=='purchases',next_request=next_request)
         elif page in ('purchases','watchlist'):
@@ -883,7 +874,16 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             if result is None:
                 raise PublicCatalogError('Amazon did not expose a recognized %s collection. Open Diagnostics for the report.'%
                     ('Watchlist' if page=='watchlist' else 'Purchases & Rentals'))
-            next_request=collection_paging.discover(data,content_type,final_url,observer,scope=page)
+            try:
+                next_request=collection_paging.discover(data,content_type,final_url,observer,scope=page)
+                if details.get('native_continuation_pending') and not (result.next_url or next_request):
+                    raise PublicCatalogError('Amazon declared more personal collection data without a usable continuation. Open Diagnostics.')
+            except PublicCatalogError as error:
+                # A pagination layout error must not erase an already confirmed,
+                # readable first page. Keep the incomplete state explicit.
+                result=_personal_partial(result,page,observer,status,final_url,error,'collection_discovery')
+                details.update(pagination_unavailable=True,collection_state='partial')
+                next_request=None
             if next_request:result=replace(result,next_request=next_request,empty_confirmed=False)
         else:
             result, details = _read_page(data, content_type, final_url)
@@ -905,7 +905,8 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             raise PublicCatalogError('The personal collection could not be read; an empty collection was not confirmed. Open Diagnostics.')
         if not result.cards and result.next_url is None and result.next_request is None and not result.library_confirmed and not result.watchlist_confirmed and not result.empty_confirmed and not collection:
             raise PublicCatalogError('No title cards or page continuation were found in the catalog response.')
-        _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'success',
+        _emit(observer, {'event': 'catalog_request_completed', 'stage': 'complete', 'result': 'partial' if result.pagination_unavailable else 'success',
+                         'pagination_unavailable':result.pagination_unavailable,
                          'cards': len(result.cards), 'has_next': bool(result.next_url or result.next_request),'empty_confirmed':result.empty_confirmed,
                          'elapsed_ms': round((perf_counter() - started) * 1000)})
         return result

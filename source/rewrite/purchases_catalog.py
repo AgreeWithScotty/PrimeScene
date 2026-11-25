@@ -2,7 +2,7 @@
 from dataclasses import replace
 import hashlib,re
 from urllib.parse import parse_qsl,urlsplit
-from .provider_documents import read_documents,library_label,watchlist_label,collection_route
+from .provider_documents import read_documents,library_label,watchlist_label,collection_route,mystuff_page
 
 def navigation_identity(address):
     """Tracking markers do not turn a collection's own link into another page."""
@@ -53,7 +53,7 @@ def read_library(data,content_type,page_url,selected=False,collection='purchases
         if navigation_identity(target)==current:self_links+=1
         else:candidates.append((1,target))
     payloads=[];grids=[];empty_bodies=[];shapes=[];active=bool(extraction.get('selected_collection_navigation'))
-    explicit=False;provider_error=False;codes=[];nodes=0
+    explicit=False;provider_error=False;codes=[];nodes=0;native_views=set();native_types=set()
     inventory={'library_labels':0,'watchlist_labels':0,'native_containers':0,'explicit_empty_states':0,
         'html_library_links':len(html_links),'self_navigation_links_ignored':self_links,'grid_inventory':[]}
     def content_node(value):
@@ -65,12 +65,23 @@ def read_library(data,content_type,page_url,selected=False,collection='purchases
         if isinstance(document,dict) and any(document.get(k) for k in ('error','errors','errorCode')):provider_error=True
         if selected and isinstance(document,dict):
             for key in ('results','content'):
-                if content_node(document.get(key)):payloads.append(document[key])
+                value=document.get(key)
+                if content_node(value) and not mystuff_page(value):payloads.append(value)
         stack=[(document,'$',0)]
         while stack:
             node,path,depth=stack.pop();nodes+=1
             if nodes>100000 or depth>40:raise PublicCatalogError('The personal collection response exceeded its structural limit.')
             if isinstance(node,dict):
+                native=mystuff_page(node);view=native.get('myStuffViewType')
+                if native:native_types.add(node['__type'])
+                if view:
+                    native_views.add(view)
+                    if view==('watchlist' if collection=='watchlist' else 'library') and isinstance(node.get('baseOutput'),dict):
+                        # The typed page confirms scope. Only its sole Grid,
+                        # selected below, supplies records; sibling recommendation
+                        # carousels must never become Watchlist/ownership evidence.
+                        explicit=True
+                        if node['baseOutput'].get('containers')==[]:empty_bodies.append(node['baseOutput'])
                 if node.get('hasFailed') is True:
                     provider_error=True
                 names=[re.sub('[^a-z]','',str(node.get(k) or '').casefold()) for k in ('viewType','id','filterId')]
@@ -115,6 +126,8 @@ def read_library(data,content_type,page_url,selected=False,collection='purchases
     if confirmed and not payloads and len(grids)==1:payloads.append(grids[0])
     if confirmed and not payloads and len(empty_bodies)==1:payloads.append(empty_bodies[0])
     extraction.update(personal_collection=collection,library_inventory=inventory,protocol_structure=shapes,
+        native_mystuff_views=sorted(native_views),
+        native_mystuff_types=sorted(native_types),
         collection_scope_confirmed=confirmed,scope_from_followed_provider_link=selected,
         selected_zero_container_pages=len(empty_bodies),
         scope_from_selected_navigation=active or self_links>0,explicit_library_payload=explicit,
@@ -123,6 +136,9 @@ def read_library(data,content_type,page_url,selected=False,collection='purchases
         return None,dict(extraction,library_authentication_required=True,collection_state='authentication_required'),None
     if provider_error:
         return None,dict(extraction,library_provider_error=True,collection_state='provider_error'),None
+    expected_view='watchlist' if collection=='watchlist' else 'library'
+    if native_views and expected_view not in native_views:
+        return None,dict(extraction,collection_state='collection_mismatch',collection_scope_confirmed=False),None
     cards={};links=set();proof=[];records=0;pending=False
     for payload in payloads:
         found,direct,_=_json_content(payload,page_url)

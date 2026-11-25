@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 from .detail_catalog import documents
 from .public_catalog import ORIGIN,STOREFRONT_HOSTS,IMAGE_HOSTS,safe_url,_text,_protocol_shape
 from .regional_hosts import storefront_path
+from .image_quality import html_image,POLICY_REVISION as ARTWORK_POLICY
 
 NAMES={'action':'Action','actionandadventure':'Action & adventure','adventure':'Adventure',
     'animation':'Animation','anime':'Anime','comedy':'Comedy','documentary':'Documentary',
@@ -101,7 +102,7 @@ class Anchors(HTMLParser):
         attributes=dict(attrs)
         if tag=='a':self.current=[attributes.get('href',''),'','']
         elif tag=='img' and self.current is not None:
-            self.current[2]=safe_url(attributes.get('src') or attributes.get('data-src'),IMAGE_HOSTS) or ''
+            self.current[2]=html_image(attributes,lambda value:safe_url(value,IMAGE_HOSTS))
             if not self.current[1]:self.current[1]=attributes.get('alt') or ''
     def handle_data(self,data):
         if self.current:self.current[1]+=data
@@ -149,7 +150,7 @@ def navigation(data,content_type,address,observer):
         if key not in rows or artwork and not rows[key].get('artwork'):rows[key]=row
     result=list(rows.values())
     observer({'event':'genre_navigation_parsed','stage':'genre_discovery','documents':len(docs),
-        'linked_genres':len(result),'artwork_supplied':sum(bool(row.get('artwork')) for row in result),
+        'linked_genres':len(result),'artwork_supplied':sum(bool(row.get('artwork')) for row in result),'artwork_policy':ARTWORK_POLICY,
         'category_links':len(set(categories)),'protocol_structure':[_protocol_shape(d) for d in docs[:1]],'result':'success'})
     return result,list(dict.fromkeys(categories))
 

@@ -1,0 +1,2520 @@
+{
+  "version": "0.2.62",
+  "sha256": "4478679faf04f5dde23231b5a455815da7cc0fbbdc9e08ed6999eca873ff5003",
+  "bytes": 3766427,
+  "files": 160,
+  "changed_files": [
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/actions.py",
+    "plugin.video.primeinterface/resources/lib/artwork_cache.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/catalog_gateway.py",
+    "plugin.video.primeinterface/resources/lib/collection_paging.py",
+    "plugin.video.primeinterface/resources/lib/detail_catalog.py",
+    "plugin.video.primeinterface/resources/lib/genre_catalog.py",
+    "plugin.video.primeinterface/resources/lib/image_quality.py",
+    "plugin.video.primeinterface/resources/lib/media_resources.py",
+    "plugin.video.primeinterface/resources/lib/navigation.py",
+    "plugin.video.primeinterface/resources/lib/playback_engine.py",
+    "plugin.video.primeinterface/resources/lib/provider_documents.py",
+    "plugin.video.primeinterface/resources/lib/public_catalog.py",
+    "plugin.video.primeinterface/resources/lib/purchases_catalog.py",
+    "plugin.video.primeinterface/resources/lib/service_catalog.py",
+    "plugin.video.primeinterface/resources/lib/title_art.py",
+    "plugin.video.primeinterface/resources/lib/tv_catalog.py",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "added_files": [],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "artwork_checks": {
+    "result": "passed",
+    "checks": [
+      {
+        "check": "Actual catalog response",
+        "result": "passed",
+        "capture": "genre-grid-20261122/fantasy-movies.html",
+        "cards": 20,
+        "capture_sha256": "0ccd1888abfe962d346050dd38e78200319e4a1abd17ea40bbd1dceb63d04b5a",
+        "original_role_sources": 40,
+        "previously_transformed_role_sources": 2,
+        "non_art_metadata_and_navigation_unchanged": true
+      },
+      {
+        "check": "Actual catalog response",
+        "result": "passed",
+        "capture": "genre-grid-20261122/fantasy-tv.html",
+        "cards": 20,
+        "capture_sha256": "dfbaa13c14a8e039a897213969f77e2849e6d02ce8822c4db20f64e1d1531fce",
+        "original_role_sources": 40,
+        "previously_transformed_role_sources": 0,
+        "non_art_metadata_and_navigation_unchanged": true
+      },
+      {
+        "check": "Actual catalog response",
+        "result": "passed",
+        "capture": "genre-grid-20261122/fantasy-movies-token-page2.json",
+        "cards": 40,
+        "capture_sha256": "1690155904fd5bfe474d71854668b678596857d1984ab225d5f11e0341a123d9",
+        "original_role_sources": 80,
+        "previously_transformed_role_sources": 2,
+        "non_art_metadata_and_navigation_unchanged": true
+      },
+      {
+        "check": "Actual catalog response",
+        "result": "passed",
+        "capture": "genre-grid-20261122/fantasy-tv-token-page2.json",
+        "cards": 40,
+        "capture_sha256": "24b749f2738ca6cbe3b810ce2dae6a52ac1ae0d50adf6c09cb6ddfe50be926c5",
+        "original_role_sources": 80,
+        "previously_transformed_role_sources": 0,
+        "non_art_metadata_and_navigation_unchanged": true
+      },
+      {
+        "check": "Actual catalog response",
+        "result": "passed",
+        "capture": "draft-regional-data-20261124/eu-de-movies.html",
+        "cards": 20,
+        "capture_sha256": "a190eadd55fb45a4fef7210f31d3bacdf3d60b4be5e83e2c88c626b6d2b4405d",
+        "original_role_sources": 40,
+        "previously_transformed_role_sources": 0,
+        "non_art_metadata_and_navigation_unchanged": true
+      },
+      {
+        "check": "Actual catalog response",
+        "result": "passed",
+        "capture": "draft-regional-data-20261124/fe-ja-movies.html",
+        "cards": 20,
+        "capture_sha256": "2081c52366bc7071f122ad5f26784d2285b731dc2211e4d99af176e0df6a33b2",
+        "original_role_sources": 40,
+        "previously_transformed_role_sources": 0,
+        "non_art_metadata_and_navigation_unchanged": true
+      },
+      {
+        "check": "Actual catalog response",
+        "result": "passed",
+        "capture": "draft-regional-data-20261124/www-fr-movies.html",
+        "cards": 20,
+        "capture_sha256": "e8f49a482bdeb61b688a901d965925a4b75d8db0e3a4e916c852e131ac396aa7",
+        "original_role_sources": 40,
+        "previously_transformed_role_sources": 0,
+        "non_art_metadata_and_navigation_unchanged": true
+      },
+      {
+        "check": "Actual TV detail response",
+        "result": "passed",
+        "capture": 0,
+        "episodes": 6,
+        "seasons": 1,
+        "non_art_metadata_playable_actions_seasons_and_episodes_unchanged": true
+      },
+      {
+        "check": "Actual TV detail response",
+        "result": "passed",
+        "capture": 1,
+        "episodes": 22,
+        "seasons": 5,
+        "non_art_metadata_playable_actions_seasons_and_episodes_unchanged": true
+      },
+      {
+        "check": "Actual TV detail response",
+        "result": "passed",
+        "capture": 2,
+        "episodes": 8,
+        "seasons": 1,
+        "non_art_metadata_playable_actions_seasons_and_episodes_unchanged": true
+      },
+      {
+        "check": "Actual service branding response",
+        "result": "passed",
+        "services": 48,
+        "service_identities_links_and_roles_preserved": true
+      },
+      {
+        "check": "Actual localized genre artwork response",
+        "result": "passed",
+        "capture": "eu-de",
+        "genres": 12,
+        "localized_navigation_unchanged": true
+      },
+      {
+        "check": "Actual localized genre artwork response",
+        "result": "passed",
+        "capture": "fe-ja",
+        "genres": 12,
+        "localized_navigation_unchanged": true
+      },
+      {
+        "check": "Actual localized genre artwork response",
+        "result": "passed",
+        "capture": "www-fr",
+        "genres": 12,
+        "localized_navigation_unchanged": true
+      },
+      {
+        "check": "Actual UI artwork helper",
+        "result": "passed",
+        "old_width_argument_ignored": true,
+        "card_and_hero_caps_removed": true,
+        "kodi_imported_or_replaced": false
+      },
+      {
+        "check": "Exact six-module artwork change scope",
+        "result": "passed",
+        "changed": [
+          "resources/lib/artwork_cache.py",
+          "resources/lib/aurora.py",
+          "resources/lib/genre_catalog.py",
+          "resources/lib/image_quality.py",
+          "resources/lib/public_catalog.py",
+          "resources/lib/service_catalog.py"
+        ],
+        "unchanged_files": 154,
+        "typography_native_layout_auth_playback_and_dependencies_preserved": true
+      },
+      {
+        "check": "Earlier Watchlist and season functions retained",
+        "result": "passed",
+        "functions": 7
+      }
+    ],
+    "catalog_cards_checked": 180,
+    "artwork_policy": "amazon-originals-everywhere-v1",
+    "changed_this_task": [
+      "resources/lib/artwork_cache.py",
+      "resources/lib/aurora.py",
+      "resources/lib/genre_catalog.py",
+      "resources/lib/image_quality.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/service_catalog.py"
+    ],
+    "cumulative_changed_paths": [
+      "resources/lib/actions.py",
+      "resources/lib/artwork_cache.py",
+      "resources/lib/aurora.py",
+      "resources/lib/catalog_gateway.py",
+      "resources/lib/collection_paging.py",
+      "resources/lib/detail_catalog.py",
+      "resources/lib/genre_catalog.py",
+      "resources/lib/image_quality.py",
+      "resources/lib/media_resources.py",
+      "resources/lib/navigation.py",
+      "resources/lib/playback_engine.py",
+      "resources/lib/provider_documents.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/purchases_catalog.py",
+      "resources/lib/service_catalog.py",
+      "resources/lib/title_art.py",
+      "resources/lib/tv_catalog.py",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml"
+    ],
+    "auth_playback_typography_xml_storage_dependencies_version_and_installer_unchanged": true,
+    "kodi_or_private_provider_tested": false,
+    "provider_or_kodi_mocked": false,
+    "uploaded": false
+  },
+  "actual_public_artwork_downloads": {
+    "scope": "Actual anonymous Amazon CDN responses for saved provider-declared assets and the real published61 delivery policy",
+    "records": [
+      {
+        "role": "landscape",
+        "policy": "original",
+        "request_id": "aff199dd55a17fd3",
+        "stage": "actual_public_artwork_download",
+        "requested_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#8d1e6bac",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_facts": {
+          "artwork_policy": "amazon-originals-everywhere-v1",
+          "artificial_width_cap": false,
+          "resolution_policy": "provider_original_master",
+          "delivery_transform_removed": false,
+          "provider_delivery_query_present": false
+        },
+        "credentials_sent": false,
+        "status": 200,
+        "response_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#8d1e6bac",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "content_type": "image/jpeg",
+        "server_request_id": null,
+        "bytes": 35106,
+        "pixel_dimensions": [
+          624,
+          351
+        ],
+        "sha256": "4921aebfe0261312bd52f7437fb0e7a8a40e5df5526b842a799ff53f0bc42d89",
+        "saved_file": "actual-public-images\\landscape-original.jpg",
+        "saved_bytes_equal_response": true,
+        "recompressed": false,
+        "result": "success",
+        "elapsed_ms": 62,
+        "redirects": []
+      },
+      {
+        "role": "landscape",
+        "policy": "legacy_720",
+        "request_id": "065fc6ae1bf9fa14",
+        "stage": "actual_public_artwork_download",
+        "requested_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#d7708a55",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_facts": {
+          "artwork_policy": "amazon-originals-everywhere-v1",
+          "artificial_width_cap": false,
+          "resolution_policy": "provider_original_master",
+          "delivery_transform_removed": true,
+          "provider_delivery_query_present": false
+        },
+        "credentials_sent": false,
+        "status": 200,
+        "response_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#d7708a55",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "content_type": "image/jpeg",
+        "server_request_id": null,
+        "bytes": 35106,
+        "pixel_dimensions": [
+          624,
+          351
+        ],
+        "sha256": "4921aebfe0261312bd52f7437fb0e7a8a40e5df5526b842a799ff53f0bc42d89",
+        "saved_file": "actual-public-images\\landscape-legacy_720.jpg",
+        "saved_bytes_equal_response": true,
+        "recompressed": false,
+        "result": "success",
+        "elapsed_ms": 125,
+        "redirects": []
+      },
+      {
+        "role": "poster",
+        "policy": "original",
+        "request_id": "b0c5f04d60c28507",
+        "stage": "actual_public_artwork_download",
+        "requested_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_facts": {
+          "artwork_policy": "amazon-originals-everywhere-v1",
+          "artificial_width_cap": false,
+          "resolution_policy": "provider_original_master",
+          "delivery_transform_removed": false,
+          "provider_delivery_query_present": false
+        },
+        "credentials_sent": false,
+        "status": 200,
+        "response_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3209ca1d",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "content_type": "image/jpeg",
+        "server_request_id": null,
+        "bytes": 232456,
+        "pixel_dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "ae57e1a640f07044de91e9136ce4a027fd0983436a6eeab9c7e5a6fd2af25376",
+        "saved_file": "actual-public-images\\poster-original.jpg",
+        "saved_bytes_equal_response": true,
+        "recompressed": false,
+        "result": "success",
+        "elapsed_ms": 157,
+        "redirects": []
+      },
+      {
+        "role": "poster",
+        "policy": "legacy_720",
+        "request_id": "8b37b41498af0d08",
+        "stage": "actual_public_artwork_download",
+        "requested_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_facts": {
+          "artwork_policy": "amazon-originals-everywhere-v1",
+          "artificial_width_cap": false,
+          "resolution_policy": "provider_original_master",
+          "delivery_transform_removed": true,
+          "provider_delivery_query_present": false
+        },
+        "credentials_sent": false,
+        "status": 200,
+        "response_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#8de0b3c4/#62c5ae18/#ae81b73c/#333e0a1e/#1e6ed65d/#9447e06e/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#3d74d61e/#dd844485/#64330525/#3ec730a6",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "content_type": "image/jpeg",
+        "server_request_id": null,
+        "bytes": 45037,
+        "pixel_dimensions": [
+          720,
+          405
+        ],
+        "sha256": "536ac8e7ae025b53f65a536c580237c2e7ecf94ed370f34feb86fa2fb2a4431a",
+        "saved_file": "actual-public-images\\poster-legacy_720.jpg",
+        "saved_bytes_equal_response": true,
+        "recompressed": false,
+        "result": "success",
+        "elapsed_ms": 312,
+        "redirects": []
+      },
+      {
+        "role": "service",
+        "policy": "original",
+        "request_id": "f730033314c475f8",
+        "stage": "actual_public_artwork_download",
+        "requested_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#ed17fe6b/#7fa3ca02/#8172f9d4/#3d215ea1",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_facts": {
+          "artwork_policy": "amazon-originals-everywhere-v1",
+          "artificial_width_cap": false,
+          "resolution_policy": "provider_original_master",
+          "delivery_transform_removed": false,
+          "provider_delivery_query_present": false
+        },
+        "credentials_sent": false,
+        "status": 200,
+        "response_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#ed17fe6b/#7fa3ca02/#8172f9d4/#3d215ea1",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "content_type": "image/jpeg",
+        "server_request_id": null,
+        "bytes": 976841,
+        "pixel_dimensions": [
+          1920,
+          1080
+        ],
+        "sha256": "cb9b460b194c65d83e38854c4bbb622df21c8581fd1b4cf24ece9c6a1808cec9",
+        "saved_file": "actual-public-images\\service-original.jpg",
+        "saved_bytes_equal_response": true,
+        "recompressed": false,
+        "result": "success",
+        "elapsed_ms": 265,
+        "redirects": []
+      },
+      {
+        "role": "service",
+        "policy": "legacy_720",
+        "request_id": "9b5ead20cb79a2ff",
+        "stage": "actual_public_artwork_download",
+        "requested_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#ed17fe6b/#7fa3ca02/#8172f9d4/#dd24ed43",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "source_facts": {
+          "artwork_policy": "amazon-originals-everywhere-v1",
+          "artificial_width_cap": false,
+          "resolution_policy": "provider_original_master",
+          "delivery_transform_removed": true,
+          "provider_delivery_query_present": false
+        },
+        "credentials_sent": false,
+        "status": 200,
+        "response_address": {
+          "host": "m.media-amazon.com",
+          "scheme": "https",
+          "port": null,
+          "has_userinfo": false,
+          "route": "/#21b2eed1/#333e0a1e/#938db8c9/#cda3c373/video/#4179ce9e/#fc6a3d0f/#72dac4ff/#ed17fe6b/#7fa3ca02/#8172f9d4/#dd24ed43",
+          "query_keys": [],
+          "authorization_code_present": false
+        },
+        "content_type": "image/jpeg",
+        "server_request_id": null,
+        "bytes": 38763,
+        "pixel_dimensions": [
+          720,
+          405
+        ],
+        "sha256": "afd193f25741f6b2d188bd8f1fb484ee62e4943692761a6003c865aa00a4c695",
+        "saved_file": "actual-public-images\\service-legacy_720.jpg",
+        "saved_bytes_equal_response": true,
+        "recompressed": false,
+        "result": "success",
+        "elapsed_ms": 203,
+        "redirects": []
+      }
+    ],
+    "comparisons": [
+      {
+        "role": "landscape",
+        "both_downloads_verified": true,
+        "original_dimensions": [
+          624,
+          351
+        ],
+        "old_dimensions": [
+          624,
+          351
+        ],
+        "original_has_at_least_as_many_pixels": true,
+        "original_has_more_pixels": false
+      },
+      {
+        "role": "poster",
+        "both_downloads_verified": true,
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_has_at_least_as_many_pixels": true,
+        "original_has_more_pixels": true
+      },
+      {
+        "role": "service",
+        "both_downloads_verified": true,
+        "original_dimensions": [
+          1920,
+          1080
+        ],
+        "old_dimensions": [
+          720,
+          405
+        ],
+        "original_has_at_least_as_many_pixels": true,
+        "original_has_more_pixels": true
+      }
+    ],
+    "native_kodi_observed": false,
+    "account_playback_or_login_tested": false,
+    "provider_or_kodi_mocked": false,
+    "uploaded": false
+  },
+  "title_render_checks": {
+    "result": "passed",
+    "renderer_examples": [
+      {
+        "title": "John Wick",
+        "lines": [
+          "JOHN WICK"
+        ],
+        "cap_heights": [
+          100
+        ],
+        "line_frames": [
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-7e15d4ba200cbab63b41.png",
+            "sha256": "d8bda95a80cdb88021615f004e92167a6eac71744bc4fda921cd450138ff1bed",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              5,
+              31,
+              460,
+              132
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Street Fighter 2 - The Movie",
+        "lines": [
+          "STREET FIGHTER 2",
+          "- THE MOVIE"
+        ],
+        "cap_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-e570ee853e152025b80a.png",
+            "sha256": "6d2087ecb3b39b7b407a378f3e43bc504d33556529020f04bb0777b6b17901da",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              4,
+              31,
+              774,
+              197
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Apocalypse Z: New World",
+        "lines": [
+          "APOCALYPSE Z:",
+          "NEW WORLD"
+        ],
+        "cap_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-fd5b8d03caba5b2cae5c.png",
+            "sha256": "b91ae613c56b43b15c2b29e196446caadeb362e4a910e59a5cd41047b0f9320b",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              4,
+              31,
+              644,
+              197
+            ]
+          }
+        ]
+      },
+      {
+        "title": "The Lord of the Rings: The Fellowship of the Ring",
+        "lines": [
+          "THE LORD OF THE RINGS:",
+          "THE FELLOWSHIP OF THE RING"
+        ],
+        "cap_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-86f230da0a55a26a392a.png",
+            "sha256": "c2badfcccf0f1077f77a2d5b2c807b2846d56fc25afcb80e84f2d338e2fa13e9",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              3,
+              31,
+              1027,
+              197
+            ]
+          }
+        ]
+      },
+      {
+        "title": "A Knight of the Seven Kingdoms",
+        "lines": [
+          "A KNIGHT OF THE SEVEN",
+          "KINGDOMS"
+        ],
+        "cap_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-83d1f70551bbc005b59c.png",
+            "sha256": "c1b866b96901edc5847f22fdcdaa21e18867ee048037ca0ce6c028ad0ed9cc98",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              4,
+              31,
+              1003,
+              197
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Spider-Man: No Way Home",
+        "lines": [
+          "SPIDER-MAN:",
+          "NO WAY HOME"
+        ],
+        "cap_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-dee64f0f44057550a85c.png",
+            "sha256": "486a9bba2cebf8adbefbca05b6e0d77805aed31930db9381662ad9e9acbf9663",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              5,
+              31,
+              561,
+              197
+            ]
+          }
+        ]
+      },
+      {
+        "title": "12:01",
+        "lines": [
+          "12:01"
+        ],
+        "cap_heights": [
+          100
+        ],
+        "line_frames": [
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-5b46d663e9023eb03815.png",
+            "sha256": "62bc3650acd07be605bb661308db37ac413f05ce14722c1a37547859b9831524",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              14,
+              31,
+              244,
+              132
+            ]
+          }
+        ]
+      },
+      {
+        "title": "\u00c9t\u00e9 \u00e0 Z\u00fcrich: S\u00e3o Paulo \u00c7a Va",
+        "lines": [
+          "\u00c9T\u00c9 \u00c0 Z\u00dcRICH:",
+          "S\u00c3O PAULO \u00c7A VA"
+        ],
+        "cap_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-148bfa188b0ccab1a5a9.png",
+            "sha256": "1d1d61edadf06c4179c77519c809e611c7c5a2ad50699f9aae01799503d83a16",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              4,
+              9,
+              591,
+              213
+            ]
+          }
+        ]
+      },
+      {
+        "title": "A Celebration of Cinema: The Definitive Collection of International Stories, Restored Editions, Special Features and Previously Unseen Adventures",
+        "lines": [
+          "A CELEBRATION OF CINEMA:",
+          "THE DEFINITIVE COLLECTION OF INTERNATIONAL STORIES,",
+          "RESTORED EDITIONS, SPECIAL FEATURES AND PREVIOUSLY",
+          "UNSEEN ADVENTURES"
+        ],
+        "cap_heights": [
+          100,
+          50,
+          50,
+          50
+        ],
+        "line_frames": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-7ed58bd5a295a7315e07\\0000.png",
+            "sha256": "d240ae8e7a4d3523490f5e3905ab44cee24c1c62a505bde2ef59fe05a3123e00",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              3,
+              31,
+              1208,
+              204
+            ]
+          },
+          {
+            "file": "verified-plates\\title-7ed58bd5a295a7315e07\\0001.png",
+            "sha256": "8bac5293303a415797c87c0837b517a53fa890af252e51899d382fad9abbd8d9",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              4,
+              31,
+              1226,
+              263
+            ]
+          }
+        ]
+      },
+      {
+        "title": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA: A complete unbroken-word rendering check",
+        "lines": [
+          "AAAAAAAAAAAAAAAAAAAAA",
+          "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "AAAAAAAAAAAAAAAAAAAAAAAAAAA: A COMPLETE",
+          "UNBROKEN-WORD RENDERING CHECK"
+        ],
+        "cap_heights": [
+          100,
+          50,
+          50,
+          50
+        ],
+        "line_frames": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-64abcc410d9ffcbdf887\\0000.png",
+            "sha256": "3148e22d7a0b6ebe4218a10db7c9f79311846030fee088183445bc7e369cea04",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              3,
+              32,
+              1219,
+              255
+            ]
+          },
+          {
+            "file": "verified-plates\\title-64abcc410d9ffcbdf887\\0001.png",
+            "sha256": "6ebb651a0cf0e8862b22fabf9d9f9bf7623574d533ce24b2cb27fd2b0e206204",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              4,
+              32,
+              1198,
+              197
+            ]
+          }
+        ]
+      },
+      {
+        "title": "\u6771\u4eac\u7269\u8a9e: A supported-font replacement check",
+        "lines": [
+          "\u6771\u4eac\u7269\u8a9e:",
+          "A SUPPORTED-FONT REPLACEMENT CHECK"
+        ],
+        "cap_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "first_line_identical_between_frames": true,
+        "pngs": [
+          {
+            "file": "verified-plates\\title-f2d3e3d7599c2eb20205.png",
+            "sha256": "0f24c20980dd27d15c11ed0475c0933049dc683ef02e23e5866f9c293aae9da2",
+            "size": [
+              1280,
+              268
+            ],
+            "ink_bounds": [
+              3,
+              31,
+              896,
+              197
+            ]
+          }
+        ]
+      }
+    ],
+    "actual_public_title_checks": [
+      {
+        "capture": "genre-grid-20261122/fantasy-movies.html",
+        "titles_checked": 20,
+        "capture_sha256": "0ccd1888abfe962d346050dd38e78200319e4a1abd17ea40bbd1dceb63d04b5a",
+        "fixed_sizes_layout_text_preserved_and_safe_ink_bounds": true
+      },
+      {
+        "capture": "genre-grid-20261122/fantasy-tv.html",
+        "titles_checked": 20,
+        "capture_sha256": "dfbaa13c14a8e039a897213969f77e2849e6d02ce8822c4db20f64e1d1531fce",
+        "fixed_sizes_layout_text_preserved_and_safe_ink_bounds": true
+      },
+      {
+        "capture": "draft-regional-data-20261124/fe-ja-movies.html",
+        "titles_checked": 20,
+        "capture_sha256": "2081c52366bc7071f122ad5f26784d2285b731dc2211e4d99af176e0df6a33b2",
+        "fixed_sizes_layout_text_preserved_and_safe_ink_bounds": true
+      }
+    ],
+    "primary_cap_height": 100,
+    "secondary_cap_height": 50,
+    "canvas": [
+      1280,
+      268
+    ],
+    "configured_native_fit_scale": 1,
+    "cache_revision": "uniform-levels-v4",
+    "native_controls": [
+      110,
+      111
+    ],
+    "native_control_dimensions_match_every_png": true,
+    "other_skin_controls_and_genre_layout_unchanged": true,
+    "layout_title_text_preserved": true,
+    "unsupported_glyphs_reported": true,
+    "existing_font_coverage_extended": false,
+    "actual_filesystem_failure_diagnostics": [
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "8bbba2fc6954d22b0f45",
+        "normalized_length": 25,
+        "break_rule": "word_wrap",
+        "line_count": 2,
+        "line_word_counts": [
+          2,
+          1
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          870,
+          177
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_failed",
+        "stage": "hero_title_render",
+        "elapsed_ms": 0,
+        "exception": {
+          "type": "FileExistsError",
+          "frames": [
+            {
+              "file": "title_art.py",
+              "line": 256,
+              "function": "render_title"
+            },
+            {
+              "file": "pathlib.py",
+              "line": 1311,
+              "function": "mkdir"
+            }
+          ],
+          "errno": 17
+        },
+        "result": "failure"
+      }
+    ],
+    "overflow_behavior": "ordered smaller continuation frames; large first line stays identical",
+    "earlier_12_draft_modules_preserved_sha256": {
+      "resources/lib/actions.py": "95c39cc711d8749cf2a843882ff573e0c8d6382794536a37030bda85cdcc3524",
+      "resources/lib/aurora.py": "acd905f28430a649a3da9bc42c1097cbeda75524f7df712b29db46cb5f007ac1",
+      "resources/lib/catalog_gateway.py": "da8390833eebda24012ec707f9136a680a9308f4635cd8ab4adcb83d87133981",
+      "resources/lib/collection_paging.py": "9c780c0e06e17b2c6acf4d804235d217430e5ec8489ccaf5548110db9ad93c87",
+      "resources/lib/detail_catalog.py": "659c73d800ae0fe7b71f83c4f7a04a3f17caf1a6ecc7deb44aa33d869b387bd8",
+      "resources/lib/media_resources.py": "70de4710b41051de5e84a1e17511b44a6f3fc31c04c00f1ffa3f913551831f88",
+      "resources/lib/navigation.py": "f2896399e426347e5663a0bd7771da2e5f8eaec9c9447e54cdf5d75afe7d433f",
+      "resources/lib/playback_engine.py": "865bce53079c7527d4c0731078211b1d1f52626dc38ec18a892a93f32f7cb5e8",
+      "resources/lib/provider_documents.py": "efc6fe7849cee8c11648258e325eb8479c400f480fb1306c6464e3f810ccd2e4",
+      "resources/lib/public_catalog.py": "b3da6fb3dc89fa77c95454675bc664c58a9d7dc4781b17464351b56cd502d840",
+      "resources/lib/purchases_catalog.py": "c249b194386e6523c987cab536b256db26cb7103f6b9ba5caa4f774540b18be3",
+      "resources/lib/tv_catalog.py": "d1690d60013f077c32e44f99f3e6ff3af4b7e14741ead3e0d2800f87fb3c288d"
+    },
+    "cumulative_changed_paths": [
+      "resources/lib/actions.py",
+      "resources/lib/aurora.py",
+      "resources/lib/catalog_gateway.py",
+      "resources/lib/collection_paging.py",
+      "resources/lib/detail_catalog.py",
+      "resources/lib/media_resources.py",
+      "resources/lib/navigation.py",
+      "resources/lib/playback_engine.py",
+      "resources/lib/provider_documents.py",
+      "resources/lib/public_catalog.py",
+      "resources/lib/purchases_catalog.py",
+      "resources/lib/title_art.py",
+      "resources/lib/tv_catalog.py",
+      "resources/skins/Default/1080i/PrimeSceneHome.xml"
+    ],
+    "version_fonts_art_auth_storage_and_dependencies_unchanged": true,
+    "kodi_ui_observed": false,
+    "provider_or_kodi_simulated": false,
+    "package_created": false,
+    "uploaded": false,
+    "renderer_diagnostics": [
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "7e15d4ba200cbab63b41",
+        "normalized_length": 9,
+        "break_rule": "single_line",
+        "line_count": 1,
+        "line_word_counts": [
+          2
+        ],
+        "line_scales": [
+          0.7143
+        ],
+        "line_widths": [
+          459
+        ],
+        "line_tops": [
+          32
+        ],
+        "line_heights": [
+          100
+        ],
+        "line_frames": [
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 31,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "7e15d4ba200cbab63b41",
+        "normalized_length": 9,
+        "break_rule": "single_line",
+        "line_count": 1,
+        "line_word_counts": [
+          2
+        ],
+        "line_scales": [
+          0.7143
+        ],
+        "line_widths": [
+          459
+        ],
+        "line_tops": [
+          32
+        ],
+        "line_heights": [
+          100
+        ],
+        "line_frames": [
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "e570ee853e152025b80a",
+        "normalized_length": 28,
+        "break_rule": "dash",
+        "line_count": 2,
+        "line_word_counts": [
+          3,
+          3
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          776,
+          258
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 47,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "e570ee853e152025b80a",
+        "normalized_length": 28,
+        "break_rule": "dash",
+        "line_count": 2,
+        "line_word_counts": [
+          3,
+          3
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          776,
+          258
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "fd5b8d03caba5b2cae5c",
+        "normalized_length": 23,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          2,
+          2
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          647,
+          259
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 47,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "fd5b8d03caba5b2cae5c",
+        "normalized_length": 23,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          2,
+          2
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          647,
+          259
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "86f230da0a55a26a392a",
+        "normalized_length": 49,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          5,
+          5
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          1030,
+          631
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 62,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "86f230da0a55a26a392a",
+        "normalized_length": 49,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          5,
+          5
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          1030,
+          631
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "83d1f70551bbc005b59c",
+        "normalized_length": 30,
+        "break_rule": "word_wrap",
+        "line_count": 2,
+        "line_word_counts": [
+          5,
+          1
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          1006,
+          225
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 62,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "83d1f70551bbc005b59c",
+        "normalized_length": 30,
+        "break_rule": "word_wrap",
+        "line_count": 2,
+        "line_word_counts": [
+          5,
+          1
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          1006,
+          225
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "dee64f0f44057550a85c",
+        "normalized_length": 23,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          1,
+          3
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          564,
+          302
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 47,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "dee64f0f44057550a85c",
+        "normalized_length": 23,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          1,
+          3
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          564,
+          302
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "5b46d663e9023eb03815",
+        "normalized_length": 5,
+        "break_rule": "single_line",
+        "line_count": 1,
+        "line_word_counts": [
+          1
+        ],
+        "line_scales": [
+          0.7143
+        ],
+        "line_widths": [
+          255
+        ],
+        "line_tops": [
+          32
+        ],
+        "line_heights": [
+          100
+        ],
+        "line_frames": [
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 16,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "5b46d663e9023eb03815",
+        "normalized_length": 5,
+        "break_rule": "single_line",
+        "line_count": 1,
+        "line_word_counts": [
+          1
+        ],
+        "line_scales": [
+          0.7143
+        ],
+        "line_widths": [
+          255
+        ],
+        "line_tops": [
+          32
+        ],
+        "line_heights": [
+          100
+        ],
+        "line_frames": [
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "148bfa188b0ccab1a5a9",
+        "normalized_length": 29,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          3,
+          4
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          594,
+          370
+        ],
+        "line_tops": [
+          32,
+          152
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 31,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "148bfa188b0ccab1a5a9",
+        "normalized_length": 29,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          3,
+          4
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          594,
+          370
+        ],
+        "line_tops": [
+          32,
+          152
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "7ed58bd5a295a7315e07",
+        "normalized_length": 145,
+        "break_rule": "colon",
+        "line_count": 4,
+        "line_word_counts": [
+          4,
+          6,
+          6,
+          2
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571,
+          0.3571,
+          0.3571
+        ],
+        "line_widths": [
+          1166,
+          1209,
+          1224,
+          455
+        ],
+        "line_tops": [
+          32,
+          146,
+          146,
+          212
+        ],
+        "line_heights": [
+          100,
+          50,
+          50,
+          50
+        ],
+        "line_frames": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "frame_count": 2,
+        "overflow": "continuation_frames",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 203,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "7ed58bd5a295a7315e07",
+        "normalized_length": 145,
+        "break_rule": "colon",
+        "line_count": 4,
+        "line_word_counts": [
+          4,
+          6,
+          6,
+          2
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571,
+          0.3571,
+          0.3571
+        ],
+        "line_widths": [
+          1166,
+          1209,
+          1224,
+          455
+        ],
+        "line_tops": [
+          32,
+          146,
+          146,
+          212
+        ],
+        "line_heights": [
+          100,
+          50,
+          50,
+          50
+        ],
+        "line_frames": [
+          0,
+          0,
+          1,
+          1
+        ],
+        "frame_count": 2,
+        "overflow": "continuation_frames",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "64abcc410d9ffcbdf887",
+        "normalized_length": 132,
+        "break_rule": "colon",
+        "line_count": 4,
+        "line_word_counts": [
+          1,
+          1,
+          3,
+          3
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571,
+          0.3571,
+          0.3571
+        ],
+        "line_widths": [
+          1197,
+          1218,
+          1075,
+          783
+        ],
+        "line_tops": [
+          32,
+          146,
+          204,
+          146
+        ],
+        "line_heights": [
+          100,
+          50,
+          50,
+          50
+        ],
+        "line_frames": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "frame_count": 2,
+        "overflow": "continuation_frames",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 219,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "64abcc410d9ffcbdf887",
+        "normalized_length": 132,
+        "break_rule": "colon",
+        "line_count": 4,
+        "line_word_counts": [
+          1,
+          1,
+          3,
+          3
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571,
+          0.3571,
+          0.3571
+        ],
+        "line_widths": [
+          1197,
+          1218,
+          1075,
+          783
+        ],
+        "line_tops": [
+          32,
+          146,
+          204,
+          146
+        ],
+        "line_heights": [
+          100,
+          50,
+          50,
+          50
+        ],
+        "line_frames": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "frame_count": 2,
+        "overflow": "continuation_frames",
+        "unsupported_codepoints": [],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "f2d3e3d7599c2eb20205",
+        "normalized_length": 40,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          1,
+          4
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          235,
+          895
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [
+          20140,
+          26481,
+          29289,
+          35486
+        ],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": false,
+        "elapsed_ms": 31,
+        "result": "success"
+      },
+      {
+        "layout_revision": "uniform-levels-v4",
+        "font_family": "Bebas Neue",
+        "primary_cap_height": 100,
+        "secondary_cap_height": 50,
+        "canvas_width": 1280,
+        "canvas_height": 268,
+        "configured_native_fit_scale": 1,
+        "title_key": "f2d3e3d7599c2eb20205",
+        "normalized_length": 40,
+        "break_rule": "colon",
+        "line_count": 2,
+        "line_word_counts": [
+          1,
+          4
+        ],
+        "line_scales": [
+          0.7143,
+          0.3571
+        ],
+        "line_widths": [
+          235,
+          895
+        ],
+        "line_tops": [
+          32,
+          146
+        ],
+        "line_heights": [
+          100,
+          50
+        ],
+        "line_frames": [
+          0,
+          0
+        ],
+        "frame_count": 1,
+        "overflow": "none",
+        "unsupported_codepoints": [
+          20140,
+          26481,
+          29289,
+          35486
+        ],
+        "unsupported_placeholder": "?",
+        "max_width": 1240,
+        "max_height": 268,
+        "event": "title_layout_ready",
+        "stage": "hero_title_render",
+        "cache_hit": true,
+        "elapsed_ms": 0,
+        "result": "success"
+      }
+    ]
+  },
+  "watchlist_actual_run_evidence": {
+    "report_bytes": 11180598,
+    "report_sha256": "328f5927ce52fec5c2bc56c560fd7ebbe0cc99060cb6233b94b289786d59add8",
+    "version": "0.2.61",
+    "unparsed_historical_lines": 16,
+    "events": [
+      {
+        "time": "2026-11-25T00:27:13.503264+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "c6486f87874f9e0d",
+        "event": "library_response_parsed",
+        "stage": "parse_response",
+        "status": 200,
+        "bytes": 516340,
+        "elapsed_ms": 2772,
+        "collection_state": "navigation",
+        "raw_collection_records": 0,
+        "parsed_collection_cards": 0,
+        "library_payloads": 0,
+        "collection_scope_confirmed": false,
+        "scope_from_followed_provider_link": false,
+        "scope_from_selected_navigation": false,
+        "empty_confirmed": false,
+        "native_continuation_pending": false,
+        "report_line": 19232
+      },
+      {
+        "time": "2026-11-25T00:27:15.335646+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "273e1f53590d6ecf",
+        "event": "library_response_parsed",
+        "stage": "parse_response",
+        "status": 200,
+        "bytes": 412260,
+        "elapsed_ms": 1829,
+        "collection_state": "items",
+        "raw_collection_records": 20,
+        "parsed_collection_cards": 20,
+        "library_payloads": 1,
+        "collection_scope_confirmed": true,
+        "scope_from_followed_provider_link": true,
+        "scope_from_selected_navigation": true,
+        "empty_confirmed": false,
+        "native_continuation_pending": true,
+        "report_line": 19238
+      },
+      {
+        "time": "2026-11-25T00:27:15.367177+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "273e1f53590d6ecf",
+        "event": "collection_grid_inventory",
+        "stage": "collection_discovery",
+        "result": "success",
+        "page_parameter_fields": [],
+        "capability_fields": [
+          "decorationScheme",
+          "dynamicFeatures",
+          "featureScheme",
+          "variant",
+          "widgetScheme"
+        ],
+        "context_path": "$.init.preparations.body.content.baseOutput",
+        "grid_fields": [
+          "containerType",
+          "entities",
+          "entitlementCues",
+          "estimatedTotal",
+          "impressionData",
+          "inlineContainerUpdateActions",
+          "isContinueWatching",
+          "paginationServiceToken",
+          "paginationStartIndex",
+          "paginationTargetId",
+          "refMarker",
+          "strings",
+          "text",
+          "title",
+          "webUid"
+        ],
+        "target_present": true,
+        "token_present": true,
+        "report_line": 19239
+      },
+      {
+        "time": "2026-11-25T00:27:15.368175+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "273e1f53590d6ecf",
+        "event": "collection_protocol_missing",
+        "stage": "collection_discovery",
+        "result": "failure",
+        "has_page_parameters": false,
+        "has_capability": true,
+        "report_line": 19240
+      },
+      {
+        "time": "2026-11-25T00:27:15.369135+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "273e1f53590d6ecf",
+        "event": "catalog_request_failed",
+        "stage": "parse_response",
+        "result": "failure",
+        "elapsed_ms": 1864,
+        "report_line": 19241,
+        "exception_type": "PublicCatalogError"
+      },
+      {
+        "time": "2026-11-25T00:27:15.370132+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "c6486f87874f9e0d",
+        "event": "catalog_request_failed",
+        "stage": "parse_response",
+        "result": "failure",
+        "elapsed_ms": 4639,
+        "report_line": 19242,
+        "exception_type": "PublicCatalogError"
+      },
+      {
+        "time": "2026-11-25T00:27:29.164082+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "ba63142e130d4947",
+        "event": "library_response_parsed",
+        "stage": "parse_response",
+        "status": 200,
+        "bytes": 516992,
+        "elapsed_ms": 3172,
+        "collection_state": "navigation",
+        "raw_collection_records": 0,
+        "parsed_collection_cards": 0,
+        "library_payloads": 0,
+        "collection_scope_confirmed": false,
+        "scope_from_followed_provider_link": false,
+        "scope_from_selected_navigation": false,
+        "empty_confirmed": false,
+        "native_continuation_pending": false,
+        "report_line": 19311
+      },
+      {
+        "time": "2026-11-25T00:27:30.954899+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "2eb9e21c36d8edba",
+        "event": "library_response_parsed",
+        "stage": "parse_response",
+        "status": 200,
+        "bytes": 412744,
+        "elapsed_ms": 1772,
+        "collection_state": "items",
+        "raw_collection_records": 20,
+        "parsed_collection_cards": 20,
+        "library_payloads": 1,
+        "collection_scope_confirmed": true,
+        "scope_from_followed_provider_link": true,
+        "scope_from_selected_navigation": true,
+        "empty_confirmed": false,
+        "native_continuation_pending": true,
+        "report_line": 19338
+      },
+      {
+        "time": "2026-11-25T00:27:30.989506+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "2eb9e21c36d8edba",
+        "event": "collection_grid_inventory",
+        "stage": "collection_discovery",
+        "result": "success",
+        "page_parameter_fields": [],
+        "capability_fields": [
+          "decorationScheme",
+          "dynamicFeatures",
+          "featureScheme",
+          "variant",
+          "widgetScheme"
+        ],
+        "context_path": "$.init.preparations.body.content.baseOutput",
+        "grid_fields": [
+          "containerType",
+          "entities",
+          "entitlementCues",
+          "estimatedTotal",
+          "impressionData",
+          "inlineContainerUpdateActions",
+          "isContinueWatching",
+          "paginationServiceToken",
+          "paginationStartIndex",
+          "paginationTargetId",
+          "refMarker",
+          "strings",
+          "text",
+          "title",
+          "webUid"
+        ],
+        "target_present": true,
+        "token_present": true,
+        "report_line": 19339
+      },
+      {
+        "time": "2026-11-25T00:27:30.991501+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "2eb9e21c36d8edba",
+        "event": "collection_protocol_missing",
+        "stage": "collection_discovery",
+        "result": "failure",
+        "has_page_parameters": false,
+        "has_capability": true,
+        "report_line": 19340
+      },
+      {
+        "time": "2026-11-25T00:27:30.992939+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "2eb9e21c36d8edba",
+        "event": "catalog_request_failed",
+        "stage": "parse_response",
+        "result": "failure",
+        "elapsed_ms": 1810,
+        "report_line": 19341,
+        "exception_type": "PublicCatalogError"
+      },
+      {
+        "time": "2026-11-25T00:27:30.994074+00:00",
+        "version": "0.2.61",
+        "operation": "watchlist",
+        "request_id": "ba63142e130d4947",
+        "event": "catalog_request_failed",
+        "stage": "parse_response",
+        "result": "failure",
+        "elapsed_ms": 5003,
+        "report_line": 19342,
+        "exception_type": "PublicCatalogError"
+      }
+    ],
+    "confirmed_readable_cards_before_failure": 20,
+    "missing_page_parameters_with_capability": true,
+    "private_page_body_available": false,
+    "after_change_authenticated_retrieval_observed": false
+  },
+  "season_actual_timing_evidence": {
+    "report_bytes": 11180598,
+    "report_sha256": "328f5927ce52fec5c2bc56c560fd7ebbe0cc99060cb6233b94b289786d59add8",
+    "version": "0.2.61",
+    "actual_clicks": [
+      {
+        "media_kind": "tvshow",
+        "click_to_cards_ms": 2200,
+        "request_ids": [
+          "df20676d510c8fe3"
+        ],
+        "actual_title_fetches": 1,
+        "http_ms": [
+          2047
+        ],
+        "repeated_tv_document_extraction_ms": [
+          62
+        ],
+        "seasons": 5,
+        "episodes": null
+      },
+      {
+        "media_kind": "season",
+        "click_to_cards_ms": 1999,
+        "request_ids": [
+          "d8401d81694b1e00"
+        ],
+        "actual_title_fetches": 1,
+        "http_ms": [
+          1844
+        ],
+        "repeated_tv_document_extraction_ms": [
+          63
+        ],
+        "seasons": 5,
+        "episodes": 8
+      }
+    ],
+    "post_change_native_timings_observed": false
+  },
+  "playback_actual_run_evidence": {
+    "report_bytes": 11180598,
+    "report_sha256": "328f5927ce52fec5c2bc56c560fd7ebbe0cc99060cb6233b94b289786d59add8",
+    "version": "0.2.61",
+    "run_records": 1899,
+    "unparsed_historical_lines": 16,
+    "actual_playback_failures": [
+      {
+        "attempt_id": "e59dbda7845d186c",
+        "playback_request_id": "ee28ea0b3884f325",
+        "time": "2026-11-25T00:26:53.624371+00:00",
+        "stage": "playback_resources",
+        "http_status": 200,
+        "server_error_codes": [
+          "PRS.InvalidRequest",
+          "PRS.NoRights",
+          "PRS.NoRights.InvalidGeoIP"
+        ],
+        "request_hosts": [
+          "atv-ps.amazon.com"
+        ],
+        "manifest_or_license_requested": false,
+        "terminal_results": [
+          "failure"
+        ]
+      },
+      {
+        "attempt_id": "b1c689332a8e4738",
+        "playback_request_id": "22641ea4fdc10120",
+        "time": "2026-11-25T00:27:38.283701+00:00",
+        "stage": "playback_resources",
+        "http_status": 200,
+        "server_error_codes": [
+          "PRS.InvalidRequest",
+          "PRS.NoRights",
+          "PRS.NoRights.InvalidGeoIP"
+        ],
+        "request_hosts": [
+          "atv-ps.amazon.com"
+        ],
+        "manifest_or_license_requested": false,
+        "terminal_results": [
+          "failure"
+        ]
+      }
+    ],
+    "history_card_counts": [
+      2
+    ],
+    "provider_home_regions": [
+      "NA"
+    ],
+    "observed_location_refusal": true,
+    "stale_or_incorrect_api_region_proven": false,
+    "vpn_detection_specifically_proven": false,
+    "authenticated_playback_success_observed": false,
+    "other_observed_failures": {
+      "service_directory_ready": 2,
+      "collection_protocol_missing": 2
+    }
+  }
+}
