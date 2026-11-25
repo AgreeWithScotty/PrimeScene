@@ -1894,13 +1894,18 @@
                 <animation effect="zoom" start="100" end="103" center="auto" time="150" tween="sine" easing="out">Focus</animation>
                 <animation effect="zoom" start="103" end="100" center="auto" time="150" tween="sine" easing="in">Unfocus</animation>
             </control>
-            <control type="image" id="110">
+            <control type="multiimage" id="110">
                 <left>72</left>
                 <top>148</top>
                 <width>1280</width>
                 <height>268</height>
                 <aspectratio align="left" aligny="top">keep</aspectratio>
-                <texture background="true">$INFO[Container(200).ListItem.Property(TitleArt)]</texture>
+                <imagepath>$INFO[Container(200).ListItem.Property(TitleArt)]</imagepath>
+                <timeperimage>4500</timeperimage>
+                <fadetime>0</fadetime>
+                <randomize>false</randomize>
+                <loop>yes</loop>
+                <pauseatend>1000</pauseatend>
                 <visible>[Integer.IsGreater(Container(200).NumItems,0)] + String.IsEmpty(Window.Property(GenrePanel))</visible>
             </control>
             <control type="label">
@@ -1914,13 +1919,18 @@
                 <label>$INFO[Container(200).ListItem.Label]</label>
                 <visible>[Integer.IsGreater(Container(200).NumItems,0) + String.IsEmpty(Container(200).ListItem.Property(TitleArt))] + String.IsEmpty(Window.Property(GenrePanel))</visible>
             </control>
-            <control type="image" id="111">
+            <control type="multiimage" id="111">
                 <left>72</left>
                 <top>148</top>
                 <width>1280</width>
                 <height>268</height>
                 <aspectratio align="left" aligny="top">keep</aspectratio>
-                <texture background="true">$INFO[Window.Property(HeroTitleArt)]</texture>
+                <imagepath>$INFO[Window.Property(HeroTitleArt)]</imagepath>
+                <timeperimage>4500</timeperimage>
+                <fadetime>0</fadetime>
+                <randomize>false</randomize>
+                <loop>yes</loop>
+                <pauseatend>1000</pauseatend>
                 <visible>[Integer.IsEqual(Container(200).NumItems,0)] + String.IsEmpty(Window.Property(GenrePanel))</visible>
             </control>
             <control type="label">

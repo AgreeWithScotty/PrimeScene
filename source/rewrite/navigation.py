@@ -125,6 +125,7 @@ class StorefrontLoader:
             entry = self.cache.get(path)
             if (path not in FRESH_ROOTS and future is not None and future.done() and not future.cancelled()
                     and future.exception() is None and entry and path not in self.revalidate and time() - entry[0] < FRESH_SECONDS
+                    and not entry[1].get('pagination_unavailable')
                     and (path!='__service_directory__' or entry[1].get('directory_complete'))):
                 if (path in ROOTS or path.startswith(('__genre__/','__service__/'))) and entry[1].get('next'):self.request(entry[1]['next'],background=True)
                 return future
@@ -218,6 +219,7 @@ class StorefrontLoader:
         return bool(safe_url(value,STOREFRONT_HOSTS))
 
     def _save(self, root, packet, bridge, saved):
+        if packet.get('pagination_unavailable'):return
         if root in FRESH_ROOTS or root=='__service_directory__' and not packet.get('directory_complete'):return
         # Only root/genre first-page caches survive a restart. Their real continuation
         # mapping is saved alongside them; no endpoint or fake page is invented.
@@ -259,6 +261,7 @@ class StorefrontLoader:
                 bridge,reader_lock=CatalogGateway(self.g),Lock()
                 entry=None
             if (entry and path not in self.revalidate and 0 <= time() - entry[0] < FRESH_SECONDS
+                    and not entry[1].get('pagination_unavailable')
                     and (path!='__service_directory__' or entry[1].get('directory_complete'))):
                 packet = deepcopy(entry[1])
                 source = 'cache'
@@ -310,7 +313,8 @@ class StorefrontLoader:
                          'fresh_provider_request':source=='network','fresh_required':fresh,
                          'service_tiles':len(packet.get('tiles') or []),
                          'saved_or_memory_cache_used':not fresh and source == 'cache',
-                         'load_elapsed_ms': round((monotonic() - started) * 1000), 'result': 'success'})
+                         'pagination_unavailable':bool(packet.get('pagination_unavailable')),
+                         'load_elapsed_ms': round((monotonic() - started) * 1000), 'result': 'partial' if packet.get('pagination_unavailable') else 'success'})
             # Warm exactly the first two actual pages. Page three is requested
             # by the UI on entering page two, and so on for later pages.
             if self.ready is not None and self.current():self.ready(path,deepcopy(packet))

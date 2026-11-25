@@ -12,7 +12,7 @@ from .regional_hosts import storefront_path,region_prefix
 
 FIELDS={'pageType','pageId','collectionType','paginationTargetId','serviceToken',
     'startIndex','actionScheme','payloadScheme','widgetScheme','decorationScheme',
-    'featureScheme','dynamicFeatures','variant','journeyIngressContext'}
+    'featureScheme','dynamicFeatures','variant','journeyIngressContext','myStuffViewType','isPurchaseAndRentalCarousel'}
 
 def identity(target):
     return ('collection:'+hashlib.sha256(json.dumps(target,sort_keys=True,separators=(',',':')).encode()).hexdigest()
@@ -26,6 +26,8 @@ def valid_request(value):
     if urlsplit(address).query or not safe_url(value.get('source'),STOREFRONT_HOSTS):return False
     payload=value.get('payload')
     if not isinstance(payload,dict) or set(payload)-FIELDS:return False
+    if 'myStuffViewType' in payload and payload['myStuffViewType']!={'watchlist':'watchlist','purchases':'library'}.get(value.get('scope')):return False
+    if 'isPurchaseAndRentalCarousel' in payload and (type(payload['isPurchaseAndRentalCarousel']) is not bool or value.get('scope')!='purchases'):return False
     for key in ('pageType','pageId','paginationTargetId','serviceToken','widgetScheme','decorationScheme','featureScheme'):
         if not isinstance(payload.get(key),str) or not 0<len(payload[key])<=32768:return False
     return (payload.get('collectionType')=='Container' and payload.get('actionScheme')=='default'
@@ -88,7 +90,9 @@ def _declared_request(grid,page,capability,address,scope,path,observe):
     observe({'event':'collection_grid_inventory','stage':'collection_discovery','grid_fields':sorted(grid),
         'collection':scope,'context_path':path,
         'target_present':bool(grid.get('paginationTargetId')),'token_present':bool(grid.get('paginationServiceToken')),
-        'capability_fields':sorted(capability),'page_parameter_fields':sorted(page),'result':'success'})
+        'capability_fields':sorted(capability),'page_parameter_fields':sorted(page),
+        'page_context_source':'provider_mystuff_view_type' if page.get('myStuffViewType') else 'declared_page_parameters',
+        'result':'success'})
     if not page or not capability:
         observe({'event':'collection_protocol_missing','stage':'collection_discovery',
             'has_page_parameters':bool(page),'has_capability':bool(capability),'result':'failure'})
@@ -97,6 +101,8 @@ def _declared_request(grid,page,capability,address,scope,path,observe):
     endpoint=urlunsplit(('https',parts.netloc,region_prefix(address)+'/api/paginateCollection','',''))
     payload={k:capability[k] for k in ('widgetScheme','decorationScheme','featureScheme','dynamicFeatures','variant') if k in capability}
     payload.update({k:page[k] for k in ('pageType','pageId') if k in page})
+    if page.get('myStuffViewType'):payload['myStuffViewType']=page['myStuffViewType']
+    if scope=='purchases' and grid.get('isPurchaseAndRentalCarousel') is True:payload['isPurchaseAndRentalCarousel']=True
     payload.update(collectionType='Container',paginationTargetId=grid.get('paginationTargetId'),
         serviceToken=grid['paginationServiceToken'],startIndex=grid.get('paginationStartIndex'),
         actionScheme='default',payloadScheme='default')
@@ -112,7 +118,8 @@ def _declared_request(grid,page,capability,address,scope,path,observe):
 
 def request_arguments(value):
     if not valid_request(value):raise PublicCatalogError('The collection continuation is invalid or expired.')
-    return value['address'],urlencode(value['payload'],doseq=True).encode('utf-8'),{
+    payload={key:('true' if item else 'false') if type(item) is bool else item for key,item in value['payload'].items()}
+    return value['address'],urlencode(payload,doseq=True).encode('utf-8'),{
         'Content-Type':'application/x-www-form-urlencoded','Accept':'application/json',
         'Referer':value['source'],'Origin':'https://'+urlsplit(value['address']).netloc}
 

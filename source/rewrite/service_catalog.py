@@ -3,7 +3,8 @@ import re
 from time import monotonic
 from urllib.parse import urlsplit
 from .detail_catalog import documents
-from .public_catalog import ORIGIN,STOREFRONT_HOSTS,IMAGE_HOSTS,safe_url,StorefrontParser,_protocol_shape
+from .public_catalog import ORIGIN,STOREFRONT_HOSTS,safe_url,StorefrontParser,_protocol_shape,_image
+from .image_quality import POLICY_REVISION as ARTWORK_POLICY
 from .prime_diagnostics import route
 from .regional_hosts import storefront_path
 from .provider_documents import objects
@@ -30,9 +31,9 @@ def read_directory(data,content_type,address,observe):
                 label=node.get('displayTitle') or node.get('title') or ''
                 if not target or not isinstance(label,str) or not label.strip() or not isinstance(metadata,dict) or metadata.get('pageType') not in ('subscription','channel'):
                     rejected+=1;continue
-                image=next((safe_url((node.get('images',{}).get(k) or {}).get('url'),IMAGE_HOSTS)
-                    for k in ('cover','logo','hero') if isinstance(node.get('images',{}).get(k),dict)
-                    and safe_url(node['images'][k].get('url'),IMAGE_HOSTS)), '')
+                images=node.get('images') or {}
+                image=next((selected for role in ('cover','logo','hero') if isinstance(images,dict)
+                    for selected in [_image(images.get(role))] if selected),'')
                 rows.append({'title':label,'address':target,'artwork':image,'caption':'Subscription service'})
                 count+=1
             more=(container.get('seeMore') or {}).get('link') or {}
@@ -49,7 +50,7 @@ def read_directory(data,content_type,address,observe):
     next_links=sorted(parser.next_links)
     observe({'event':'service_directory_parsed','stage':'service_directory_parse','documents':len(docs),
         'groups':groups,'services':len(unique),'rejected_non_catalog_nodes':rejected,
-        'directory_links':len(set(links)),'next_links':len(next_links),
+        'directory_links':len(set(links)),'next_links':len(next_links),'artwork_policy':ARTWORK_POLICY,
         'protocol_structure':[_protocol_shape(d) for d in docs[:2]],'subscription_filter_applied':False,
         'result':'success' if unique else 'unavailable'})
     return sorted(unique.values(),key=lambda row:row['title'].casefold()),list(dict.fromkeys(links)),next_links
