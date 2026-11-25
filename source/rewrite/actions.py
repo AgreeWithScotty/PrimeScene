@@ -11,6 +11,7 @@ def dispatch(argv):
     mode=value('mode');g=AppRuntime()
     report=DiagnosticLog(g.DATA_PATH,g.addon.getAddonInfo('version'),operation='action')
     report({'event':'action_started','stage':'dispatch','action':mode,'result':'started'})
+    playback_outcome={}
     try:
         if mode=='PlayVideo':
             from .account_state import current_account
@@ -23,7 +24,7 @@ def dispatch(argv):
             if material is None:raise ValueError('Unsupported playback material')
             resume=value('resume','ask')
             if resume not in ('ask','start'):raise ValueError('Unsupported resume mode')
-            result=play(value('asin'),value('name','Smooth Prime'),material,int(argv[1]),resume_mode=resume)
+            result=play(value('asin'),value('name','Smooth Prime'),material,int(argv[1]),resume_mode=resume,outcome=playback_outcome)
         elif mode=='LogIn':
             from .prime_login import LogIn
             result=LogIn() is not False
@@ -38,7 +39,9 @@ def dispatch(argv):
             xbmc.executebuiltin('RunScript("'+str(Path(g.PLUGIN_PATH)/filename)+'")');result=True
         elif mode=='openSettings':g.addon.openSettings();result=True
         else:raise ValueError('Unknown Smooth Prime action')
-        report({'event':'action_finished','stage':'dispatch','action':mode,'result':'success' if result else 'cancelled'})
+        report({'event':'action_finished','stage':'dispatch','action':mode,
+            'result':playback_outcome.get('result') or ('success' if result else 'cancelled'),
+            'playback_terminal_reason':playback_outcome.get('reason')})
         return result
     except Exception as error:
         report({'event':'action_failed','stage':'dispatch','action':mode,'exception':exception_details(error),'result':'failure'})

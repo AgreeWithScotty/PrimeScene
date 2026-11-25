@@ -10,7 +10,7 @@ import xbmcgui
 import xbmcplugin
 from .app_runtime import AppRuntime,Preferences
 from .account_state import account_epoch,current_account
-from .media_resources import MediaAPI
+from .media_resources import MediaAPI,MediaServiceError
 from .media_proxy import PlaybackProxy
 from .playback_progress import ResumePoints
 from .prime_diagnostics import DiagnosticLog,exception_details
@@ -107,7 +107,7 @@ def list_item(name,proxy,report,resume,preferences,origin_url):
     return item
 
 
-def play(identifier,name,material='Feature',handle=-1,resume_mode='ask'):
+def play(identifier,name,material='Feature',handle=-1,resume_mode='ask',outcome=None):
     g=AppRuntime();preferences=Preferences(g.addon)
     from .aurora import _read_note,_request_playback_return
     note=_read_note(g.DATA_PATH) or {};report=PlaybackLog(g,note.get('request_id'))
@@ -203,8 +203,13 @@ def play(identifier,name,material='Feature',handle=-1,resume_mode='ask'):
             except Exception as error:report({'event':'progress_stop_failed','stage':'watch_progress','exception':exception_details(error),'result':'failure'})
         return terminal not in ('error','start_timeout','account_changed')
     except Exception as error:
-        report({'event':'playback_failed','stage':'native_playback','exception':exception_details(error),'result':'failure'})
-        g.dialog.ok('Smooth Prime','Playback could not start. Open Settings > Diagnostics for the complete report.')
+        details={'event':'playback_failed','stage':getattr(error,'stage','native_playback'),
+            'exception':exception_details(error),'result':'failure'}
+        if isinstance(error,MediaServiceError):
+            details.update(provider_refusal=error.category,status=error.status,server_error_codes=list(error.server_error_codes))
+        report(details)
+        g.dialog.ok('Smooth Prime',error.user_message if isinstance(error,MediaServiceError) else
+            'Playback could not start. Open Settings > Diagnostics for the complete report.')
         if handle>=0 and player is None:xbmcplugin.setResolvedUrl(handle,False,xbmcgui.ListItem())
         return False
     finally:
@@ -215,11 +220,13 @@ def play(identifier,name,material='Feature',handle=-1,resume_mode='ask'):
             try:resource.dismiss() if resource is prompt else resource.close()
             except Exception as error:report({'event':'playback_cleanup_failed','stage':'cleanup',
                 'exception':exception_details(error),'result':'failure'})
+        result='cancelled' if terminal in ('cancelled','account_changed','shutdown','replaced') else 'failure' if terminal in ('error','start_timeout') else 'success'
+        if outcome is not None:outcome.update(result=result,reason=terminal)
         report({'event':'playback_session_finished','stage':'terminal','reason':terminal,
             'cleanup_elapsed_ms':round((monotonic()-cleanup_started)*1000),'ui_return_requested_before_cleanup':return_sent,
             'position_seconds':round(position,2),'duration_seconds':round(duration,2),
             'elapsed_ms':round((monotonic()-started)*1000),
-            'result':'cancelled' if terminal in ('cancelled','account_changed','shutdown','replaced') else 'failure' if terminal in ('error','start_timeout') else 'success'})
+            'result':result})
         # The observer can restore the card immediately. A fresh In Progress
         # request must follow the final provider progress attempt, not race it.
         _request_playback_return(note,terminal,report,progress_ready=True)

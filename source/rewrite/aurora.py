@@ -6,6 +6,7 @@ Scene PlayVideo URL. No separate Kodi skin is required.
 """
 from json import dumps, load, loads
 from copy import deepcopy
+from concurrent.futures import Future
 from pathlib import Path
 from queue import Empty, Full, Queue
 from secrets import token_hex
@@ -26,7 +27,7 @@ from .interface_diagnostics import record
 from .title_art import render_title
 from .navigation import StorefrontLoader
 from .artwork_cache import ImageCache
-from .image_quality import source_image
+from .image_quality import source_image,source_facts,POLICY_REVISION as ARTWORK_POLICY
 from .description_cache import DescriptionCache
 from .card_presentation import viewing_label, duration_seconds, position_seconds, progress_label, progress as progress_percent
 from .prime_diagnostics import DiagnosticLog, exception_details, route
@@ -46,12 +47,8 @@ ADDON_ID = 'plugin.video.primeinterface'
 # Estuary always ships Home.xml, so that name loads the skin window. These
 # names are not skin windows, so the add-on files are the ones that open.
 _HOME_XML = 'PrimeSceneHome.xml'
-# Cards use a small delivery variant; full-screen backgrounds use the master.
-_AMAZON_IMAGE = compile_re(
-    r'^(https://(?:m\.media-amazon\.com|images-na\.ssl-images-amazon\.com)/images/.+?)'
-    r'(?:\._[^./]+_)?(\.(?:jpe?g|png|webp))$',
-    IGNORECASE)
-_CARD_ART = 720
+# Every role uses the original, including small cards and service tiles.
+_CARD_ART = None
 _HERO_ART = None
 _DESCRIPTION_AHEAD = 10
 _DESCRIPTION_BEHIND = 2
@@ -277,19 +274,9 @@ def _season_number(row):
         return 1 << 20
 
 
-def _fit_art(url, width):
-    """Request a cacheable width from Amazon's image host. Other URLs pass through."""
-    url = _http(url)
-    if not url:
-        return ''
-    if width is None:
-        return source_image(url)
-    base, _, query = url.partition('?')
-    match = _AMAZON_IMAGE.match(base)
-    if not match:
-        return url
-    sized = '%s._SX%d_.%s' % (match.group(1), int(width), match.group(2).lstrip('.'))
-    return sized + ('?' + query if query else '')
+def _fit_art(url, width=None):
+    """Always use the master; the compatibility width argument cannot cap it."""
+    return source_image(_http(url))
 
 
 def _hero_art(info):
@@ -392,10 +379,15 @@ def _item(row, title_art='', image_cache=None, report=None):
         art['fanart'] = fanart
     if hero:
         art['hero'] = hero
+    sources=dict(art)
     if image_cache is not None:
         art = {key: image_cache.local(value) for key, value in art.items()}
     if art:
         item.setArt(art)
+        if report:report({'event':'artwork_sources_bound','stage':'artwork_binding','artwork_policy':ARTWORK_POLICY,
+            'roles':[dict(source_facts(value),role=key,address=route(value),
+                local_cache_used=art[key]!=value) for key,value in sources.items()],
+            'result':'success'})
     meta = _meta(row)
     plot = _plain(info.get('plot') or '')
     item.setProperty('Meta', meta)
@@ -626,6 +618,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.metadata_bridge, self.metadata_lock = None, Lock()
         self.known_continuations = {}
         self.detail_cache = {}
+        self.detail_inflight = {}
+        self._season_focus=None;self._season_focus_since=0;self._season_attempts={}
         self._play_token = 0
         self._allow_enrich = True
         self.loader = None
@@ -875,6 +869,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.description_attempts.clear()
             self.description_cache = None
             self.detail_cache.clear()
+            self.detail_inflight.clear();self._season_attempts.clear();self._season_focus=None
             self.series_context = None
             self.path, self.query, self.next_path = '__prime_movies__', None, None
             self.busy = False
@@ -956,6 +951,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.detail_jobs = Queue()
         self.play_jobs = Queue()
         self.detail_cache = {}
+        self.detail_inflight.clear();self._season_attempts.clear();self._season_focus=None
         self._painted_details.clear()
         self.title_cache.clear()
         self.known_details.clear()
@@ -1093,7 +1089,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 'identity': visible.get('identity'), 'series': deepcopy(self.series_context),
                 'history': list(self.history), 'card_count':len(self.rows), 'view': {'rows': list(self.rows) if self.path!='__watching__' else [], 'items': list(self.items) if self.path!='__watching__' else [],
                     'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at,
-                    'selected': selected, 'series': deepcopy(self.series_context)}}
+                    'selected': selected, 'series': deepcopy(self.series_context),
+                    'pagination_unavailable':getattr(self,'_personal_pagination_unavailable',False)}}
 
     def _start_playback(self, row, origin=None,resume_mode='ask', request_token=None, generation=None):
         """Keep the launching card and original browse context until return."""
@@ -1122,7 +1119,8 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Section', '' if self.path in _SECTION_PATHS else clean(self.heading or '').upper())
 
     def _save_view(self):
-        if self.path == '__watching__' or (self.series_context or {}).get('watching_only'):
+        if (self.path == '__watching__' or (self.series_context or {}).get('watching_only')
+                or getattr(self,'_personal_pagination_unavailable',False)):
             self.views.pop((self.path,self.query),None)
             return
         if self.rows:
@@ -1151,7 +1149,8 @@ class AuroraHome(xbmcgui.WindowXML):
         with self.lock:
             series_changed=series is not None and (series.get('view'),series.get('requested_season')) != (
                 (self.series_context or {}).get('view'),(self.series_context or {}).get('requested_season'))
-            if path not in ('__watching__','__prime_watchlist__') and (path, query) == (self.path, self.query) and self.rows and not series_changed:
+            if (path not in ('__watching__','__prime_watchlist__') and (path, query) == (self.path, self.query)
+                    and self.rows and not series_changed and not getattr(self,'_personal_pagination_unavailable',False)):
                 self.setProperty('Nav', self.nav if self.nav in _NAV_VALUES else '')
                 return
             if save_current:
@@ -1180,6 +1179,8 @@ class AuroraHome(xbmcgui.WindowXML):
             self._navigation_started = monotonic()
             if series_changed:self.views.pop((path,query),None)
             cached = self.views.get((path, query)) if path not in ('__watching__','__prime_watchlist__') else None
+            if cached and cached.get('pagination_unavailable'):cached=None
+            self._personal_pagination_unavailable=False
             self.series_context = deepcopy(cached.get('series')) if cached else deepcopy(series)
         self.performance({'event': 'navigation_started', 'generation': token,
                           'section': self.nav if self.nav in _NAV_VALUES else 'detail_or_search',
@@ -1298,7 +1299,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 'section':self.nav,'generation':token,'cards':len(self.rows),
                 'page_number':len(visited)+1,'history_complete':path=='__watching__' and not continued,
                 'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),
-                'result':'partial' if continued else 'success'})
+                'result':'partial' if continued or packet.get('pagination_unavailable') else 'success'})
         except Exception as error:
             self.performance({'event':'personal_request_failed','stage':'direct_personal_request',
                 'generation':token,'page_number':len(visited)+1,'cards_retained':len(self.rows),
@@ -1310,6 +1311,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         else:self._display_category_state(unavailable=True)
                     else:self.setProperty('SectionNotice',
                         'Your Amazon session needs verification. Use Sign out, then sign in again.' if isinstance(error,CatalogSigninRequired) else
+                        'Your Watchlist could not be refreshed. Select Watchlist to try again.' if path=='__prime_watchlist__' else
                         'Your In Progress list could not be refreshed. Select In Progress to try again.')
                     self._progress_refresh_generation=None
                     if path=='__watching__':
@@ -1369,7 +1371,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def _note_artwork(self, info):
         self._report_display_text()
-        art = {key: info[key] for key in ('thumb', 'poster', 'fanart') if info.get(key)}
+        art = {key: info[key] for key in ('thumb', 'landscape', 'poster', 'fanart') if info.get(key)}
         used = set(art.values())
         used.update(_fit_art(value, width) for value in art.values() for width in (_CARD_ART, _HERO_ART))
         fresh = {value for value in used if isinstance(value, str) and value.startswith('https://')} - self.artwork
@@ -1437,7 +1439,9 @@ class AuroraHome(xbmcgui.WindowXML):
                     self.known_details[row['identity']] = {'title': row['title'], 'lazyLoadURL': row['detail_url']}
             self.next_path = packet.get('next')
             self._page_retry_at,self._page_retry_count=0,0
-            self.setProperty('SectionNotice','')
+            if packet.get('pagination_unavailable'):self._personal_pagination_unavailable=True
+            if packet.get('notice') or not getattr(self,'_personal_pagination_unavailable',False):
+                self.setProperty('SectionNotice',packet.get('notice') or '')
             count = len(self.rows)
             restore = self._restore
         if additions and restore is not None and restore < count:
@@ -1721,8 +1725,9 @@ class AuroraHome(xbmcgui.WindowXML):
             self.views.pop((path,None),None)
         if _kind(row.get('info')) == 'season':
             context['requested_season'] = (row.get('info') or {}).get('season')
+        context.update(season_selection_started=monotonic(),season_request_id=token_hex(8))
         self.performance({'event': 'title_click', 'action': 'browse_episodes',
-                          'media_kind': _kind(row.get('info')), 'result': 'success'})
+                          'media_kind': _kind(row.get('info')),'request_id':context['season_request_id'], 'result': 'success'})
         self.navigate(path, heading=context['title'], series=context,
             intro_art=_hero_art(row.get('info') or {}))
 
@@ -1731,8 +1736,16 @@ class AuroraHome(xbmcgui.WindowXML):
             if token!=self.generation or self.stop.is_set() or not self.series_context:return None
             context = deepcopy(self.series_context)
         continuation = self.bridge.continuations.get(path) if self.bridge else None
-        packet = (self._read_tv_detail(path, token) if context.get('watching_only') or continuation and continuation[1] == 'tv_detail'
-                  else self._fetch_detail(path))
+        # Season links are account-scoped title metadata, not a progress
+        # snapshot. Reuse prepared links even when entering from In Progress;
+        # the selected season's episode/progress read below remains fresh.
+        season_view=context.get('view')=='seasons'
+        prepared=(self.detail_cache.get(path) or {}).get('packet') if season_view else None
+        season_source='prepared_title' if prepared and prepared.get('seasons') else 'shared_title_request'
+        if prepared and prepared.get('seasons'):packet=deepcopy(prepared)
+        elif season_view:packet=self._fetch_detail(path)
+        else:packet=(self._read_tv_detail(path, token) if context.get('watching_only') or continuation and continuation[1] == 'tv_detail'
+                    else self._fetch_detail(path))
         if packet is None and not self.stop.is_set() and token == self.generation:
             packet = self._read_tv_detail(path, token)
         if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
@@ -1762,6 +1775,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 if token!=self.generation or self.stop.is_set():return None
                 self.series_context=context;self._season_properties()
             self.performance({'event':'series_seasons_published','stage':'season_listing','season_count':len(rows),
+                'request_id':context.get('season_request_id'),'source':season_source,'season_metadata_only':True,
+                'click_to_seasons_ms':round((monotonic()-context.get('season_selection_started',monotonic()))*1000),
                 'automatic_episode_selection':False,'result':'success'})
             return dict(packet,rows=rows,next=None)
         if seasons and not path.endswith('/nextPage'):
@@ -1962,7 +1977,7 @@ class AuroraHome(xbmcgui.WindowXML):
                         if signature!=getattr(self,'_reported_background_signature',None):
                             self._reported_background_signature=signature
                             self.performance({'event':'background_artwork_selected','stage':'hero_binding',
-                                'generation':token,'index':position,'requested_width':_HERO_ART,
+                                'generation':token,'index':position,'requested_width':_HERO_ART,'artwork_policy':ARTWORK_POLICY,
                                 'resolution_policy':'provider_original_master','artificial_width_cap':False,
                                 'source':'provider_heroshot' if info.get('fanart') else 'cover_preview',
                                 'address':route(hero) if hero else None,'local_cache_used':bool(local and local!=hero),
@@ -2063,7 +2078,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 if image:
                     try:status=cache.state(image)
                     except Exception as error:status={'state':'image_cache_error','exception':exception_details(error)}
-                if status['state']=='ready_original':ready+=1
+                if status['state'] in ('ready_original','ready_provider_source'):ready+=1
                 elif status['state'] in ('metadata_pending','metadata_received_resolving_backdrop','image_download_pending','image_not_queued'):pending+=1
                 else:unavailable+=1
                 images.append(dict(status,genre=row['title'],genre_address=route(address),image_address=route(image) if image else None))
@@ -2151,6 +2166,7 @@ class AuroraHome(xbmcgui.WindowXML):
         """Read the focused title and next ten descriptions before selection."""
         if self.bridge is None or self.stop.is_set():
             return
+        if self._prepare_focused_seasons():return
         with self.lock:
             selected = self._selected_index()
             generation = self.generation
@@ -2228,6 +2244,40 @@ class AuroraHome(xbmcgui.WindowXML):
             return
         self._queue_focus_metadata()
 
+    def _prepare_focused_seasons(self):
+        """Prepare just the settled show, even when its synopsis/art is complete."""
+        if self.genre_owner is not None or self.stop.is_set():return False
+        row=self._selected_row()
+        if not row or not _tv_container(row) or row.get('season_choice'):return False
+        path=_detail_path(self.g.pluginid,row)
+        if not path:return False
+        cached=(self.detail_cache.get(path) or {}).get('packet')
+        if cached is not None:return False
+        signature=(self.generation,path);now=monotonic()
+        if signature!=self._season_focus:
+            self._season_focus=signature;self._season_focus_since=now
+        if now-self._season_focus_since<.2:return True
+        if now-self._season_attempts.get(path,float('-inf'))<30:return False
+        self._season_attempts[path]=now;self.description_attempts[path]=now
+        request_id=token_hex(8);generation=self.generation;started=monotonic()
+        self.performance({'event':'season_preload_started','stage':'focused_title_metadata',
+            'request_id':request_id,'generation':generation,'focused_titles':1,'result':'started'})
+        try:
+            packet=self._fetch_detail(path,background=True)
+            if isinstance(packet,dict) and not self.stop.is_set():
+                playable,how=choose_playback(packet.get('rows'),_kind(packet.get('info')),packet.get('selected_id'))
+                self._remember(path,playable,how if playable is not None else 'metadata',packet)
+            cancelled=self.stop.is_set() or generation!=self.generation
+            self.performance({'event':'season_preload_finished','stage':'focused_title_metadata',
+                'request_id':request_id,'generation':generation,'season_count':len(packet.get('seasons') or []) if isinstance(packet,dict) else 0,
+                'elapsed_ms':round((monotonic()-started)*1000),
+                'result':'cancelled' if cancelled else 'success' if isinstance(packet,dict) and packet.get('seasons') else 'unavailable'})
+        except Exception as error:
+            self.performance({'event':'season_preload_failed','stage':'focused_title_metadata',
+                'request_id':request_id,'generation':generation,'elapsed_ms':round((monotonic()-started)*1000),
+                'exception':exception_details(error),'result':'failure'})
+        return True
+
     def _queue_focus_metadata(self):
         row = self._selected_row()
         path = _detail_path(self.g.pluginid, row)
@@ -2275,6 +2325,47 @@ class AuroraHome(xbmcgui.WindowXML):
             for key,value in self.known_continuations.items():bridge.continuations.setdefault(key,value)
 
     def _fetch_detail(self, path, background=False):
+        """Share one actual title read between focused preparation and selection."""
+        started=monotonic()
+        if self.stop.is_set():return 'wait'
+        with self.lock:
+            cached=self.detail_cache.get(path) or {}
+            if cached.get('packet') is not None:
+                self.performance({'event':'title_packet_cache_hit','stage':'title_request',
+                    'background':background,'result':'success'})
+                return deepcopy(cached['packet'])
+            future=self.detail_inflight.get(path);owner=future is None
+            if owner:
+                future=Future();future.request_id=token_hex(8);self.detail_inflight[path]=future
+        if not owner:
+            self.performance({'event':'title_request_shared','stage':'title_request_wait',
+                'request_id':future.request_id,'background':background,'result':'waiting'})
+            try:
+                while not future.done():
+                    if self.stop.wait(.025):
+                        self.performance({'event':'title_request_wait_finished','stage':'title_request_wait',
+                            'request_id':future.request_id,'elapsed_ms':round((monotonic()-started)*1000),'result':'cancelled'})
+                        return 'wait'
+                result=future.result()
+                self.performance({'event':'title_request_wait_finished','stage':'title_request_wait',
+                    'request_id':future.request_id,'elapsed_ms':round((monotonic()-started)*1000),
+                    'result':'success' if isinstance(result,dict) else 'cancelled' if result=='wait' else 'failure'})
+                return deepcopy(result)
+            except Exception as error:
+                self.performance({'event':'title_request_wait_failed','stage':'title_request_wait',
+                    'request_id':future.request_id,'elapsed_ms':round((monotonic()-started)*1000),
+                    'exception':exception_details(error),'result':'failure'})
+                raise
+        try:
+            result=self._fetch_detail_packet(path,background,future.request_id)
+            future.set_result(deepcopy(result));return result
+        except BaseException as error:
+            future.set_exception(error);raise
+        finally:
+            with self.lock:
+                if self.detail_inflight.get(path) is future:self.detail_inflight.pop(path,None)
+
+    def _fetch_detail_packet(self, path, background, request_id):
         bridge = self.metadata_bridge if background else self.bridge
         if bridge is None or self.stop.is_set():
             return 'wait'
@@ -2291,12 +2382,19 @@ class AuroraHome(xbmcgui.WindowXML):
                     if key in part:
                         packet[key] = part[key]
 
+        reader_started=monotonic()
         try:
             with self.metadata_lock if background else self.bridge_lock:
                 if self.stop.is_set():
                     return 'wait'
                 self._sync_detail_routes(bridge)
-                bridge.browse_progressive(path, publish, lambda: not self.stop.is_set())
+                observe=DiagnosticLog(self.g.DATA_PATH,self.g.addon.getAddonInfo('version'),
+                    active=lambda:bridge._active(lambda:not self.stop.is_set()),operation='title_metadata')
+                observe({'event':'title_reader_started','stage':'title_request','parent_request_id':request_id,
+                    'background':background,'reader_wait_ms':round((monotonic()-reader_started)*1000),'result':'started'})
+                bridge.operation_observer=observe
+                try:bridge.browse_progressive(path, publish, lambda: not self.stop.is_set())
+                finally:bridge.operation_observer=None
         except Exception as error:
             self.performance({'event':'title_lookup_failed','stage':'native_title_read','exception':exception_details(error),'result':'failure'})
             if isinstance(error,CatalogSigninRequired):raise

@@ -10,7 +10,27 @@ _VOID={'area','base','br','col','embed','hr','img','input','link','meta','param'
 
 _PATH_FIELDS=set(('init preparations body props pageProps state widgets collections items results result data '
     'content viewOutput page components resources entities features containers config selected baseOutput '
-    'swiftPageParameters sitewide sitewide-alexa primeVideoCapability pagination emptyState').split())
+    'swiftPageParameters sitewide sitewide-alexa primeVideoCapability pagination emptyState sharedArgs '
+    'swiftRequestParameters pageContext').split())
+
+# Amazon's public DVWebClient_page-mystuff.0f65a56e.js (2026-11-24) derives
+# these exact page IDs from content.__type instead of serializing a
+# swiftPageParameters object. The request also carries sharedArgs.viewType.
+_MY_STUFF_PAGES={
+    'atv.wps#MyStuffLandingView':{'pageType':'home','pageId':'MyStuff'},
+    'atv.wps#MyStuffEmptyView':{'pageType':'home','pageId':'MyStuff'},
+    'atv.wps#MyStuffWatchlistView':{'pageType':'home','pageId':'Watchlist','myStuffViewType':'watchlist'},
+    'atv.wps#MyStuffLibraryView':{'pageType':'home','pageId':'VideoLibrary','myStuffViewType':'library'},
+}
+
+
+def mystuff_page(node,shared_args=None):
+    """Decode only the provider's explicit public document-type enum."""
+    value=node.get('__type') if isinstance(node,dict) else None
+    page=dict(_MY_STUFF_PAGES.get(value,{})) if isinstance(value,str) else {}
+    view=shared_args.get('viewType') if isinstance(shared_args,dict) else None
+    if page and view in ('watchlist','library'):page['myStuffViewType']=view
+    return page
 
 
 def objects(documents):
@@ -45,6 +65,13 @@ def page_contexts(documents):
             for n,_ in all_nodes if isinstance(n.get('primeVideoCapability'),dict)}
         if not pages:pages=global_pages
         if not caps:caps=global_caps
+        typed={id(n['baseOutput']):mystuff_page(n) for n,_ in all_nodes
+            if isinstance(n.get('baseOutput'),dict) and mystuff_page(n)}
+        for node,_ in all_nodes:
+            content=node.get('content')
+            if isinstance(content,dict) and isinstance(content.get('baseOutput'),dict):
+                page=mystuff_page(content,node.get('sharedArgs'))
+                if page:typed[id(content['baseOutput'])]=page
         for node,path in all_nodes:
             containers=node.get('containers')
             if not isinstance(containers,list):continue
@@ -52,7 +79,8 @@ def page_contexts(documents):
             site=node.get('sitewide') or {}
             site=site.get('sitewide-alexa') or {} if isinstance(site,dict) else {}
             cap=site.get('primeVideoCapability') if isinstance(site,dict) else None
-            page=page if isinstance(page,dict) else next(iter(pages.values())) if len(pages)==1 else {}
+            page=page if isinstance(page,dict) and page else typed.get(id(node)) or (
+                next(iter(pages.values())) if len(pages)==1 else {})
             cap=cap if isinstance(cap,dict) else next(iter(caps.values())) if len(caps)==1 else {}
             yield containers,page,cap,path
 
