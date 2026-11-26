@@ -1,1 +1,1 @@
-Smooth Prime 0.2.64 includes automatic pinned Chrome runtime download and all accumulated fixes. Read AUTOMATIC_RUNTIME_0.2.64.md and change-0.2.64.json. Windows x64 HD plays in stock Kodi; no installed Chrome, updater or Google binaries are bundled.
+Smooth Prime 0.2.65 includes playback startup and shutdown improvements with all accumulated fixes. Read PERFORMANCE_0.2.65.md and change-0.2.65.json. Windows x64 HD remains in stock Kodi with the fixed private runtime downloaded directly from Google.

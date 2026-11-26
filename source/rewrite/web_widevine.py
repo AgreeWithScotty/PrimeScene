@@ -8,6 +8,7 @@ import base64
 import json
 import platform
 import re
+from time import monotonic
 from urllib.parse import quote, urlencode, urlsplit
 from urllib.error import HTTPError
 import xbmc
@@ -37,7 +38,7 @@ class WebWidevine:
         self.api = api; self.report = api.report
         self.envelope = self.handoff = self.certificate = self.title = ''
         self.server_certificate=''
-        self.output_protection=None;self.hdcp_level=None
+        self.output_protection=None;self.hdcp_level=None;self.hdcp_protection_level=None
         self.origin = api.account.get('baseurl', '').rstrip('/')
         if not https_address(self.origin, PRIME_WEB_HOSTS | AMAZON_WEB_HOSTS):
             raise TransportFailure('The account has no verified Amazon website origin')
@@ -159,18 +160,23 @@ class WebWidevine:
             from .windows_hdcp import HdcpSession
             self.output_protection=HdcpSession()
             before=self.output_protection.status()
-            result=self.output_protection.request(2,self.api.g.monitor.waitForAbort)
-            attempts=[dict(result,desired_protection=2)]
+            # Keep the verified type-1 capability: omitting the measured 2.2
+            # capability caused Amazon to offer only 960x400 in a real HD test.
+            desired=2
+            result=self.output_protection.request(desired,self.api.g.monitor.waitForAbort)
+            attempts=[dict(result,desired_protection=desired)]
+            if result.get('result_code')==0 and result.get('hdcp_on'):self.hdcp_protection_level=desired
             if (result.get('result_code')==0 and result.get('effective_protection')==2
                     and result.get('hdcp_on') and result.get('type_enforcement')):
                 # Windows type-1 enforcement requires HDCP2.2 or later. This
                 # value is sent only after the OS reports successful enforcement.
                 self.hdcp_level='2.2'
-            elif result.get('result_code')==2 and not self.api.g.monitor.abortRequested():
+            elif desired==2 and result.get('result_code')==2 and not self.api.g.monitor.abortRequested():
                 # Generic HDCP-on does not establish a specific version. Enable
                 # the real protection, but never advertise an unmeasured1.4/2.2.
                 result=self.output_protection.request(1,self.api.g.monitor.waitForAbort)
                 attempts.append(dict(result,desired_protection=1))
+                if result.get('result_code')==0 and result.get('hdcp_on'):self.hdcp_protection_level=1
             if self.api.g.monitor.abortRequested():
                 self.report({'event':'windows_hdcp_prepared','stage':'hd_output_protection',
                     'windows_attempts':attempts,'result':'cancelled'})
@@ -178,6 +184,7 @@ class WebWidevine:
             self.report({'event':'windows_hdcp_prepared','stage':'hd_output_protection',
                 'before':before,'windows_attempts':attempts,
                 'windows_enforced_hdcp_level':self.hdcp_level,
+                'required_protection':self.hdcp_protection_level,
                 'advertised_hdcp_level':self.hdcp_level,
                 'cdm_security_level_changed':False,'session_held_for_playback':True,
                 'result':'success' if result.get('result_code')==0 else 'unavailable'})
@@ -193,18 +200,19 @@ class WebWidevine:
                 'exception':exception_details(error),'advertised_hdcp_level':None,'result':'unavailable'})
 
     def verify_output_protection(self,record=False):
-        if self.hdcp_level!='2.2':return
+        if self.hdcp_protection_level is None:return
         try:state=self.output_protection.current_status()
         except Exception as error:
             from .prime_diagnostics import exception_details
             self.report({'event':'windows_hdcp_verified','stage':'hd_output_protection',
                 'exception':exception_details(error),'result':'failure'})
             raise
-        protected=state['effective_protection']==2 and state['hdcp_on'] and state['type_enforcement']
+        protected=state['hdcp_on'] and (self.hdcp_protection_level==1 or state['type_enforcement'])
         if record or not protected:
             self.report({'event':'windows_hdcp_verified','stage':'hd_output_protection',
                 'windows_state':state,'windows_enforced_hdcp_level':self.hdcp_level,
                 'advertised_hdcp_level':self.hdcp_level,
+                'required_protection':self.hdcp_protection_level,
                 'result':'success' if protected else 'failure'})
         if not protected:
             error=TransportFailure('Windows could not keep the negotiated HDCP output protection active')
@@ -360,16 +368,18 @@ class WebWidevine:
         return data
 
     def close(self):
+        started=monotonic()
         try:
             if self.output_protection is not None:
                 self.output_protection.close()
-                self.report({'event':'windows_hdcp_closed','stage':'hd_output_protection','result':'success'})
+                self.report({'event':'windows_hdcp_closed','stage':'hd_output_protection',
+                    'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
         except Exception as error:
             from .prime_diagnostics import exception_details
             self.report({'event':'windows_hdcp_closed','stage':'hd_output_protection',
                 'exception':exception_details(error),'result':'failure'})
             raise
         finally:
-            self.output_protection=None;self.hdcp_level=None
+            self.output_protection=None;self.hdcp_level=None;self.hdcp_protection_level=None
             self.envelope = self.handoff = self.certificate = self.title = ''
             self.server_certificate=''

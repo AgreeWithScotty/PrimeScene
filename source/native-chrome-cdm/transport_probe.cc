@@ -118,6 +118,8 @@ int main(int argc,char** argv) {
   auto mapping_text=base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("frame-mapping");
   HANDLE frame_mapping=reinterpret_cast<HANDLE>(static_cast<uintptr_t>(std::strtoull(mapping_text.c_str(),nullptr,10)));
   if(server_mode&&!frame_mapping){Event("native_frame_mapping_argument","invalid");return 64;}
+  auto shutdown_text=base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII("shutdown-event");
+  base::win::ScopedHandle shutdown_event(reinterpret_cast<HANDLE>(static_cast<uintptr_t>(std::strtoull(shutdown_text.c_str(),nullptr,10))));
   bool decode_init=base::CommandLine::ForCurrentProcess()->HasSwitch("decode-init");
   if(content_probe&&(!ReadBlob(session_probe.certificate)||!ReadBlob(session_probe.pssh))) {
     Event("private_cdm_input","failure");return 68;
@@ -168,6 +170,7 @@ int main(int argc,char** argv) {
     if (service_probe) QueryVersion(child_control.get().value(),41);
     auto deadline=start+base::Seconds(server_mode?6*60*60:18);
     while (base::TimeTicks::Now()<deadline) {
+      if(server_mode&&shutdown_event.is_valid()&&WaitForSingleObject(shutdown_event.get(),0)==WAIT_OBJECT_0){Event("native_adapter_shutdown","event_signalled");break;}
       int exit_code;
       if (child.WaitForExitWithTimeout(base::TimeDelta(),&exit_code)) {
         Event("actual_child_exit_before_cleanup","exited",exit_code); break;

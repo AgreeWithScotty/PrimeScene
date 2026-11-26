@@ -62,7 +62,7 @@ struct Pending{uint32_t promise=0,kind=0;};
 
 class Proxy final:public cdm::ContentDecryptionModule_10 {
   cdm::Host_10* host;
-  HANDLE input=nullptr,output=nullptr,process=nullptr,job=nullptr,mapping=nullptr;
+  HANDLE input=nullptr,output=nullptr,process=nullptr,job=nullptr,mapping=nullptr,shutdown_event=nullptr;
   void* pixels=nullptr;
   std::thread reader;
   std::mutex write_mutex,state_mutex;
@@ -78,7 +78,7 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
   explicit Proxy(cdm::Host_10* value):host(value){}
   ~Proxy() override {Shutdown();}
   bool Send(uint32_t op,const Bytes& data,uint32_t correlation=0){
-    if(closed||!input)return false;
+    if(closed||destroyed||!input)return false;
     std::lock_guard<std::mutex> guard(write_mutex);uint32_t header[3]={op,correlation,static_cast<uint32_t>(data.size())};
     bool ok=WriteAll(input,header,sizeof(header))&&WriteAll(input,data.data(),data.size());if(!ok)Log("private_pipe_write_failed",GetLastError());return ok;
   }
@@ -90,6 +90,7 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
     SetHandleInformation(input,HANDLE_FLAG_INHERIT,0);SetHandleInformation(output,HANDLE_FLAG_INHERIT,0);
     mapping=CreateFileMappingW(INVALID_HANDLE_VALUE,&security,PAGE_READWRITE,0,16*1024*1024,nullptr);
     if(!mapping)return false;pixels=MapViewOfFile(mapping,FILE_MAP_READ,0,0,16*1024*1024);if(!pixels)return false;
+    shutdown_event=CreateEventW(&security,TRUE,FALSE,nullptr);if(!shutdown_event)return false;
     job=CreateJobObjectW(nullptr,nullptr);JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits={};limits.BasicLimitInformation.LimitFlags=JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
     if(!job||!SetInformationJobObject(job,JobObjectExtendedLimitInformation,&limits,sizeof(limits)))return false;
     auto directory=ModuleDirectory();auto helper=directory+L"\\transport_probe.exe";
@@ -97,14 +98,15 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
     if(!CreateDirectoryW(profile.c_str(),nullptr)&&GetLastError()!=ERROR_ALREADY_EXISTS)return false;
     std::wstring command=L"\""+helper+L"\" --transport-only --native-cdm-server --probe-profile=\""+profile+
         L"\" --cdm-path=\""+ChromeRuntimeCdm(directory)+L"\" --frame-mapping="+
-        std::to_wstring(reinterpret_cast<uintptr_t>(mapping));
+        std::to_wstring(reinterpret_cast<uintptr_t>(mapping))+L" --shutdown-event="+
+        std::to_wstring(reinterpret_cast<uintptr_t>(shutdown_event));
     STARTUPINFOEXW startup={};startup.StartupInfo.cb=sizeof(startup);startup.StartupInfo.dwFlags=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
     startup.StartupInfo.wShowWindow=SW_HIDE;startup.StartupInfo.hStdInput=child_input;startup.StartupInfo.hStdOutput=child_output;
     HANDLE errors=CreateFileW(L"NUL",GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE,&security,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
     startup.StartupInfo.hStdError=errors;
     SIZE_T bytes=0;InitializeProcThreadAttributeList(nullptr,1,0,&bytes);Bytes attributes(bytes);
     startup.lpAttributeList=reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(attributes.data());
-    HANDLE inherited[4]={child_input,child_output,mapping,errors};
+    HANDLE inherited[5]={child_input,child_output,mapping,errors,shutdown_event};
     bool configured=InitializeProcThreadAttributeList(startup.lpAttributeList,1,0,&bytes)&&
         UpdateProcThreadAttribute(startup.lpAttributeList,0,PROC_THREAD_ATTRIBUTE_HANDLE_LIST,inherited,sizeof(inherited),nullptr,nullptr);
     PROCESS_INFORMATION info={};
@@ -123,12 +125,22 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
   }
   void Shutdown(){
     if(destroyed.exchange(true))return;
-    if(input){Send(99,{});CloseHandle(input);input=nullptr;}
-    if(process&&WaitForSingleObject(process,3000)!=WAIT_OBJECT_0)TerminateProcess(process,0);
-    if(reader.joinable())reader.join();
+    auto started=GetTickCount64();Log("native_proxy_shutdown_started");changed.notify_all();
+    // A dedicated event cannot queue behind media bytes in the synchronous pipe.
+    if(shutdown_event)SetEvent(shutdown_event);
+    if(input){CloseHandle(input);input=nullptr;}
+    if(process&&WaitForSingleObject(process,1000)!=WAIT_OBJECT_0){
+      Log("native_helper_shutdown_forced");
+      if(job){CloseHandle(job);job=nullptr;}else TerminateProcess(process,0);
+    }
+    Log("native_helper_shutdown_elapsed",static_cast<uint32_t>(GetTickCount64()-started));
+    if(reader.joinable()){CancelSynchronousIo(reader.native_handle());reader.join();}
     if(output)CloseHandle(output);if(process)CloseHandle(process);if(job)CloseHandle(job);
     if(pixels)UnmapViewOfFile(pixels);if(mapping)CloseHandle(mapping);
-    output=process=job=mapping=nullptr;pixels=nullptr;Log("native_proxy_closed",static_cast<uint32_t>(rendered));
+    if(shutdown_event)CloseHandle(shutdown_event);
+    output=process=job=mapping=shutdown_event=nullptr;pixels=nullptr;
+    Log("native_proxy_shutdown_elapsed",static_cast<uint32_t>(GetTickCount64()-started));
+    Log("native_proxy_closed",static_cast<uint32_t>(rendered));
   }
   void Read(){
     WindowsOutput protection;std::string buffered;char chunk[16384];DWORD count=0;
@@ -137,7 +149,9 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
       size_t newline;
       while((newline=buffered.find('\n'))!=std::string::npos){std::string line=buffered.substr(0,newline);buffered.erase(0,newline+1);
         if(line.find("\"host_rpc\"")!=std::string::npos){
-          auto facts=protection.Query(line.find("enable_output")!=std::string::npos,JsonNumber(line,"desired_mask"));
+          auto started=GetTickCount64();
+          auto facts=protection.Query(line.find("enable_output")!=std::string::npos,JsonNumber(line,"desired_mask"),&destroyed);
+          Log("native_output_query_elapsed",static_cast<uint32_t>(GetTickCount64()-started));
           Log("actual_windows_output_result",static_cast<uint32_t>(protection.last));Send(2,facts,JsonNumber(line,"rpc_id"));
         }else if(line.find("\"private_cdm_ready\"")!=std::string::npos){std::lock_guard<std::mutex> lock(state_mutex);ready=true;changed.notify_all();}
         else if(line.find("\"private_cdm_raw\"")!=std::string::npos){auto message=Base64(line,"private_cdm_raw");if(!destroyed)CdmMessage(message);}
@@ -154,10 +168,12 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
         // Never log raw private records, challenge/license data or session IDs.
       }
     }
+    auto closing=GetTickCount64();protection.Close();
+    Log("native_output_close_elapsed",static_cast<uint32_t>(GetTickCount64()-closing));
     closed=true;changed.notify_all();Log("native_helper_pipe_closed");
   }
   void Reply(Bytes message){if(message.size()<8)return;std::lock_guard<std::mutex> lock(state_mutex);replies[prime_wire::U64(message.data())]=std::move(message);changed.notify_all();}
-  Bytes Wait(uint64_t id){std::unique_lock<std::mutex> lock(state_mutex);changed.wait_for(lock,std::chrono::seconds(12),[&]{return replies.contains(id)||closed.load();});auto found=replies.find(id);if(found==replies.end()){Log("native_operation_timeout");return {};}auto data=std::move(found->second);replies.erase(found);return data;}
+  Bytes Wait(uint64_t id){std::unique_lock<std::mutex> lock(state_mutex);changed.wait_for(lock,std::chrono::seconds(12),[&]{return replies.contains(id)||closed.load()||destroyed.load();});auto found=replies.find(id);if(found==replies.end()){Log(destroyed?"native_operation_cancelled":"native_operation_timeout");return {};}auto data=std::move(found->second);replies.erase(found);return data;}
   uint64_t Promise(uint32_t promise,uint32_t kind){uint64_t id=next_id++;std::lock_guard<std::mutex> lock(state_mutex);promises[id]={promise,kind};return id;}
   void CdmMessage(const Bytes& bytes){
     auto body=prime_wire::Body(bytes);if(body==UINT32_MAX||bytes.size()<32)return;
@@ -194,8 +210,8 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
     // Stock ISA reads its key map immediately on return. Preserve the native
     // callback ordering across the asynchronous Chrome pipe.
     std::unique_lock<std::mutex> lock(state_mutex);
-    bool received=changed.wait_for(lock,std::chrono::seconds(12),[&]{return key_callbacks.load()!=before||closed.load();});
-    Log(received&&key_callbacks.load()!=before?"actual_license_keys_ready_on_return":"native_license_key_callback_timeout");
+    bool received=changed.wait_for(lock,std::chrono::seconds(12),[&]{return key_callbacks.load()!=before||closed.load()||destroyed.load();});
+    Log(destroyed?"native_license_wait_cancelled":received&&key_callbacks.load()!=before?"actual_license_keys_ready_on_return":"native_license_key_callback_timeout");
   }
   void CloseSession(uint32_t promise,const char* session,uint32_t size) override {auto id=Promise(promise,0);Send(10,prime_wire::Session(kCdmCloseSession,id,{session,size}));}
   void RemoveSession(uint32_t promise,const char* session,uint32_t size) override {auto id=Promise(promise,0);Send(10,prime_wire::Session(kCdmRemoveSession,id,{session,size}));}
