@@ -18,6 +18,7 @@ from .media_quality import lower_quality
 from .media_proxy import PlaybackProxy
 from .playback_progress import ResumePoints
 from .prime_diagnostics import DiagnosticLog,exception_details
+from .chrome_runtime import PreparationCancelled
 STARTUP_REVISION='reply-before-async-stop-v1'
 
 
@@ -404,6 +405,11 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
                     'elapsed_ms':round((monotonic()-progress_started)*1000),'result':'success'})
             except Exception as error:report({'event':'progress_stop_failed','stage':'watch_progress','exception':exception_details(error),'result':'failure'})
         return terminal not in ('error','start_timeout','account_changed')
+    except PreparationCancelled as error:
+        terminal='cancelled'
+        report({'event':'playback_cancelled','stage':'private_chrome_runtime',
+            'exception':exception_details(error),'result':'cancelled'})
+        return False
     except Exception as error:
         if g.monitor.abortRequested():
             terminal='shutdown'

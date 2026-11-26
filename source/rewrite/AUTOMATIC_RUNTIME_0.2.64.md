@@ -1,0 +1,11 @@
+# Smooth Prime 0.2.64 automatic runtime
+
+- Automatically download pinned regular Chrome 158.0.8127.89 directly from Google on first Windows x64 HD playback; no separate Chrome installation.
+- Verify the Google payload and every private runtime file; reuse the fixed version independently of system browser updates.
+- Show cancellable first-use setup with atomic installation, interrupted-download recovery and temporary-file cleanup.
+- Keep HD playback in stock Kodi with the owned CDM adapter; do not modify Kodi, InputStream Adaptive or a system browser.
+- Include the unmodified 7-Zip extractor, license and exact source; distribute no Google Chrome or Widevine binaries.
+- Preserve accumulated region, Watchlist, season loading, sign-in catalog refresh, Back/resume, title sizing and original artwork fixes.
+- Expand redacted download, integrity, extraction, cancellation, native playback and quality diagnostics.
+
+Real stock Kodi HD and cold/warm Google download behavior were tested. The 2160p request returned a maximum 1920x800 browser/H264 manifest; no 4K success is claimed. First-use download is about 512 MiB. No public release promotion.

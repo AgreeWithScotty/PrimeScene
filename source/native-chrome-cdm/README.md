@@ -1,18 +1,5 @@
-# Smooth Prime standard CDM bridge
+# Smooth Prime stock-Kodi CDM bridge
 
-These are the owned adapter/helper sources for the unchanged binary artifacts
-in0.2.63. They use stockCDM10 and exact Chromium158.0.8127.37 Mojo contracts.
-Kodi, ISA, Chrome and Google Widevine are not rebuilt or bundled.
+Owned CDM10 adapter/helper sources for 0.2.64. The private regular Chrome pin is 158.0.8127.89. The adapter/helper locate runtime/chrome.exe and its genuine CDM beside their own directory. No installed browser path, rebuilt Kodi or Google binary is shipped. The exact public VERSION and six Mojo definitions used to derive .89 method ordinals are in fixtures/158.0.8127.89. The existing SDK common-code compatibility fixture remains Chromium158.0.8127.37; CDM API d6c4e1ea4c8fc3dcd98ac3ab5a981f63067223a4, BoringSSL ea9f3a34c3977144c45d272be81842fd891a0bdb.
 
-The source fixture is b8c2be851f62f6a394ec57955d7f31335d7cb6d4;
-CDM API d6c4e1ea4c8fc3dcd98ac3ab5a981f63067223a4;
-BoringSSL ea9f3a34c3977144c45d272be81842fd891a0bdb.
-The .py scripts retain their original workbench-relative paths. Place them in
-an hd-license-rejection-20261125 work directory, these sources in
-chrome-bridge/client-source, and prepare the exact SDK inputs with the build
-scripts. Existing graph rebuilds use build_mojo_transport_client.py --incremental
---target prime_cdm_proxy and the default transport_probe target.
-
-Chrome158 is an explicit installed-binary compatibility fixture, not a claim
-that it is the newest browser. No unsupported browser ABI is enabled.
-The application source license is LICENSE; third-party notices are adjacent.
+The build scripts retain documented workbench-relative paths: place them in hd-license-rejection-20261125 and sources in chrome-bridge/client-source. Incremental rebuild targets are transport_probe and prime_cdm_proxy. Runtime ordinal agreement and real provider/native playback validation are required before changing a pin. App runtime acquisition is implemented in source/rewrite/chrome_runtime*.py with schema3 metadata, not the historical installed-browser staging helper. License and third-party notices remain adjacent.

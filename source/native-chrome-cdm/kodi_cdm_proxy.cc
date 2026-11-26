@@ -12,6 +12,7 @@
 #include <thread>
 #include "native_proxy_wire.h"
 #include "native_windows_output.h"
+#include "runtime_fixture.h"
 using prime_wire::Bytes;
 namespace {
 std::wstring ModuleDirectory(){
@@ -27,7 +28,7 @@ void Log(const char* stage,uint32_t code=0){
   if(file==INVALID_HANDLE_VALUE){OutputDebugStringW(L"Smooth Prime CDM diagnostic write failed\n");return;}
   std::string value="{\"operation\":\"normal_kodi_cdm_proxy\",\"stage\":\""+std::string(stage)+
       "\",\"code\":"+std::to_string(code)+",\"process\":"+std::to_string(GetCurrentProcessId())+
-      ",\"tick_ms\":"+std::to_string(GetTickCount64())+",\"cdm_abi\":10,\"chrome_abi_fixture\":\"158.0.8127.37\"}\n";
+      ",\"tick_ms\":"+std::to_string(GetTickCount64())+",\"cdm_abi\":10,\"chrome_abi_fixture\":\""+kChromeRuntimeVersion+"\"}\n";
   DWORD written=0;if(!WriteFile(file,value.data(),static_cast<DWORD>(value.size()),&written,nullptr)||written!=value.size())
     OutputDebugStringW(L"Smooth Prime CDM diagnostic append failed\n");
   CloseHandle(file);
@@ -49,12 +50,12 @@ uint32_t JsonNumber(std::string_view line,const char* key){
   std::string numeric(line.substr(at,24));return static_cast<uint32_t>(std::strtoll(numeric.c_str(),nullptr,10));
 }
 bool ChromeFixture(){
-  const wchar_t* path=L"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-  DWORD unused=0,size=GetFileVersionInfoSizeW(path,&unused);if(!size)return false;Bytes bytes(size);
-  if(!GetFileVersionInfoW(path,0,size,bytes.data()))return false;
+  const auto path=ChromeRuntimeExecutable(ModuleDirectory());
+  DWORD unused=0,size=GetFileVersionInfoSizeW(path.c_str(),&unused);if(!size)return false;Bytes bytes(size);
+  if(!GetFileVersionInfoW(path.c_str(),0,size,bytes.data()))return false;
   VS_FIXEDFILEINFO* info=nullptr;UINT length=0;
   if(!VerQueryValueW(bytes.data(),L"\\",reinterpret_cast<void**>(&info),&length)||length<sizeof(*info))return false;
-  return HIWORD(info->dwFileVersionMS)==158&&LOWORD(info->dwFileVersionMS)==0&&HIWORD(info->dwFileVersionLS)==8127&&LOWORD(info->dwFileVersionLS)==37;
+  return info->dwFileVersionMS==kChromeVersionMS&&info->dwFileVersionLS==kChromeVersionLS;
 }
 cdm::Status Status(uint32_t value,bool decode){return value==0?cdm::kSuccess:value==1?cdm::kNoKey:value==2?cdm::kNeedMoreData:decode?cdm::kDecodeError:cdm::kDecryptError;}
 struct Pending{uint32_t promise=0,kind=0;};
@@ -95,7 +96,7 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
     auto profile=directory+L"\\native-profile-"+std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(GetTickCount64());
     if(!CreateDirectoryW(profile.c_str(),nullptr)&&GetLastError()!=ERROR_ALREADY_EXISTS)return false;
     std::wstring command=L"\""+helper+L"\" --transport-only --native-cdm-server --probe-profile=\""+profile+
-        L"\" --cdm-path=\"C:\\Program Files\\Google\\Chrome\\Application\\158.0.8127.37\\WidevineCdm\\_platform_specific\\win_x64\\widevinecdm.dll\" --frame-mapping="+
+        L"\" --cdm-path=\""+ChromeRuntimeCdm(directory)+L"\" --frame-mapping="+
         std::to_wstring(reinterpret_cast<uintptr_t>(mapping));
     STARTUPINFOEXW startup={};startup.StartupInfo.cb=sizeof(startup);startup.StartupInfo.dwFlags=STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
     startup.StartupInfo.wShowWindow=SW_HIDE;startup.StartupInfo.hStdInput=child_input;startup.StartupInfo.hStdOutput=child_output;

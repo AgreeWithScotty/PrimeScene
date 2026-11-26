@@ -29,13 +29,18 @@ def save():
 try:
     parser=argparse.ArgumentParser()
     parser.add_argument('--incremental',action='store_true',help='Existing graph; refresh only owned client source')
+    parser.add_argument('--owned-source-dir',type=Path,help='Isolated owned adapter sources for a concrete runtime test')
     parser.add_argument('--target',choices=['transport_probe','prime_cdm_proxy','proxy_abi_probe'],default='transport_probe')
     options=parser.parse_args()
     REPORT['target']=options.target
     helpers=() if options.incremental else ('scope_mojo_client_build.py','configure_mojo_client.py')
     if options.incremental:
         changed=[]
-        for source in (HERE/'client-source').iterdir():
+        owned_source=options.owned_source_dir or HERE/'client-source'
+        owned_source=owned_source.resolve(strict=True)
+        owned_source.relative_to(BASE.parent.resolve())
+        REPORT['owned_source_directory']=str(owned_source)
+        for source in owned_source.iterdir():
             if source.suffix not in ('.cc','.h'):continue
             destination=SRC/'client'/source.name
             content=source.read_bytes()

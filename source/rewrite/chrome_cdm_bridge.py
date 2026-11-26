@@ -9,6 +9,7 @@ import uuid
 import xbmcaddon
 import xbmcvfs
 from .prime_diagnostics import exception_details
+from .chrome_runtime import PreparationCancelled
 
 JOURNAL='chrome-cdm-path-lease.json'
 
@@ -17,15 +18,29 @@ def _directory(g):
 
 def available(g,report):
     started=monotonic()
+    dialog=None
     try:
         if os.name!='nt' or struct.calcsize('P')!=8:return False
         root=_directory(g);manifest=json.loads((root/'bridge.json').read_text(encoding='utf-8'))
         from .widevine_diagnostics import windows_binary_version
-        chrome=Path(manifest['chrome_executable'])
+        from .chrome_runtime import ensure
+        import xbmc,xbmcgui
+        monitor=xbmc.Monitor()
+        def progress(percent,message):
+            nonlocal dialog
+            if dialog is None:
+                dialog=xbmcgui.DialogProgress()
+                dialog.create('Preparing HD playback',message)
+            dialog.update(percent,message)
+            return dialog.iscanceled()
+        def cancelled():
+            return monitor.abortRequested() or dialog is not None and dialog.iscanceled()
+        runtime=ensure(root,manifest,report,cancel=cancelled,progress=progress)
+        chrome=runtime/'chrome.exe'
         actual=windows_binary_version(chrome)
         expected=manifest['chrome_abi_fixture']
-        # This is a tested installed-binary ABI fixture, not a claim that an old
-        # browser release is current. Unsupported versions keep normal playback.
+        # Only the private hash-pinned runtime participates in this adapter.
+        # Installing/updating a system browser never changes this selection.
         if actual!=expected:
             report({'event':'chrome_cdm_bridge_available','stage':'device_capability','chrome_version':actual,
                 'supported_abi_fixture':expected,'reason':'abi_not_verified','result':'unavailable'})
@@ -33,12 +48,16 @@ def available(g,report):
         for name,digest in manifest['artifacts'].items():
             if name not in ('widevinecdm.dll','transport_probe.exe'):raise ValueError('Invalid native artifact name')
             if hashlib.sha256((root/name).read_bytes()).hexdigest()!=digest:raise ValueError('Native adapter artifact checksum mismatch')
-        cdm=chrome.parent/expected/'WidevineCdm/_platform_specific/win_x64/widevinecdm.dll'
-        if not cdm.is_file() or not cdm.with_suffix('.dll.sig').is_file():raise ValueError('Installed Chrome Widevine component is missing')
+        cdm=runtime/expected/'WidevineCdm/_platform_specific/win_x64/widevinecdm.dll'
+        if not cdm.is_file() or not cdm.with_suffix('.dll.sig').is_file():raise ValueError('Bundled Chrome Widevine component is missing')
         report({'event':'chrome_cdm_bridge_available','stage':'device_capability',
             'chrome_version':actual,'cdm_abi':10,'native_player':'Kodi','player_binary_modified':False,
+            'runtime_source':'google_direct_download','system_chrome_required':False,'automatic_updates':False,
             'elapsed_ms':round((monotonic()-started)*1000),'result':'available'})
         return True
+    except PreparationCancelled:
+        report({'event':'chrome_cdm_bridge_available','stage':'device_capability','result':'cancelled'})
+        raise
     except FileNotFoundError:
         report({'event':'chrome_cdm_bridge_available','stage':'device_capability','reason':'component_absent','result':'unavailable'})
         return False
@@ -46,6 +65,8 @@ def available(g,report):
         report({'event':'chrome_cdm_bridge_available','stage':'device_capability',
             'exception':exception_details(error),'elapsed_ms':round((monotonic()-started)*1000),'result':'unavailable'})
         return False
+    finally:
+        if dialog is not None:dialog.close()
 
 def recover(g,report):
     path=Path(g.DATA_PATH)/JOURNAL

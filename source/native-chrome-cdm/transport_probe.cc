@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <windows.h>
+#include "runtime_fixture.h"
 
 #include "base/at_exit.h"
 #include "base/command_line.h"
@@ -134,7 +135,12 @@ int main(int argc,char** argv) {
     mojo::OutgoingInvitation invitation;
     auto child_control=invitation.AttachMessagePipe(0u);
     auto child_host=invitation.AttachMessagePipe(1u);
-    base::CommandLine command(base::FilePath(L"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"));
+    wchar_t module_path[32768]={};
+    DWORD module_length=GetModuleFileNameW(nullptr,module_path,32768);
+    if(!module_length||module_length>=32768){Event("private_runtime_path","failure",GetLastError());return 66;}
+    std::wstring module_directory(module_path,module_length);
+    module_directory.resize(module_directory.find_last_of(L"\\/"));
+    base::CommandLine command(base::FilePath(ChromeRuntimeExecutable(module_directory)));
     command.AppendSwitchASCII("type","utility");
     command.AppendSwitchASCII("utility-sub-type","media.mojom.CdmServiceBroker");
     command.AppendSwitchASCII("service-sandbox-type","cdm");
@@ -152,7 +158,7 @@ int main(int argc,char** argv) {
     channel.PrepareToPassRemoteEndpoint(&launch,&command);
     base::Process child=base::LaunchProcess(command,launch);
     channel.RemoteProcessLaunchAttempted();
-    if (!child.IsValid()) { Event("official_chrome_utility_launch","failure"); return 66; }
+    if (!child.IsValid()) { Event("official_chrome_utility_launch","failure",GetLastError()); return 66; }
     Event("official_chrome_utility_launch","created");
     Event("owned_chrome_utility_pid","observed",child.Pid());
     if(initialize_cdm)ChildSecurity(child.Handle(),"actual_preload_child_security");
