@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.64" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.65" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.64[CR]- Automatically download pinned regular Chrome 158.0.8127.89 directly from Google on first Windows x64 HD playback; no separate Chrome installation.[CR]- Verify the Google payload and every private runtime file; reuse the fixed version independently of system browser updates.[CR]- Show cancellable first-use setup with atomic installation, interrupted-download recovery and temporary-file cleanup.[CR]- Keep HD playback in stock Kodi with the owned CDM adapter; do not modify Kodi, InputStream Adaptive or a system browser.[CR]- Include the unmodified 7-Zip extractor, license and exact source; distribute no Google Chrome or Widevine binaries.[CR]- Preserve accumulated region, Watchlist, season loading, sign-in catalog refresh, Back/resume, title sizing and original artwork fixes.[CR]- Expand redacted download, integrity, extraction, cancellation, native playback and quality diagnostics.</news>
+    <news>0.2.65[CR]- Reuse verified unchanged private Chrome runtime files instead of repeating the full runtime hash scan on every playback.[CR]- Signal native helper shutdown independently of media traffic, wake cancelled waits and bound helper exit before owned-job cleanup.[CR]- Avoid redundant Windows output-protection requests while checking real protection and retaining the measured HDCP 2.2 capability for HD.[CR]- Record runtime verification work, adapter revision, output-protection release and native shutdown timings in the complete diagnostics report.[CR]- Retain automatic pinned Google runtime download and all accumulated regional, sign-in, Watchlist, Back, resume, artwork and title fixes.</news>
   </extension>
 </addon>

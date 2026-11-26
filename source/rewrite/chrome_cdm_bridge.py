@@ -53,6 +53,7 @@ def available(g,report):
         report({'event':'chrome_cdm_bridge_available','stage':'device_capability',
             'chrome_version':actual,'cdm_abi':10,'native_player':'Kodi','player_binary_modified':False,
             'runtime_source':'google_direct_download','system_chrome_required':False,'automatic_updates':False,
+            'adapter_revision':manifest.get('performance_revision','baseline'),
             'elapsed_ms':round((monotonic()-started)*1000),'result':'available'})
         return True
     except PreparationCancelled:

@@ -1,6 +1,7 @@
 // Measured Windows output protection for the native CDM proxy.
 #pragma once
 #include <roapi.h>
+#include <atomic>
 #include <windows.media.protection.h>
 #include <wrl.h>
 #include <wrl/wrappers/corewrappers.h>
@@ -9,19 +10,26 @@ class WindowsOutput {
   using Result=ABI::Windows::Media::Protection::HdcpSetProtectionResult;
   Microsoft::WRL::ComPtr<ABI::Windows::Media::Protection::IHdcpSession> session;
   bool apartment_owned=false;
+  unsigned requested_level=UINT_MAX;
  public:
   HRESULT last=E_FAIL;
-  bool Start() {
+  bool Start(const std::atomic<bool>* cancelled=nullptr) {
     last=RoInitialize(RO_INIT_MULTITHREADED);apartment_owned=SUCCEEDED(last);
     if(FAILED(last)&&last!=RPC_E_CHANGED_MODE)return false;
     Microsoft::WRL::ComPtr<IInspectable> instance;
     last=RoActivateInstance(Microsoft::WRL::Wrappers::HStringReference(L"Windows.Media.Protection.HdcpSession").Get(),&instance);
     if(FAILED(last))return false;
     last=instance.As(&session);if(FAILED(last))return false;
-    return Request(2);
+    return Request(2,cancelled);
   }
-  bool Request(unsigned level) {
+  bool Request(unsigned level,const std::atomic<bool>* cancelled=nullptr) {
     if(!session)return false;
+    if(cancelled&&cancelled->load()){last=HRESULT_FROM_WIN32(ERROR_CANCELLED);return false;}
+    if(requested_level==level){
+      boolean active=false;
+      last=session->IsEffectiveProtectionAtLeast(static_cast<Protection>(level),&active);
+      if(SUCCEEDED(last)&&active)return true;
+    }
     Microsoft::WRL::ComPtr<ABI::Windows::Foundation::IAsyncOperation<Result>> operation;
     last=session->SetDesiredMinProtectionAsync(static_cast<Protection>(level),&operation);
     if(FAILED(last))return false;
@@ -30,19 +38,22 @@ class WindowsOutput {
     ABI::Windows::Foundation::AsyncStatus status=ABI::Windows::Foundation::AsyncStatus::Started;
     ULONGLONG limit=GetTickCount64()+8000;
     while(GetTickCount64()<limit) {
+      if(cancelled&&cancelled->load()){info->Cancel();info->Close();last=HRESULT_FROM_WIN32(ERROR_CANCELLED);return false;}
       last=info->get_Status(&status);if(FAILED(last)||status!=ABI::Windows::Foundation::AsyncStatus::Started)break;
       Sleep(20);
     }
     if(status!=ABI::Windows::Foundation::AsyncStatus::Completed){info->Cancel();info->Close();last=HRESULT_FROM_WIN32(ERROR_TIMEOUT);return false;}
     Result result;last=operation->GetResults(&result);info->Close();
-    return SUCCEEDED(last)&&result==ABI::Windows::Media::Protection::HdcpSetProtectionResult_Success;
+    bool success=SUCCEEDED(last)&&result==ABI::Windows::Media::Protection::HdcpSetProtectionResult_Success;
+    if(success)requested_level=level;
+    return success;
   }
-  prime_wire::Bytes Query(bool change,uint32_t desired) {
+  prime_wire::Bytes Query(bool change,uint32_t desired,const std::atomic<bool>* cancelled=nullptr) {
     prime_wire::Bytes data(12,0);
-    if(!session&&!Start())return data;
+    if(!session&&!Start(cancelled))return data;
     if(change) {
       if(desired>1)return data;
-      if(!Request(desired?2:0))return data;
+      if(!Request(desired?2:0,cancelled))return data;
     }
     boolean on=false;
     last=session->IsEffectiveProtectionAtLeast(ABI::Windows::Media::Protection::HdcpProtection_On,&on);
@@ -74,8 +85,9 @@ class WindowsOutput {
     prime_wire::Put32(data,0,1);prime_wire::Put32(data,4,links);prime_wire::Put32(data,8,on?1:0);
     last=S_OK;return data;
   }
-  ~WindowsOutput() {
+  void Close() {
     if(session){Microsoft::WRL::ComPtr<ABI::Windows::Foundation::IClosable> closable;if(SUCCEEDED(session.As(&closable)))closable->Close();session.Reset();}
-    if(apartment_owned)RoUninitialize();
+    if(apartment_owned){RoUninitialize();apartment_owned=false;}
   }
+  ~WindowsOutput(){Close();}
 };

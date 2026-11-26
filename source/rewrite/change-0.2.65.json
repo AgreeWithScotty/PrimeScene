@@ -1,0 +1,20 @@
+{
+  "version": "0.2.65",
+  "previous": "0.2.64",
+  "changes": [
+    "Reuse verified unchanged private Chrome runtime files instead of repeating the full runtime hash scan on every playback.",
+    "Signal native helper shutdown independently of media traffic, wake cancelled waits and bound helper exit before owned-job cleanup.",
+    "Avoid redundant Windows output-protection requests while checking real protection and retaining the measured HDCP 2.2 capability for HD.",
+    "Record runtime verification work, adapter revision, output-protection release and native shutdown timings in the complete diagnostics report.",
+    "Retain automatic pinned Google runtime download and all accumulated regional, sign-in, Watchlist, Back, resume, artwork and title fixes."
+  ],
+  "bytes": 7264040,
+  "sha256": "94c8a3b4d265fab807f82c1ca3e7f7e8ca543d52b29a70e86c959b52911ff9b9",
+  "files": 176,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "prior_real_hd_attempt": "aa6165f376061e14",
+  "nuc_freeze_resolution_verified": false
+}

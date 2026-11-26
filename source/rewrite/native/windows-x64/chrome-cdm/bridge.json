@@ -91,8 +91,8 @@
     }
   ],
   "artifacts": {
-    "widevinecdm.dll": "8125d801fc84e81b07029192046f77fb45480b2bb2b0bc3878e5f7a8036392ba",
-    "transport_probe.exe": "ddd9cdb09f3223720eab111c57bae68f2c72959fd271acee5f9573b2b5a5f03b"
+    "widevinecdm.dll": "3edf2a49169eb352436330c983f4764d9e88e937f60d5f41215b88d22d628586",
+    "transport_probe.exe": "dc7f4e7b0443e1c79e3b81cfe23bfc98686b0b447c3784a6c9c5a790862e3645"
   },
   "actual_abi_evidence": "5ce2106f461444bb",
   "automatic_runtime_updates": false,
@@ -110,5 +110,6 @@
     "sha256": "e80db2dad715a6c5adabe292d31ed54e11f4e9b99ca349827b50573b175891bc",
     "source_archive": "7z2606-src.tar.xz",
     "license": "7zip-LICENSE.txt"
-  }
+  },
+  "performance_revision": "cached-integrity-stop-event-v2"
 }

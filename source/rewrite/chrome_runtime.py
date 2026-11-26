@@ -1,6 +1,7 @@
 """Provision the exact private Chrome runtime directly from Google on first use."""
 from contextlib import contextmanager
 import hashlib
+import json
 import os
 from pathlib import Path, PurePosixPath
 import re
@@ -41,14 +42,53 @@ def _inventory(manifest):
     return rows
 
 
-def _ready(runtime, rows):
+def _ready(runtime, rows, report=None):
+    started=monotonic();hashed_bytes=0;hashed_files=0;cached_files=0
+    inventory_id=hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    receipt=runtime.parent/'runtime-verification.json'
+    previous={}
+    try:
+        value=json.loads(receipt.read_text(encoding='utf-8'))
+        if (isinstance(value,dict) and value.get('schema')==1 and value.get('inventory_id')==inventory_id
+                and isinstance(value.get('files'),dict)):previous=value['files']
+    except (OSError,ValueError,TypeError):pass
+    current={}
     for row in rows.values():
         path = runtime/row['path']
         try:
-            if path.stat().st_size != row['bytes'] or _checksum(path) != row['sha256']:
+            before=path.stat()
+            if path.is_symlink() or getattr(path.lstat(),'st_file_attributes',0)&1024:return False
+            signature=[before.st_size,before.st_mtime_ns,before.st_ctime_ns,before.st_ino]
+            if before.st_size!=row['bytes']:
                 return False
+            if previous.get(row['path'])==signature:
+                cached_files+=1
+            else:
+                if _checksum(path)!=row['sha256']:return False
+                after=path.stat()
+                if signature!=[after.st_size,after.st_mtime_ns,after.st_ctime_ns,after.st_ino]:return False
+                hashed_files+=1;hashed_bytes+=row['bytes']
+            current[row['path']]=signature
         except FileNotFoundError:
             return False
+    temporary=None
+    try:
+        if current!=previous:
+            temporary=receipt.with_name('runtime-verification-'+uuid.uuid4().hex+'.tmp')
+            temporary.write_text(json.dumps({'schema':1,'inventory_id':inventory_id,'files':current}),encoding='utf-8')
+            os.replace(str(temporary),str(receipt))
+    except OSError as error:
+        if report:report({'event':'chrome_cdm_integrity_receipt','stage':'private_chrome_runtime',
+            'exception':exception_details(error),'result':'failure'})
+    finally:
+        if temporary is not None:
+            try:temporary.unlink(missing_ok=True)
+            except OSError as error:
+                if report:report({'event':'chrome_cdm_integrity_receipt_cleanup','stage':'private_chrome_runtime',
+                    'exception':exception_details(error),'result':'failure'})
+    if report:report({'event':'chrome_cdm_runtime_integrity','stage':'private_chrome_runtime',
+        'hashed_bytes':hashed_bytes,'hashed_files':hashed_files,'unchanged_verified_files':cached_files,
+        'inventory_id':inventory_id,'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
     return True
 
 
@@ -105,13 +145,13 @@ def ensure(root, manifest, report, cancel=lambda: False, progress=lambda percent
         runtime = root/'runtime'
         if cancel():
             raise PreparationCancelled()
-        if _ready(runtime, rows):
+        if _ready(runtime, rows, report):
             outcome = 'success'
             emit('success', operation='verify_existing_runtime', files=len(rows),
                  download_required=False, system_chrome_required=False, automatic_updates=False)
             return runtime
         with _install_lock(root, cancel):
-            if _ready(runtime, rows):
+            if _ready(runtime, rows, report):
                 outcome = 'success'
                 emit('success', operation='runtime_prepared_by_other_invocation', files=len(rows))
                 return runtime
