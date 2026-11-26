@@ -202,6 +202,16 @@ def LogIn(retToken=False):
         observe({'event': 'signin_complete', 'authorization_mode': mode,
                  'device_registered': authorization is not None, 'cookie_count': len(result),
                  'server_verification_confirmed': bool(identity.get('verified') or authorization is not None), 'result': 'success'})
+        try:
+            import json
+            reply = json.loads(xbmc.executeJSONRPC(json.dumps({'jsonrpc':'2.0','id':1,
+                'method':'JSONRPC.NotifyAll','params':{'sender':g.addon.getAddonInfo('id'),
+                'message':'account_verified'}})))
+            if 'error' in reply:raise RuntimeError('Kodi did not deliver the account-ready notification')
+            observe({'event':'signin_interface_notified','stage':'account_handoff','result':'success'})
+        except Exception as error:
+            observe({'event':'signin_interface_notification_failed','stage':'account_handoff',
+                'exception':exception_details(error),'result':'failure'})
         g.dialog.notification(TITLE, 'Signed in and verified by Amazon.', sound=False)
         if retToken and authorization is not None:
             result.clear()

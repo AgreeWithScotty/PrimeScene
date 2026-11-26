@@ -1,0 +1,114 @@
+{
+  "schema": 3,
+  "implementation": "owned_standard_cdm10_proxy_private_regular_chrome",
+  "chrome_abi_fixture": "158.0.8127.89",
+  "chrome_executable": "runtime/chrome.exe",
+  "version_policy": "exact user-approved official stable payload; no system browser or updater",
+  "cdm_abi": 10,
+  "delegated_cdm_version": "4.10.3112.0",
+  "google_cdm_bundled": false,
+  "runtime_expanded_bytes": 386893827,
+  "runtime_files": [
+    {
+      "path": "chrome.exe",
+      "bytes": 4723864,
+      "sha256": "7438b8758a49df9e4c414a252e100069cc9ef8571eff92741d38425e44ea31f8"
+    },
+    {
+      "path": "158.0.8127.89/chrome.dll",
+      "bytes": 313672344,
+      "sha256": "72362adb3fe8b55ef02aff5f079b60307398e3486a79b12711d9849185a5ab34"
+    },
+    {
+      "path": "158.0.8127.89/chrome_elf.dll",
+      "bytes": 2898584,
+      "sha256": "6dda0de51ef81f50d22d3fd4e25c6fd00001d40523a72979ffc8f4bda324e4a4"
+    },
+    {
+      "path": "158.0.8127.89/icudtl.dat",
+      "bytes": 10824576,
+      "sha256": "e1ed8f674bb8449731b79cae956042da59f9ecbd37c8d3f86586a22b4836e5b2"
+    },
+    {
+      "path": "158.0.8127.89/v8_context_snapshot.bin",
+      "bytes": 709560,
+      "sha256": "e9880677788a3fb44d58a320c6be5a32b228eab8448cfdcef13f450820768add"
+    },
+    {
+      "path": "158.0.8127.89/chrome.exe.sig",
+      "bytes": 1427,
+      "sha256": "98702f0fcd03f907a7073b2776b3dd0d384358b49d506c76bb0a0c99dee154b5"
+    },
+    {
+      "path": "158.0.8127.89/chrome.dll.sig",
+      "bytes": 1427,
+      "sha256": "800bad4481012b336ba383df86d1e5825b93aeafa5ff5446b34a946efc91a9dc"
+    },
+    {
+      "path": "158.0.8127.89/resources.pak",
+      "bytes": 27715745,
+      "sha256": "8220a44d3c5560b1ffb4c7710b90c4e6af9a784ecc8f8f2baa9a5bfe34c3a2a0"
+    },
+    {
+      "path": "158.0.8127.89/chrome_100_percent.pak",
+      "bytes": 1032898,
+      "sha256": "456210a72f14e7f57d2bf130a4bc4d41cae0149b8130d5c4934eecc3284ff488"
+    },
+    {
+      "path": "158.0.8127.89/chrome_200_percent.pak",
+      "bytes": 1799779,
+      "sha256": "574970ff52b2d63428cbc355127875165d7d8a551a3cf8e31549ad37fc726328"
+    },
+    {
+      "path": "158.0.8127.89/locales/en-US.pak",
+      "bytes": 540547,
+      "sha256": "cd66fd6dccf3e172cd7bcf5ecb29955631dab08cd1b0ec79a9a875153b5fc73f"
+    },
+    {
+      "path": "158.0.8127.89/WidevineCdm/LICENSE",
+      "bytes": 473,
+      "sha256": "20de375707692099b3132084695377ce5fec0aec05813dedcce094b8eda44386"
+    },
+    {
+      "path": "158.0.8127.89/WidevineCdm/manifest.json",
+      "bytes": 942,
+      "sha256": "fd7a3a82907ee7715ec2e3c99d400cd45b17e525d217710c704ef53394673e3c"
+    },
+    {
+      "path": "158.0.8127.89/WidevineCdm/_platform_specific/win_x64/widevinecdm.dll",
+      "bytes": 22970008,
+      "sha256": "7b44e84403fbb3faee15ca2d56eb8432fdf4eb68812c4460abdd20972528e825"
+    },
+    {
+      "path": "158.0.8127.89/WidevineCdm/_platform_specific/win_x64/widevinecdm.dll.sig",
+      "bytes": 1427,
+      "sha256": "f9f160cb5ca37ef81a3aa80eeb7fef8b302e18c82d92c34f42503e0ab085ada5"
+    },
+    {
+      "path": "158.0.8127.89/158.0.8127.89.manifest",
+      "bytes": 226,
+      "sha256": "3454efd70ee873bd3210a33bbeea4d605ac28e04c2b46ddef96d0b789cdecb84"
+    }
+  ],
+  "artifacts": {
+    "widevinecdm.dll": "8125d801fc84e81b07029192046f77fb45480b2bb2b0bc3878e5f7a8036392ba",
+    "transport_probe.exe": "ddd9cdb09f3223720eab111c57bae68f2c72959fd271acee5f9573b2b5a5f03b"
+  },
+  "actual_abi_evidence": "5ce2106f461444bb",
+  "automatic_runtime_updates": false,
+  "system_chrome_required": false,
+  "official_source_installer_sha256": "e94768730a55bfe698d65899a9aa43d498a8816e7ce3b307bd9d07ac230a9371",
+  "runtime_source": "google_direct_download",
+  "runtime_download": {
+    "url": "https://edgedl.me.gvt1.com/edgedl/release2/chrome/cegotz2vlsfimli3uv34l7ztzm_158.0.8127.89/158.0.8127.89_chrome_installer_uncompressed.exe",
+    "bytes": 536490408,
+    "sha256": "e94768730a55bfe698d65899a9aa43d498a8816e7ce3b307bd9d07ac230a9371"
+  },
+  "runtime_extractor": {
+    "file": "7zr.exe",
+    "version": "26.06",
+    "sha256": "e80db2dad715a6c5adabe292d31ed54e11f4e9b99ca349827b50573b175891bc",
+    "source_archive": "7z2606-src.tar.xz",
+    "license": "7zip-LICENSE.txt"
+  }
+}

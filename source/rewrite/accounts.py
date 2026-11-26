@@ -18,6 +18,11 @@ _threads = local()
 
 def reset_runtime(profile):
     getattr(_threads, 'epochs', {}).pop(str(profile), None)
+    runtime = getattr(_threads, 'runtime', None)
+    if runtime is not None and Path(runtime.DATA_PATH) == Path(profile):
+        # Kodi keeps settings on each Addon object. Changing login_acc through
+        # the sign-in object's settings does not refresh every existing reader.
+        del _threads.runtime
 
 
 def _context():

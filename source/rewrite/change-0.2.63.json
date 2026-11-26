@@ -1,0 +1,112 @@
+{
+  "version": "0.2.63",
+  "sha256": "f9b4148330deb601e96608170455e53918eb91de8099ac1a29f5c59bcc9de9ee",
+  "bytes": 5348315,
+  "files": 171,
+  "changed_files": [
+    "plugin.video.primeinterface/NOTICE.md",
+    "plugin.video.primeinterface/README.md",
+    "plugin.video.primeinterface/addon.xml",
+    "plugin.video.primeinterface/changelog.txt",
+    "plugin.video.primeinterface/resources/lib/accounts.py",
+    "plugin.video.primeinterface/resources/lib/aurora.py",
+    "plugin.video.primeinterface/resources/lib/chrome_cdm_bridge.py",
+    "plugin.video.primeinterface/resources/lib/http_transport.py",
+    "plugin.video.primeinterface/resources/lib/media_proxy.py",
+    "plugin.video.primeinterface/resources/lib/media_quality.py",
+    "plugin.video.primeinterface/resources/lib/media_resources.py",
+    "plugin.video.primeinterface/resources/lib/playback_engine.py",
+    "plugin.video.primeinterface/resources/lib/prime_login.py",
+    "plugin.video.primeinterface/resources/lib/regional_hosts.py",
+    "plugin.video.primeinterface/resources/lib/service_host.py",
+    "plugin.video.primeinterface/resources/lib/web_widevine.py",
+    "plugin.video.primeinterface/resources/lib/widevine_certificate.py",
+    "plugin.video.primeinterface/resources/lib/widevine_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/windows_hdcp.py",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/NOTICE.txt",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/THIRD_PARTY_NOTICES.txt",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/bridge.json",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/transport_probe.exe",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/widevinecdm.dll",
+    "plugin.video.primeinterface/resources/settings.xml",
+    "plugin.video.primeinterface/resources/skins/Default/1080i/PrimeSceneHome.xml"
+  ],
+  "added_files": [
+    "plugin.video.primeinterface/resources/lib/chrome_cdm_bridge.py",
+    "plugin.video.primeinterface/resources/lib/media_quality.py",
+    "plugin.video.primeinterface/resources/lib/web_widevine.py",
+    "plugin.video.primeinterface/resources/lib/widevine_certificate.py",
+    "plugin.video.primeinterface/resources/lib/widevine_diagnostics.py",
+    "plugin.video.primeinterface/resources/lib/windows_hdcp.py",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/NOTICE.txt",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/THIRD_PARTY_NOTICES.txt",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/bridge.json",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/transport_probe.exe",
+    "plugin.video.primeinterface/resources/native/windows-x64/chrome-cdm/widevinecdm.dll"
+  ],
+  "removed_files": [],
+  "kodi_ui_outcome_observed": false,
+  "mocked_provider_or_kodi_tests": false,
+  "native_test": {
+    "attempt": "2b435fb1739040c7",
+    "stock_kodi": "21.3",
+    "stock_isa": "21.5.25",
+    "video_width": 1920,
+    "video_height": 800,
+    "codec": "H264",
+    "audio_bitrate": 128000,
+    "real_frames": 2873,
+    "media_seconds": 30.0,
+    "wall_seconds": 30.0,
+    "terminal": "clean_stop",
+    "protected_binaries_unchanged": [
+      {
+        "file": "kodi.exe",
+        "sha256": "fef16f362aa405ab83fe7e7f34948c3b062df9d0701eb883f7834301562fe0ae",
+        "unchanged": true
+      },
+      {
+        "file": "inputstream.adaptive.dll",
+        "sha256": "f68535efa1c2cf64fef9a601d1ce740a43c494d84bb319cac2c9ef23b9c34bd2",
+        "unchanged": true
+      },
+      {
+        "file": "original_widevinecdm.dll",
+        "sha256": "7b44e84403fbb3faee15ca2d56eb8432fdf4eb68812c4460abdd20972528e825",
+        "unchanged": true
+      }
+    ],
+    "visual_screenshot_confirmation": false
+  },
+  "cleanup": {
+    "attempt": "7670efa3a363451d",
+    "result": "success",
+    "retired_code_references": 0
+  },
+  "native_sources": {
+    "BUILD.gn": "201cb0d123c800606a5090860f20a95364a976820d461d9a0249f01c329ed58c",
+    "build_mojo_transport_client.py": "b30cfd8d2becc0f886602e043653e10c41d2e8f6187d870a66c039d530275e59",
+    "configure_mojo_client.py": "d956682b989932b645abf367acf46e1a2bf33fdbc6c4f45aeed668ee72a49c13",
+    "content_session_probe.h": "c69b469a187743c7f942ba38832c9136f0a6bcccef5e60c91f28186a9720bbd2",
+    "decoder_probe.h": "a71c34d76b1db86a0958647d38b247841b54376279bafd0fb159f09f7a6810a3",
+    "derive_chrome_bridge_protocol.py": "88e756d4f6300081b92c45a29ab49a4912bcf481c1487d5dc52b8045d0c19148",
+    "fetch_chrome_bridge_sources.py": "845a1b5faedee8c73b2033a2909a7179ec5c7965bdc0c33a24ac2c977b1c6bad",
+    "kodi_cdm_proxy.cc": "4d8627b89c19ec774fa89eb529309449ceee97b5dc720eb0a09ec13421d840a8",
+    "LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b",
+    "native_bridge_server.h": "e9c8c272f24974dbfe98861e46f580fecfd8d111159ccc60989f2dda459e16c4",
+    "native_proxy_wire.h": "78ce548954cd49c55665605bf5ea600a6040365ba37c0f93ed99e38b58e46277",
+    "native_windows_output.h": "5c89ca00130e25581dcfa359bf3b7b095974bd2c55e6042043858d379bb0c294",
+    "prepare_mojo_client_inputs.py": "56392e40e8aecc9baa554a77030bf09a6e32b6bf4a7f2d85800f575235b74fa5",
+    "prepare_mojo_client_toolchain.py": "b9c8688c8427b1e1b9b1a45ccc2ce22ebc0c8a5578ba51d5651a6ba84823875e",
+    "protocol_fixture.h": "d229f897ee505e5515d12bca86b5706a1e4f38711c04ddc20fedaa15bc3f7049",
+    "proxy_abi_probe.cc": "95e176c0b40d781ceab315c88fd94dee6a9cfe6a85d78362159deae0b3cc56a7",
+    "remote_cdm_probe.h": "7eab0e555047652518aa5cbb42266a816a742152bc9dc59ce314e7b86706391f",
+    "resolve_mojo_client_graph.py": "44385b8b130dff58333bba5430d7137f93d7e772fdfaf400b661f404e9ec6814",
+    "scope_mojo_client_build.py": "4982faa431a8641cff18159d2f28175b58fd15bb73770e2dd362d18b9781f651",
+    "THIRD_PARTY_NOTICES.txt": "32866f1c90f6bc6780a82ce50f48818cf4bce2c6dc1a4bee453e3bc3eecd5ffc",
+    "transport_probe.cc": "b7f7482f0101f2ffc134b7a3b504ff36e3ad2780be14978f7d07a16b0be185cd",
+    "wire_protocol.h": "1f15200fca63d6d88fedd177f90c71d449d8e0e79d85363cf30b685be4668619"
+  },
+  "chrome_requirement": "Windows64 installed Chrome158.0.8127.37 only",
+  "public_promotion": false
+}

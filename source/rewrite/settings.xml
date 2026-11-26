@@ -33,22 +33,12 @@
           <default>false</default>
           <control type="toggle" />
         </setting>
-        <setting id="enable_uhd" type="boolean" label="32106">
-          <level>0</level>
-          <default>false</default>
-          <control type="toggle" />
-        </setting>
         <setting id="enable_hdr10" type="boolean" label="32107">
           <level>0</level>
           <default>false</default>
           <control type="toggle" />
         </setting>
         <setting id="enable_dovi" type="boolean" label="32108">
-          <level>0</level>
-          <default>false</default>
-          <control type="toggle" />
-        </setting>
-        <setting id="l3_request_hd" type="boolean" label="32109">
           <level>0</level>
           <default>false</default>
           <control type="toggle" />

@@ -47,6 +47,7 @@ ADDON_ID = 'plugin.video.primeinterface'
 # Estuary always ships Home.xml, so that name loads the skin window. These
 # names are not skin windows, so the add-on files are the ones that open.
 _HOME_XML = 'PrimeSceneHome.xml'
+_ACCOUNT_READY_CONTROL = 8999
 # Every role uses the original, including small cards and service tiles.
 _CARD_ART = None
 _HERO_ART = None
@@ -558,7 +559,10 @@ class _AccountMonitor(xbmc.Monitor):
         self.window = window
 
     def onNotification(self, sender, method, data):
-        if self.window is not None and sender == ADDON_ID and method.rsplit('.', 1)[-1] == 'account_invalidated':
+        if self.window is None or sender != ADDON_ID:return
+        if method.rsplit('.', 1)[-1] == 'account_verified':
+            self.window._queue_account_refresh()
+        elif method.rsplit('.', 1)[-1] == 'account_invalidated':
             self.window.stop.set()
             from .account_state import clear_runtime
             try:
@@ -572,6 +576,9 @@ class AuroraHome(xbmcgui.WindowXML):
         self.g = kwargs.pop('globals_instance')
         self.account_name = kwargs.pop('account_name', None)
         self.account_action = kwargs.pop('account_action', None)
+        self._account_refresh_pending = Event()
+        self._account_refresh_lock = RLock()
+        self._account_refreshing = False
         self.offer_signin = kwargs.pop('offer_signin', False)
         self.launch_diagnostics = kwargs.pop('launch_diagnostics', None)
         _prepare(self, args)
@@ -582,6 +589,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.generation = 0
         self.rows = []
         self.history = []
+        self._back_menu_ready=False
         self.path = '__genres__/movies'
         self.query = None
         self.heading = 'Movies'
@@ -837,6 +845,51 @@ class AuroraHome(xbmcgui.WindowXML):
         from .account_state import needs_cleanup
         name = self.account_name() if self.account_name is not None else ''
         self.setProperty('AccountLabel', 'Finish sign out' if needs_cleanup(self.g.DATA_PATH) else 'Sign out' if name else 'Sign in')
+
+    def _queue_account_refresh(self):
+        if self.window_id is None or self._account_refresh_pending.is_set():return
+        self._account_refresh_pending.set()
+        report=DiagnosticLog(self.g.DATA_PATH,self.g.addon.getAddonInfo('version'),operation='account_handoff')
+        try:
+            xbmc.executebuiltin('SendClick(%d,%d)'%(self.window_id,_ACCOUNT_READY_CONTROL))
+            report({'event':'account_interface_refresh_queued','stage':'account_handoff','result':'success'})
+        except Exception as error:
+            self._account_refresh_pending.clear()
+            report({'event':'account_interface_refresh_queue_failed','stage':'account_handoff',
+                'exception':exception_details(error),'result':'failure'})
+
+    def _refresh_account_interface(self, source):
+        with self._account_refresh_lock:
+            if self._account_refreshing:return
+            self._account_refreshing=True
+            self._account_refresh_pending.clear()
+            started=monotonic()
+            report=DiagnosticLog(self.g.DATA_PATH,self.g.addon.getAddonInfo('version'),operation='account_handoff')
+            try:
+                from .account_state import account_epoch
+                from .accounts import reset_runtime
+                reset_runtime(self.g.DATA_PATH)
+                signed_in=bool(self.account_name and self.account_name())
+                epoch=account_epoch(self.g.DATA_PATH)
+                current=(signed_in and self.account_generation==epoch and self.worker is not None
+                    and self.worker.is_alive() and not self.stop.is_set())
+                if not current:
+                    if self.worker is not None:self.pause_catalog('Loading account...')
+                    self.stop=Event()
+                    if signed_in:self._initialize_controls()
+                    else:self.show_signed_out()
+                self.update_account_button()
+                report({'event':'account_interface_refreshed','stage':'account_handoff','source':source,
+                    'signed_in':signed_in,'already_current':current,
+                    'catalog_worker_alive':bool(self.worker and self.worker.is_alive()),
+                    'native_window_active':xbmcgui.getCurrentWindowId()==self.window_id,
+                    'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
+            except Exception as error:
+                report({'event':'account_interface_refresh_failed','stage':'account_handoff','source':source,
+                    'elapsed_ms':round((monotonic()-started)*1000),'exception':exception_details(error),'result':'failure'})
+                self.setProperty('StartupSplash','')
+                self.g.dialog.ok('Smooth Prime','The account view could not refresh. Your saved sign-in was kept. Open Diagnostics for the report.')
+            finally:self._account_refreshing=False
 
     def show_signed_out(self):
         self._startup=None;self.setProperty('StartupSplash','');self.setProperty('ArtworkRecovery','')
@@ -1141,6 +1194,7 @@ class AuroraHome(xbmcgui.WindowXML):
 
     def navigate(self, path, remember=True, query=None, selection=None, heading=None, series=None, save_current=True, intro_art=''):
         if self.stop.is_set():return
+        self._back_menu_ready=False
         self._cancel_genre_selection('navigation_changed')
         if (path,query)!=(self.path,self.query):self._dismiss_pending_playback_refresh()
         if self.account_name is not None and not self.account_name():
@@ -2564,6 +2618,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self._focus_first_card()
 
     def _show_search(self):
+        self._back_menu_ready=False
         self.setProperty('NavigationBackdrop','')
         if self.path=='search' and self.query is None and self.genre_owner is None:return
         if self.account_name is not None and not self.account_name():return
@@ -2587,6 +2642,7 @@ class AuroraHome(xbmcgui.WindowXML):
             'generation':self.generation,'old_section_cards_retained':False,'result':'success'})
 
     def _activate_section(self,control_id,focus_cards=False):
+        if focus_cards:self._back_menu_ready=False
         if control_id in (301,302,303):
             self._show_genres(control_id,focus_grid=focus_cards)
             return
@@ -2601,6 +2657,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if focus_cards:self._focus_first_card()
 
     def _show_genres(self,owner,focus_grid=True):
+        self._back_menu_ready=False
         self.setProperty('GenreEntryFocus','1')
         self._cancel_genre_selection('menu_selected')
         self.setProperty('NavigationBackdrop','')
@@ -2940,6 +2997,8 @@ class AuroraHome(xbmcgui.WindowXML):
                     'exception':exception_details(error),'result':'failure'})
 
     def onClick(self, control_id):
+        if control_id==_ACCOUNT_READY_CONTROL:
+            self._refresh_account_interface('account_notification');return
         if self.getProperty('StartupSplash'):return
         primary = {309: '__watching__', 301: '__prime_movies__', 302: '__prime_tv__',
                    303: '__extras__', 308: '__prime_watchlist__'}
@@ -2954,31 +3013,15 @@ class AuroraHome(xbmcgui.WindowXML):
             self._choose_season()
         elif control_id == 305:
             self.g.addon.openSettings()
-            self.update_account_button()
-            if self.account_name is not None and not self.account_name():
-                self.pause_catalog()
-                self.stop = Event()
-                self.show_signed_out()
-            elif self.account_generation is not None:
-                from .account_state import current_account
-                if not current_account(self.g.DATA_PATH, self.account_generation):
-                    self.pause_catalog()
-                    self.stop = Event()
-                    self._initialize_controls()
+            self._refresh_account_interface('settings_closed')
         elif control_id == 306 and self.account_action is not None:
-            changed = False
             try:
-                changed = self.account_action(self.pause_catalog)
+                self.account_action(self.pause_catalog)
             except Exception as error:
                 self.g.dialog.ok('Smooth Prime', str(error) if isinstance(error, RuntimeError)
                                  else 'Account controls could not finish (' + type(error).__name__ + ').')
             finally:
-                self.stop = Event()
-                self.update_account_button()
-                if self.account_name and self.account_name() and (changed or self.worker is None):
-                    self._initialize_controls()
-                elif self.account_name is not None and not self.account_name():
-                    self.show_signed_out()
+                self._refresh_account_interface('account_action')
         elif control_id == 200:
             row = self._selected_row()
             if row:self._activate_row(row,self._capture_playback_origin())
@@ -3004,6 +3047,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self._cancel_genre_selection('interface_closed')
         self.performance({'event':'interface_exit_requested','stage':'user_back',
             'reason':reason,'signed_out_view':self._signed_out_view,
+            'focused_control':self.getFocusId(),'history_depth':len(self.history),'menu_back_ready':self._back_menu_ready,
             'workers_stopped':self.stop.is_set(),'generation':self.generation,'result':'requested'})
         self.stop.set()
         self._unregister_return()
@@ -3027,6 +3071,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self._exit_to_kodi('signed_out' if self._signed_out_view else 'workers_stopped')
             return
         focus=self.getFocusId()
+        if action_id not in _BACK and focus in (200,410,415):self._back_menu_ready=False
         if focus==410 and action_id in (1,2):
             self.setProperty('GenreEntryFocus','');self._observe_genre_panel()
         elif self.genre_owner in (301,302) and action_id in (3,4):self.setProperty('GenreEntryFocus','1')
@@ -3047,7 +3092,9 @@ class AuroraHome(xbmcgui.WindowXML):
         if self.getProperty('GenrePanel') and action_id in _BACK and focus in (410,415):
             if self._genre_selection:
                 self._cancel_genre_selection('back_pressed');return
-            self.setFocusId(self.genre_owner)
+            self._back_menu_ready=True;self.setFocusId(self.genre_owner)
+            self.performance({'event':'back_to_main_menu','stage':'back_navigation','source':'genre_grid',
+                'from_control':focus,'target_control':self.genre_owner,'generation':self.generation,'result':'success'})
             return
         if action_id not in _BACK:
             return
@@ -3065,7 +3112,17 @@ class AuroraHome(xbmcgui.WindowXML):
             self._show_genres(303,focus_grid=True)
             self.performance({'event':'back_to_service_grid','stage':'back_navigation','result':'success'})
         else:
-            self._exit_to_kodi('root_back')
+            menu_controls=(301,302,303,304,305,306,308,309)
+            if not self._back_menu_ready or focus not in menu_controls:
+                self._dismiss_pending_playback_refresh()
+                self._focus_first_generation=None;self._focus_receipt=None;self._pending_progress_return=None
+                self._back_menu_ready=True;target=self._menu_control()
+                self.setProperty('GenreEntryFocus','1');self.setFocusId(target)
+                self.performance({'event':'back_to_main_menu','stage':'back_navigation','source':'root_content',
+                    'from_control':focus,'target_control':target,'section':self.nav,
+                    'cards_retained':len(self.rows),'history_depth':len(self.history),
+                    'generation':self.generation,'result':'success'})
+            else:self._exit_to_kodi('root_back_from_menu')
 
     def _card_actions(self,info_only=False):
         row=self._selected_row()

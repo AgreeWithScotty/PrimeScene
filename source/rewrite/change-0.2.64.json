@@ -1,0 +1,59 @@
+{
+  "version": "0.2.64",
+  "previous": "0.2.63",
+  "bytes": 7263100,
+  "files": 176,
+  "sha256": "4ad98acc4cd54de1affcb0ac0ecaa8161f42d4afe8408c4d4f3ce5d8dd09ad27",
+  "changes": [
+    "Automatically download pinned regular Chrome 158.0.8127.89 directly from Google on first Windows x64 HD playback; no separate Chrome installation.",
+    "Verify the Google payload and every private runtime file; reuse the fixed version independently of system browser updates.",
+    "Show cancellable first-use setup with atomic installation, interrupted-download recovery and temporary-file cleanup.",
+    "Keep HD playback in stock Kodi with the owned CDM adapter; do not modify Kodi, InputStream Adaptive or a system browser.",
+    "Include the unmodified 7-Zip extractor, license and exact source; distribute no Google Chrome or Widevine binaries.",
+    "Preserve accumulated region, Watchlist, season loading, sign-in catalog refresh, Back/resume, title sizing and original artwork fixes.",
+    "Expand redacted download, integrity, extraction, cancellation, native playback and quality diagnostics."
+  ],
+  "google_binaries_bundled": false,
+  "runtime_version": "158.0.8127.89",
+  "google_first_use_download_bytes": 536490408,
+  "actual_tests": {
+    "cold_runtime_download_bytes": 536490408,
+    "cold_download_ms": 9359,
+    "warm_google_downloads": 0,
+    "cold_decoded_frames": 708,
+    "warm_decoded_frames": 309,
+    "native_video": {
+      "codec": "h264",
+      "height": 800,
+      "index": 0,
+      "language": "",
+      "name": "",
+      "width": 1920
+    },
+    "system_chrome_required": false,
+    "automatic_browser_updates": false,
+    "temporary_payload_absent": true,
+    "bundled_google_archive_absent": true,
+    "cdm_path_restored": "special://home/cdm",
+    "owned_kodi_closed": true,
+    "volume": 0,
+    "uhd_result": "uhd_requested_provider_manifest_capped_below_4k",
+    "uhd_manifest_widths": [
+      480,
+      512,
+      640,
+      704,
+      960,
+      1280,
+      1920
+    ],
+    "physical_display_visual_confirmation": false
+  },
+  "cold_attempt": "27f6b5fc290142d2",
+  "warm_attempt": "66ee166d829645d5",
+  "uhd_result": "uhd_requested_provider_manifest_capped_below_4k",
+  "new_playback_test_for_version_bump": false,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "public_promotion": false
+}

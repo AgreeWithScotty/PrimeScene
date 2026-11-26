@@ -3,11 +3,12 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 import math
 import re
 from secrets import token_urlsafe
-from threading import RLock,Thread
+from threading import Event,RLock,Thread
 from time import monotonic
 from urllib.parse import urljoin,urlsplit
 import xml.etree.ElementTree as ET
-from .http_transport import HttpTransport,https_address,shape,TransportFailure
+from .http_transport import HttpTransport
+from .media_resources import MediaServiceError
 from .prime_diagnostics import exception_details,route
 
 
@@ -63,15 +64,43 @@ def dash_document(data,address,report):
         for base in bases:base.text=urljoin(address,base.text or '')
     for location in root.findall(namespace+'Location'):
         location.text=urljoin(address,location.text or '')
-    audio=0
+    systems={'urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95':'playready',
+        'urn:uuid:edef8ba9-79d6-4ace-a3c8-27dcd51d21ed':'widevine',
+        'urn:mpeg:dash:mp4protection:2011':'common_cenc'}
+    protection={};unknown_protection=0;init_data_nodes=0
+    for node in root.iter(namespace+'ContentProtection'):
+        system=systems.get(node.get('schemeIdUri','').lower())
+        if system:protection[system]=protection.get(system,0)+1
+        else:unknown_protection+=1
+        init_data_nodes+=sum(child.tag.rsplit('}',1)[-1] in ('pssh','pro') for child in node)
+    audio=0;video=[];video_sets=0
     for adaptation in root.iter(namespace+'AdaptationSet'):
+        representations=adaptation.findall(namespace+'Representation')
+        if (adaptation.get('contentType')=='video' or adaptation.get('mimeType','').startswith('video/')
+                or any(item.get('mimeType','').startswith('video/') for item in representations)):
+            video_sets+=1
+            for representation in representations:
+                item={}
+                for key in ('width','height','bandwidth'):
+                    value=representation.get(key) or adaptation.get(key)
+                    if value and len(value)<=12 and value.isdigit():item[key]=int(value)
+                codec=representation.get('codecs') or adaptation.get('codecs') or ''
+                if re.fullmatch(r'[A-Za-z0-9.,_-]{1,128}',codec):item['codecs']=codec
+                video.append(item)
         if adaptation.get('contentType')=='audio' or adaptation.get('mimeType','').startswith('audio/'):
             audio+=1
             # Each track remains selectable. Do not prune codecs/bitrates or
             # alter signed provider URLs to force another media source.
             language=adaptation.get('lang')
             if language:adaptation.set('lang',language.replace('_','-'))
-    report({'event':'dash_prepared','stage':'manifest_parse','audio_sets':audio,
+    report({'event':'dash_prepared','stage':'manifest_parse','audio_sets':audio,'video_sets':video_sets,
+        'drm_protection_counts':protection,'other_drm_protection_count':unknown_protection,
+        'drm_init_data_nodes':init_data_nodes,
+        'video_representations':len(video),'video_heights':sorted({v['height'] for v in video if 'height' in v}),
+        'video_widths':sorted({v['width'] for v in video if 'width' in v}),
+        'video_codecs':sorted({v['codecs'] for v in video if 'codecs' in v}),
+        'video_bitrate_range':[min(v['bandwidth'] for v in video if 'bandwidth' in v),
+            max(v['bandwidth'] for v in video if 'bandwidth' in v)] if any('bandwidth' in v for v in video) else [],
         'tracks_removed':0,'media_source_urls_rewritten':False,'result':'success'})
     return ET.tostring(root,encoding='utf-8',xml_declaration=True)
 
@@ -79,7 +108,7 @@ def dash_document(data,address,report):
 class PlaybackProxy:
     def __init__(self,api,resources,report):
         self.api,self.resources,self.report=api,resources,report
-        self.key=token_urlsafe(24);self.lock=RLock();self.refused=None
+        self.key=token_urlsafe(24);self.lock=RLock();self.refused=None;self.failed=Event();self.refused_replays=0
         self.manifest_bytes=None
         self.client=HttpTransport(api.g.DATA_PATH,api.epoch,report,headers=api.headers)
         self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
@@ -87,7 +116,8 @@ class PlaybackProxy:
         self.address='http://127.0.0.1:%d/%s/'%(self.server.server_port,self.key)
         self.thread=Thread(target=self.server.serve_forever,name='SmoothMedia',daemon=True)
         self.thread.start()
-        report({'event':'playback_proxy_started','stage':'local_transport','port':self.server.server_port,'result':'success'})
+        report({'event':'playback_proxy_started','stage':'local_transport','port':self.server.server_port,
+            'transport_revision':'license-response-flush-v1','result':'success'})
     def manifest(self):return self.address+'manifest.mpd'
     def license(self):return self.address+'license'
     def prepare_manifest(self):
@@ -112,6 +142,7 @@ class PlaybackProxy:
         self.resources.manifest='';self.resources.subtitles.clear();self.resources.transitions.clear()
         self.server.owner=None
         self.report({'event':'playback_proxy_closed','stage':'local_transport',
+            'license_failure_present':self.refused is not None,'license_replays_blocked':self.refused_replays,
             'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
 
 
@@ -126,6 +157,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length',str(len(data)));self.send_header('Cache-Control','no-store')
         self.send_header('Connection','close');self.end_headers();self.close_connection=True
         if not head:self.wfile.write(data)
+        self.wfile.flush()
     def dispatch(self,head=False):
         owner=self.server.owner;started=monotonic();kind='validate'
         if owner is None:
@@ -153,10 +185,14 @@ class Handler(BaseHTTPRequestHandler):
                 length=int(self.headers.get('Content-Length','0'))
                 if not 0<length<=1024*1024:raise ValueError('Invalid license request size')
                 with owner.lock:
-                    if owner.refused:raise TransportFailure('The provider already refused this playback license')
+                    if owner.refused is not None:
+                        owner.refused_replays+=1
+                        if owner.refused_replays==1:owner.report({'event':'license_retry_blocked','stage':owner.api.drm_system+'_license',
+                            'provider_requests_repeated':False,'result':'refused'})
+                        self.output(403,b'This playback license was refused.','text/plain',head);return
                     try:data=owner.api.license(self.rfile.read(length))
-                    except Exception:
-                        owner.refused=True;raise
+                    except Exception as error:
+                        owner.refused=error;raise
                 content_type='application/octet-stream'
             elif kind=='manifest.mpd' and self.command in ('GET','HEAD'):
                 data=owner.manifest_bytes
@@ -174,9 +210,28 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError,ConnectionResetError) as error:
             owner.report({'event':'local_media_cancelled','stage':kind.split('/')[0],
                 'exception':exception_details(error),'result':'cancelled'})
+            if kind=='license' and owner.refused is not None:
+                owner.report({'event':'license_failure_response_finished','stage':'license_response',
+                    'response_sent':False,'elapsed_ms':round((monotonic()-started)*1000),'result':'cancelled'})
+                owner.failed.set()
         except Exception as error:
+            if kind=='license' and owner.refused is None:
+                owner.refused=error
             owner.report({'event':'local_media_failed','stage':kind.split('/')[0],
                 'method':self.command,'exception':exception_details(error),
                 'elapsed_ms':round((monotonic()-started)*1000),'result':'failure'})
-            try:self.output(502,b'Playback request failed; see Smooth Prime Diagnostics.','text/plain',head)
-            except (BrokenPipeError,ConnectionResetError):pass
+            status=403 if isinstance(error,MediaServiceError) else 502
+            sent=False
+            try:
+                self.output(status,b'Playback request failed; see Smooth Prime Diagnostics.','text/plain',head)
+                sent=True
+            except OSError as response_error:
+                owner.report({'event':'local_failure_response_error','stage':kind.split('/')[0],
+                    'exception':exception_details(response_error),'result':'failure'})
+            finally:
+                if kind=='license':
+                    owner.report({'event':'license_failure_response_finished','stage':'license_response',
+                        'status':status,'response_sent':sent,'elapsed_ms':round((monotonic()-started)*1000),
+                        'result':'success' if sent else 'cancelled'})
+                    # The native CDM must receive its response before shutdown.
+                    owner.failed.set()
