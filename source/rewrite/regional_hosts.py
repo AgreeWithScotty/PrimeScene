@@ -41,8 +41,25 @@ AUTH_API_DOMAINS=frozenset(('amazon.com','amazon.co.uk','amazon.de','amazon.co.j
 AUTH_API_HOSTS=frozenset('api.'+domain for domain in AUTH_API_DOMAINS)|{'atv-ps.amazon.com'}
 VIDEO_DOMAINS=AUTH_API_DOMAINS|{'primevideo.com'}
 MEDIA_API_HOSTS=frozenset('atv-ps'+suffix+'.'+domain for suffix in ('','-eu','-fe') for domain in VIDEO_DOMAINS)
+# Amazon WebPlayerSDK MarketplaceID.isClassic (observed2026-11-25).
+# A US/UK/DE/JP account can use primevideo.com; its website host/pv flag
+# does not change its marketplace's playback catalog.
+CLASSIC_PLAYBACK_MARKETPLACES=frozenset((
+    'ATVPDKIKX0DER','A1F83G8C2ARO7P','A1PA6795UKMFR9','A1VC38T7YXB528'))
 SECURITY_IMAGE_HOSTS=SIGNIN_NAV_HOSTS|{'images-na.ssl-images-amazon.com','m.media-amazon.com',
     'opfcaptcha-prod.s3.amazonaws.com'}
+
+
+def playback_catalog_context(account):
+    """Match the provider's marketplace rule, independently of website routing."""
+    marketplace=account.get('mid')
+    if not isinstance(marketplace,str) or not marketplace:
+        raise ValueError('Verified account has no playback marketplace')
+    classic=marketplace in CLASSIC_PLAYBACK_MARKETPLACES
+    enabled=not classic
+    return {'gasc_enabled':enabled,'marketplace_class':'classic' if classic else 'global',
+        'catalog_rule':'amazon_webplayer_marketplace_v1',
+        'website_flag_differs':bool(account.get('pv'))!=enabled}
 
 
 def url_rejection(value,hosts):

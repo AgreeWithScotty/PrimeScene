@@ -4,6 +4,10 @@
     <defaultcontrol always="false">301</defaultcontrol>
     <views>200</views>
     <controls>
+        <control type="button" id="8999">
+            <left>0</left><top>0</top><width>1</width><height>1</height>
+            <visible>false</visible><label></label>
+        </control>
         <control type="group" id="9000">
             <visible>!Window.IsVisible(fullscreenvideo)</visible>
             <control type="image">

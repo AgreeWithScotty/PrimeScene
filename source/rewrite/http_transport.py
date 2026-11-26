@@ -30,7 +30,11 @@ def shape(value):
     known=set('error errors errorCode code message status statusCode messageType type body '
         'widevine2License license playbackUrls audioVideoUrls urlSets defaultUrlSetId '
         'avCdnUrlSets urls manifest subtitleUrls forcedNarratives transitionTimecodes '
-        'errorsByResource requestId statusCallbackIntervalSeconds'.split())
+        'errorsByResource requestId statusCallbackIntervalSeconds '
+        'vodPlaylistedPlaybackUrls result ok sessionization sessionHandoffToken '
+        'widevineServiceCertificate encodedServiceCertificate widevineLicense metadata '
+        'keyMetadata keyType cdmUsageLevel hdcp playbackSettings manifestMetadata '
+        'videoQuality intraTitlePlaylist failoverPolicy cdnOrder timedTextUrls'.split())
     stack=[('$',value,0)];out=[]
     while stack and len(out)<40:
         path,node,depth=stack.pop()
@@ -145,10 +149,27 @@ class HttpTransport:
             if isinstance(error,HTTPError):
                 details.update(status=error.code,response_address=route(error.geturl()),
                     server_request_id=error.headers.get('x-amzn-requestid') or error.headers.get('x-amz-rid'))
+                if stage in ('widevine_license','widevine_web_license'):
+                    from .widevine_diagnostics import denial_details
+                    # Amazon can expose the detailed refusal in response headers
+                    # while keeping its JSON body generic. Record only known
+                    # enums/requirement flags, never the raw header text.
+                    error_type=error.headers.get('x-amzn-ErrorType','')
+                    error_message=error.headers.get('x-amzn-ErrorMessage','')
+                    details['drm_denial_header_presence']={
+                        'error_type':bool(error_type),'error_message':bool(error_message)}
+                    details['drm_denial_header_details']=denial_details({
+                        'code':error_type.split(':',1)[0],
+                        'errorType':error_type,'message':error_message,'reason':error_type})
                 try:
                     body=error.read(65537);details['response_bytes']=len(body)
                     if len(body)<=65536:
-                        value=json.loads(body);details.update(protocol_structure=shape(value),server_error_codes=server_errors(value))
+                        value=json.loads(body);codes=server_errors(value)
+                        error.server_error_codes=tuple(codes)
+                        details.update(protocol_structure=shape(value),server_error_codes=codes)
+                        if stage in ('widevine_license','widevine_web_license'):
+                            from .widevine_diagnostics import denial_details
+                            details['drm_denial_details']=denial_details(value)
                 except Exception as decode_error:details['error_body_decode']=exception_details(decode_error)
                 finally:error.close()
             self.report(details)

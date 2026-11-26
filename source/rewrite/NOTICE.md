@@ -8,6 +8,12 @@ or imported. Provider protocol identifiers, request fields and Kodi integration
 properties describe interoperable wire/API contracts; they are not software
 dependencies or claims of affiliation with Amazon.
 
+The owned Windows CDM adapter and IPC helper are under resources/native/windows-x64/chrome-cdm.
+They include Chromium and related permissive open-source components; full notices
+are in that directory's THIRD_PARTY_NOTICES.txt. Corresponding adapter/helper
+source and exact build-input provenance accompany this main-branch update under
+source/native-chrome-cdm. Google Chrome and Google Widevine are not bundled.
+
 The Aurora Cinema interface is adapted from Scott's SmoothFlix:
 https://github.com/AgreeWithScotty/SmoothFlix
 The distributed application source is GPL-3.0-only; see LICENSE. The complete

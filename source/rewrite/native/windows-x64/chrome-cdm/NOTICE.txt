@@ -1,0 +1,5 @@
+Smooth Prime owns this standard CDM10 proxy and Chrome IPC helper.
+The adapter/helper source is provided with this main-branch update under source/native-chrome-cdm.
+Google Chrome and Google Widevine are NOT bundled or modified.
+Windows HD currently requires the exact tested installed Chrome 158.0.8127.37 ABI.
+See THIRD_PARTY_NOTICES.txt for bundled open-source notices.

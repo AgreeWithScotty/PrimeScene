@@ -1,0 +1,29 @@
+// Derived from exact-tag public Chromium IDL and official ordinal generator.
+// Runtime Ping must match; source salt is not assumed to match official binary.
+constexpr uint32_t kExpectedPing = 99445462u;
+constexpr uint32_t kBindCdmService = 978377168u;
+constexpr uint32_t kGetCdmService = 1625570587u;
+constexpr uint32_t kCreateCdmFactory = 1134166181u;
+constexpr uint32_t kCreateCdm = 174541426u;
+constexpr uint32_t kFrameGetOrigin = 1120008786u;
+constexpr uint32_t kFrameBindEmbedder = 1218805524u;
+constexpr uint32_t kCdmSetClient = 1210134911u;
+constexpr uint32_t kCdmSetCertificate = 323918878u;
+constexpr uint32_t kCdmGenerateRequest = 602708871u;
+constexpr uint32_t kCdmOnMessage = 2117484727u;
+constexpr uint32_t kCdmUpdateSession = 2023137947u;
+constexpr uint32_t kCdmOnKeysChange = 815140025u;
+constexpr uint32_t kOutputQuery = 302671859u;
+constexpr uint32_t kOutputEnable = 1125361355u;
+constexpr uint32_t kDecryptorInitializeVideo = 2034260332u;
+constexpr uint32_t kDecryptorInitialize = 1504529189u;
+constexpr uint32_t kDecryptorDecodeVideo = 1019599039u;
+constexpr uint32_t kDecryptorDecrypt = 1595394936u;
+constexpr uint32_t kCdmCloseSession = 1092795428u;
+constexpr uint32_t kCdmLoadSession = 468347997u;
+constexpr uint32_t kCdmRemoveSession = 348138396u;
+constexpr uint32_t kCdmPolicy = 119991324u;
+constexpr uint32_t kCdmOnClosed = 368607158u;
+constexpr uint32_t kCdmOnExpiry = 439587689u;
+constexpr uint32_t kDecryptorReset = 413535383u;
+constexpr uint32_t kDecryptorDeinitialize = 455615764u;

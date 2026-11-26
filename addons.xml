@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.62" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.63" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.62[CR]- Read Amazon My Stuff pagination metadata and keep readable Watchlist titles with an explicit retry notice if later pages fail.[CR]- Prepare focused TV seasons in the background, share pending title reads and reuse decoded TV documents.[CR]- Show Amazon location-refusal details and record playback failures separately from user cancellations.[CR]- Use one fixed content-title size and one smaller continuation size, with equal canvases and wrapped overflow.[CR]- Request original-quality Amazon artwork for cards, posters, backgrounds, genres and Extras; remove reduced-size cache reuse.[CR]- Expand redacted pagination, artwork selection, source dimensions, provider-error and timing diagnostics.</news>
+    <news>0.2.63[CR]- Play Amazon HD through stock Windows Kodi using the bundled CDM adapter and genuine installed Chrome Widevine; no modified Kodi required.[CR]- Correct canonical feature-title resolution, license key callback timing, unknown H264 profile mapping and native transport throughput.[CR]- Request quality automatically and retain bounded lower-quality retries when Amazon refuses authorization.[CR]- Refresh account runtime and the open catalog after sign-in; preserve root Back navigation and playback return.[CR]- Keep accumulated regional media, resume, subtitle, artwork and catalog fixes; remove retired native PlayReady and host-verification experiments.[CR]- Collect redacted native, license, output-protection, stream-quality and shutdown diagnostics.[CR]- Windows HD currently requires installed 64-bit Chrome 158.0.8127.37; other Chrome versions use the standard playback route.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

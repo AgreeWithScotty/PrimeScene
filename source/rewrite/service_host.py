@@ -10,7 +10,7 @@ class AccountMonitor(xbmc.Monitor):
     def __init__(self,g):
         super().__init__();self.g=g;self._prime_scene_epoch=account_epoch(g.DATA_PATH)
     def onNotification(self,sender,method,data):
-        if sender==self.g.addon.getAddonInfo('id') and method.rsplit('.',1)[-1]=='account_invalidated':
+        if sender==self.g.addon.getAddonInfo('id') and method.rsplit('.',1)[-1] in ('account_invalidated','account_verified'):
             refresh_service_session(self.g,self)
 
 def run():
@@ -20,6 +20,11 @@ def run():
     registry.setProperty(property_name,token)
     report=DiagnosticLog(g.DATA_PATH,g.addon.getAddonInfo('version'),operation='service')
     try:
+        from .chrome_cdm_bridge import recover as recover_cdm_path
+        try:recover_cdm_path(g,report)
+        except Exception as error:
+            report({'event':'native_cdm_recovery_incomplete','stage':'startup',
+                'exception':exception_details(error),'result':'failure'})
         refresh_service_session(g,monitor)
         report({'event':'service_started','stage':'observer','result':'success'})
         from .aurora import watch_playback

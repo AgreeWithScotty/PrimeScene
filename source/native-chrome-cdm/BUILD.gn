@@ -1,0 +1,48 @@
+import("//build/toolchain/win/toolchain.gni")
+msvc_toolchain("toolchain") {
+  environment = "environment.x64"
+  cl = rebase_path("$clang_base_path/bin/clang-cl.exe", root_build_dir)
+  sys_include_flags = win_toolchain_data_x64.include_flags_imsvc
+  sys_lib_flags = win_toolchain_data_x64.libpath_lldlink_flags + " -libpath:" + rebase_path("$clang_base_path/lib/clang/$clang_version/lib/windows", root_build_dir)
+  toolchain_args = {
+    current_cpu = "x64"
+    current_os = "win"
+    is_clang = true
+  }
+}
+
+msvc_rust_host_build_tools_toolchain("toolchain_for_rust_host_build_tools") {
+  environment = "environment.x64"
+  cl = rebase_path("$clang_base_path/bin/clang-cl.exe", root_build_dir)
+  sys_include_flags = win_toolchain_data_x64.include_flags_imsvc
+  sys_lib_flags = win_toolchain_data_x64.libpath_lldlink_flags + " -libpath:" + rebase_path("$clang_base_path/lib/clang/$clang_version/lib/windows", root_build_dir)
+  toolchain_args = {
+    current_cpu = "x64"
+    current_os = "win"
+    is_clang = true
+  }
+}
+
+msvc_system_allocator_toolchain("toolchain_with_system_allocator") {
+  environment = "environment.x64"
+  cl = rebase_path("$clang_base_path/bin/clang-cl.exe", root_build_dir)
+  sys_include_flags = win_toolchain_data_x64.include_flags_imsvc
+  sys_lib_flags = win_toolchain_data_x64.libpath_lldlink_flags + " -libpath:" + rebase_path("$clang_base_path/lib/clang/$clang_version/lib/windows", root_build_dir)
+  toolchain_args = {
+    current_cpu = "x64"
+    current_os = "win"
+    is_clang = true
+  }
+}
+
+msvc_system_allocator_toolchain("toolchain_host_with_system_allocator") {
+  environment = "environment.x64"
+  cl = rebase_path("$clang_base_path/bin/clang-cl.exe", root_build_dir)
+  sys_include_flags = win_toolchain_data_x64.include_flags_imsvc
+  sys_lib_flags = win_toolchain_data_x64.libpath_lldlink_flags + " -libpath:" + rebase_path("$clang_base_path/lib/clang/$clang_version/lib/windows", root_build_dir)
+  toolchain_args = {
+    current_cpu = "x64"
+    current_os = "win"
+    is_clang = true
+  }
+}

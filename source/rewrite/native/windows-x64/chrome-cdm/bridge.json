@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "implementation": "owned_standard_cdm10_proxy_genuine_chrome_host",
+  "chrome_executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "chrome_abi_fixture": "158.0.8127.37",
+  "version_policy": "tested installed-binary ABI fixture, not a current-release claim",
+  "cdm_abi": 10,
+  "delegated_cdm_version": "4.10.3112.0",
+  "google_cdm_bundled": false,
+  "artifacts": {
+    "widevinecdm.dll": "200c78ce2558cf098cac270fbed6adfbbba797e04a41fe12b7f317a15b2214ea",
+    "transport_probe.exe": "e6016acc7ee9b6d95f24f7143994c580280d9d59d7bf1d98939c476a62ae711c"
+  },
+  "actual_abi_evidence": "2a466b015656464e"
+}

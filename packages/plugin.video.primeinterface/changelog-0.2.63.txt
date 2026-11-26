@@ -1,0 +1,8 @@
+0.2.63
+- Play Amazon HD through stock Windows Kodi using the bundled CDM adapter and genuine installed Chrome Widevine; no modified Kodi required.
+- Correct canonical feature-title resolution, license key callback timing, unknown H264 profile mapping and native transport throughput.
+- Request quality automatically and retain bounded lower-quality retries when Amazon refuses authorization.
+- Refresh account runtime and the open catalog after sign-in; preserve root Back navigation and playback return.
+- Keep accumulated regional media, resume, subtitle, artwork and catalog fixes; remove retired native PlayReady and host-verification experiments.
+- Collect redacted native, license, output-protection, stream-quality and shutdown diagnostics.
+- Windows HD currently requires installed 64-bit Chrome 158.0.8127.37; other Chrome versions use the standard playback route.
