@@ -27,7 +27,10 @@ class _ImageRedirect(HTTPRedirectHandler):
             'hop':self.hops,'allowed':allowed,'result':'allowed' if allowed else 'blocked'})
         if not allowed:
             raise ValueError('Artwork redirected outside the image service')
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
+        redirected=super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected is not None:
+            redirected._prime_request_id=self.request_id;redirected._prime_stage='image_download'
+        return redirected
 
 
 class ImageCache:
@@ -44,6 +47,11 @@ class ImageCache:
         self.report = DiagnosticLog(g.DATA_PATH, g.addon.getAddonInfo('version'),
                                     active=lambda: not self.stop.is_set() and current_account(g.DATA_PATH, epoch),
                                     operation='genre_artwork' if genre else 'artwork')
+        from .catalog_connections import CatalogConnections
+        self.connections=CatalogConnections(lambda:not self.stop.is_set() and current_account(g.DATA_PATH,epoch))
+
+    def _connection_event(self,event):
+        self.report(dict(event,event='artwork_connection'))
 
     def path(self, url):
         url=source_image(url)
@@ -124,7 +132,11 @@ class ImageCache:
                 self.report({'event':'artwork_ahead_cancelled','request_id':request_id,'stage':'image_download',
                     'elapsed_ms':round((monotonic()-started)*1000),'result':'cancelled'})
                 return
-            with build_opener(_ImageRedirect(self.report,request_id)).open(Request(url, headers={'Accept': 'image/*'}), timeout=8) as response:
+            from .catalog_connections import KeepAliveHTTPSHandler
+            request=Request(url,headers={'Accept':'image/*','Accept-Encoding':'identity'})
+            request._prime_request_id=request_id;request._prime_stage='image_download'
+            with build_opener(_ImageRedirect(self.report,request_id),
+                    KeepAliveHTTPSHandler(self.connections,self._connection_event)).open(request,timeout=8) as response:
                 status = response.getcode()
                 final=response.geturl()
                 response_type=response.headers.get_content_type()
@@ -187,6 +199,7 @@ class ImageCache:
         with self.lock:
             for future in self.futures.values():future.cancel()
         self.pool.shutdown(wait=True)
+        self.connections.close()
         with self.lock:
             self.pending.clear()
             self.failed.clear()

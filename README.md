@@ -6,9 +6,9 @@ SmoothFlix. Native account verification, fresh In Progress, Prime-included Movie
 and TV, Sports, Purchases, description/artwork preloading and originating-card
 playback return use one permanent add-on: plugin.video.primeinterface.
 
-## Current developer installer: 0.2.66
+## Current developer installer: 0.2.67
 
-[Download the 0.2.66 installer](https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.66.zip). Chrome now remains in Kodi persistent add-on data across updates. In-app playback retains the catalog until native AV ready, with improved shutdown diagnostics. No manual migration script is required. Windows x64 HD automatically provisions a fixed private Chrome runtime directly from Google on first use. No separate browser install or automatic browser updates. Playback remains in stock Kodi. Includes all accumulated fixes. Main/testing update only; no public release promotion.
+[Download the 0.2.67 installer](https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.67.zip). Cached cards display while provider data refreshes; Watchlist remains fresh. HD startup overlaps title/HDCP preparation, reduces manifest processing and reuses playback connections. Persistent Chrome and all accumulated fixes are retained. Windows x64 HD automatically provisions a fixed private Chrome runtime directly from Google on first use. No separate browser install or automatic browser updates. Playback remains in stock Kodi. Includes all accumulated fixes. Main/testing update only; no public release promotion.
 
 ## Screenshots
 

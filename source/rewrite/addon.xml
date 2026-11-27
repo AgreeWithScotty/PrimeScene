@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.66" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.67" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.66[CR]- Keep pinned Chrome and its integrity receipt in Kodi persistent add-on data so add-on updates reuse the runtime.[CR]- Reuse a matching existing download when available; otherwise automatically download once into persistent storage without a separate browser installation or manual migration step.[CR]- Share the persistent runtime across immutable owned adapter versions and recover prior scoped CDM paths safely.[CR]- Keep the catalog visible while in-add-on playback prepares, then request fullscreen when the owned native player reports audio/video ready.[CR]- Reduce local proxy shutdown polling and record slow audio, decoder, video-frame and protection/adapter shutdown stages.[CR]- Preserve native stock-Kodi HD, genuine output protection and all accumulated regional, sign-in, Watchlist, Back, resume, artwork and title fixes.</news>
+    <news>0.2.67[CR]- Display cached catalog and Watchlist cards immediately while refreshing provider data in the background; reconcile confirmed additions, removals and empty lists.[CR]- Reuse account-scoped HTTPS connections for catalog, artwork and playback, retain confirmed regional Watchlist navigation, and use bounded gzip transfers.[CR]- Overlap the selected title request with Windows HDCP preparation and reduce DASH manifest processing while preserving every provider track, DRM field and signed media URL.[CR]- Preserve native HD in unmodified Kodi, genuine HDCP enforcement, automatic persistent Chrome reuse, and accumulated regional, sign-in, Back, resume, artwork and title fixes.[CR]- Record actionable connection reuse, preparation overlap, transfer size, XML processing, cancellation and failure diagnostics.</news>
   </extension>
 </addon>

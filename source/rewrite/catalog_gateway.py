@@ -7,7 +7,7 @@ from urllib.parse import quote_plus,unquote_plus,urlsplit
 from .account_state import account_epoch,current_account
 from .catalog_access import prime_included
 from .public_catalog import PublicCatalogError,STOREFRONT_HOSTS,ORIGIN,detail_id,fetch_page,safe_url,_read_page
-from .prime_diagnostics import DiagnosticLog,exception_details
+from .prime_diagnostics import DiagnosticLog,exception_details,route
 from .http_transport import HttpTransport
 from .collection_paging import identity as continuation_identity
 from . import collection_paging
@@ -56,11 +56,20 @@ class CatalogGateway:
         self.g=globals_instance;self.epoch=account_epoch(self.g.DATA_PATH)
         self.public_pages={};self.continuations={};self.continuation_paths={};self.details={}
         self.operation_observer=None
+        from .catalog_connections import CatalogConnections
+        self.connections=CatalogConnections(lambda:current_account(self.g.DATA_PATH,self.epoch))
+        self.personal_routes={}
+
+    def close(self):
+        self.connections.close();self.personal_routes.clear()
+        self.public_pages.clear();self.continuations.clear();self.continuation_paths.clear();self.details.clear()
 
     def _active(self,active):
-        valid=current_account(self.g.DATA_PATH,self.epoch) and active()
+        account_valid=current_account(self.g.DATA_PATH,self.epoch)
+        valid=account_valid and active()
         if not valid:
             self.public_pages.clear();self.continuations.clear();self.continuation_paths.clear();self.details.clear()
+            if not account_valid:self.close()
         return valid
 
     def _observe(self,active):
@@ -78,7 +87,7 @@ class CatalogGateway:
             headers=session_headers(self.g.DATA_PATH)
             headers.setdefault('User-Agent',self.g.configured_user_agent())
             client=HttpTransport(self.g.DATA_PATH,self.epoch,observe,hosts=STOREFRONT_HOSTS,
-                jar=jar,headers=headers)
+                jar=jar,headers=headers,pool=self.connections)
             yield client
             if self._active(active):persist_session(self.g.DATA_PATH,self.epoch,jar)
         finally:jar.clear()
@@ -252,10 +261,31 @@ class CatalogGateway:
                              'result': 'failure', 'cookie_objects': len(list(jar))})
                     raise CatalogSigninRequired('Use Sign out, then sign in again to reconnect the website session.')
                 opener = prime_signin.catalog_opener(
-                    jar, observer=observe, headers=session_store.session_headers(self.g.DATA_PATH))
+                    jar, observer=observe, headers=session_store.session_headers(self.g.DATA_PATH),pool=self.connections)
                 try:
-                    result = fetch_page('purchases' if page.startswith('purchased_') else page,
-                        opener=opener, continuation=continuation, observer=observe)
+                    selected=continuation;remembered=self.personal_routes.get(page)
+                    direct=page=='watchlist' and continuation is None and remembered and monotonic()-remembered[0]<300
+                    if direct:
+                        selected=remembered[1]
+                        observe({'event':'personal_route_reused','stage':'collection_navigation',
+                            'section':page,'address':route(selected),
+                            'age_seconds':round(monotonic()-remembered[0]),'result':'started'})
+                    try:
+                        result = fetch_page('purchases' if page.startswith('purchased_') else page,
+                            opener=opener, continuation=selected, observer=observe)
+                    except Exception as error:
+                        if not direct or isinstance(error,CatalogSigninRequired) or not self._active(active):raise
+                        self.personal_routes.pop(page,None)
+                        observe({'event':'personal_route_rediscovery','stage':'collection_navigation',
+                            'section':page,'address':route(selected),'status':getattr(error,'code',None),
+                            'exception':exception_details(error),'result':'retry'})
+                        result=fetch_page(page,opener=opener,observer=observe)
+                    if page=='watchlist' and continuation is None and result.watchlist_confirmed:
+                        address=safe_url(result.entry_url,STOREFRONT_HOSTS)
+                        if address:
+                            self.personal_routes[page]=(monotonic(),address)
+                            observe({'event':'personal_route_confirmed','stage':'collection_navigation',
+                                'section':page,'address':route(address),'result':'success'})
                 finally:
                     for cookie in jar:
                         observe.secret(cookie.value)

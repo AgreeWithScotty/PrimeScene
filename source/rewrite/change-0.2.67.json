@@ -1,0 +1,24 @@
+{
+  "version": "0.2.67",
+  "previous": "0.2.66",
+  "changes": [
+    "Display cached catalog and Watchlist cards immediately while refreshing provider data in the background; reconcile confirmed additions, removals and empty lists.",
+    "Reuse account-scoped HTTPS connections for catalog, artwork and playback, retain confirmed regional Watchlist navigation, and use bounded gzip transfers.",
+    "Overlap the selected title request with Windows HDCP preparation and reduce DASH manifest processing while preserving every provider track, DRM field and signed media URL.",
+    "Preserve native HD in unmodified Kodi, genuine HDCP enforcement, automatic persistent Chrome reuse, and accumulated regional, sign-in, Back, resume, artwork and title fixes.",
+    "Record actionable connection reuse, preparation overlap, transfer size, XML processing, cancellation and failure diagnostics."
+  ],
+  "bytes": 7276346,
+  "sha256": "5b8147b23c49da41aef41cf811d1c74072f105f0c8b52379e84206338ee1084a",
+  "files": 179,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "prior_actual_HD_playback": "359889f3a3a9004e",
+  "prior_measurement": "20b6e1411e964b6b",
+  "prior_Watchlist_validation": "101bead612f74732",
+  "prior_manifest_equivalence": "d160aa486e464b88",
+  "nuc_start_stop_or_flash_validated": false,
+  "runtime_pin": "158.0.8127.89"
+}
