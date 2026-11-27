@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.67" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.68" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.67[CR]- Display cached catalog and Watchlist cards immediately while refreshing provider data in the background; reconcile confirmed additions, removals and empty lists.[CR]- Reuse account-scoped HTTPS connections for catalog, artwork and playback, retain confirmed regional Watchlist navigation, and use bounded gzip transfers.[CR]- Overlap the selected title request with Windows HDCP preparation and reduce DASH manifest processing while preserving every provider track, DRM field and signed media URL.[CR]- Preserve native HD in unmodified Kodi, genuine HDCP enforcement, automatic persistent Chrome reuse, and accumulated regional, sign-in, Back, resume, artwork and title fixes.[CR]- Record actionable connection reuse, preparation overlap, transfer size, XML processing, cancellation and failure diagnostics.</news>
+    <news>0.2.68[CR]- Check Windows effective HDCP protection while asynchronous preparation remains pending, in both the Python and owned native adapter waiters.[CR]- Retain a pending request through playback only when the requested protection is independently verified; preserve genuine level-2 enforcement and treat unknown protection as unavailable.[CR]- Record effective state, async status, HRESULT, wait checks and screen mode to diagnose NUC HDCP startup timeouts and display blanking.[CR]- Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist speed improvements, and all accumulated fixes.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">

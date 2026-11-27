@@ -157,7 +157,8 @@ class WebWidevine:
         """Keep a real Windows HDCP session alive through the HD playback."""
         if self.output_protection is not None:return
         self.report({'event':'windows_hdcp_preparation','stage':'hd_output_protection',
-            'requested_quality':self.api.quality,'result':'started'})
+            'requested_quality':self.api.quality,'protection_revision':'verified-effective-state-v1',
+            'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,'result':'started'})
         try:
             from .windows_hdcp import HdcpSession
             self.output_protection=HdcpSession()
@@ -167,8 +168,8 @@ class WebWidevine:
             desired=2
             result=self.output_protection.request(desired,self.api.g.monitor.waitForAbort)
             attempts=[dict(result,desired_protection=desired)]
-            if result.get('result_code')==0 and result.get('hdcp_on'):self.hdcp_protection_level=desired
-            if (result.get('result_code')==0 and result.get('effective_protection')==2
+            if result.get('protection_established') and result.get('hdcp_on'):self.hdcp_protection_level=desired
+            if (result.get('protection_established') and result.get('effective_protection')==2
                     and result.get('hdcp_on') and result.get('type_enforcement')):
                 # Windows type-1 enforcement requires HDCP2.2 or later. This
                 # value is sent only after the OS reports successful enforcement.
@@ -178,7 +179,7 @@ class WebWidevine:
                 # the real protection, but never advertise an unmeasured1.4/2.2.
                 result=self.output_protection.request(1,self.api.g.monitor.waitForAbort)
                 attempts.append(dict(result,desired_protection=1))
-                if result.get('result_code')==0 and result.get('hdcp_on'):self.hdcp_protection_level=1
+                if result.get('protection_established') and result.get('hdcp_on'):self.hdcp_protection_level=1
             if self.api.g.monitor.abortRequested():
                 self.report({'event':'windows_hdcp_prepared','stage':'hd_output_protection',
                     'windows_attempts':attempts,'result':'cancelled'})
@@ -188,8 +189,9 @@ class WebWidevine:
                 'windows_enforced_hdcp_level':self.hdcp_level,
                 'required_protection':self.hdcp_protection_level,
                 'advertised_hdcp_level':self.hdcp_level,
+                'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
                 'cdm_security_level_changed':False,'session_held_for_playback':True,
-                'result':'success' if result.get('result_code')==0 else 'unavailable'})
+                'result':'success' if result.get('protection_established') else 'unavailable'})
         except InterruptedError:raise
         except Exception as error:
             from .prime_diagnostics import exception_details

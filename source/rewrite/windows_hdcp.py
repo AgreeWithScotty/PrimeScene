@@ -49,7 +49,7 @@ class HdcpSession:
         self.api.WindowsDeleteString.argtypes=[C.c_void_p];self.api.WindowsDeleteString.restype=C.c_long
         self.api.RoActivateInstance.argtypes=[C.c_void_p,C.POINTER(C.c_void_p)]
         self.api.RoActivateInstance.restype=C.c_long
-        self.session=None;self.uninitialize=False
+        self.session=None;self.uninitialize=False;self.pending=[]
         hr=self.api.RoInitialize(1)
         if hr>=0:self.uninitialize=True
         elif hr&0xffffffff!=0x80010106:raise NativeFailure('initialize_winrt',hr)
@@ -81,31 +81,55 @@ class HdcpSession:
         checked(self.session.call(6,[C.c_int,C.POINTER(C.c_ubyte)],2,C.byref(typed)),'is_type_enforced')
         return {'effective_protection':value,'hdcp_on':bool(on.value),'type_enforcement':bool(typed.value)}
     def request(self,level,wait=None):
-        operation=None;info=None;output=C.c_void_p();started=monotonic()
+        operation=None;info=None;output=C.c_void_p();started=monotonic();status=C.c_int()
+        checks=0;observed=None;retained=False
         checked(self.session.call(8,[C.c_int,C.POINTER(C.c_void_p)],level,C.byref(output)),'set_protection')
         operation=Interface(output)
         try:
             info=operation.query('00000036-0000-0000-c000-000000000046')
-            status=C.c_int()
             cancelled=False
             while monotonic()-started<8:
                 checked(info.call(7,[C.POINTER(C.c_int)],C.byref(status)),'protection_async_status')
                 if status.value!=0:break
+                observed=self.status();checks+=1
+                established=(observed['effective_protection']==level and
+                    (not level or observed['hdcp_on']) and (level!=2 or observed['type_enforcement']))
+                if established:
+                    # Effective protection is independently measured. Some
+                    # drivers leave the asynchronous operation pending after
+                    # it is active. Keep that request alive through playback;
+                    # cancelling/releasing it here could undo the protection.
+                    self.pending.append((operation,info));retained=True
+                    return {'operation_status':'pending_protection_verified','async_status':status.value,
+                        'protection_established':True,'completion_source':'effective_protection',
+                        'state_checks':checks,'elapsed_ms':round((monotonic()-started)*1000),**observed}
                 if wait is not None:
                     if wait(.05):cancelled=True;break
                 else:sleep(.05)
             if status.value==0:
-                info.call(9,[])
-                return {'operation_status':'cancelled' if cancelled else 'timeout','elapsed_ms':round((monotonic()-started)*1000)}
+                cancel_hr=info.call(9,[])
+                observed=self.status()
+                return {'operation_status':'cancelled' if cancelled else 'timeout','async_status':status.value,
+                    'protection_established':False,'cancel_hresult':cancel_hr&0xffffffff,
+                    'state_checks':checks,'elapsed_ms':round((monotonic()-started)*1000),**observed}
+            if status.value!=1:
+                code=C.c_long();checked(info.call(8,[C.POINTER(C.c_long)],C.byref(code)),'protection_async_error')
+                return {'operation_status':'cancelled' if status.value==2 else 'error','async_status':status.value,
+                    'protection_established':False,'async_hresult':code.value&0xffffffff,
+                    'state_checks':checks,'elapsed_ms':round((monotonic()-started)*1000),**self.status()}
             result=C.c_int()
             checked(operation.call(8,[C.POINTER(C.c_int)],C.byref(result)),'protection_result')
-            return {'operation_status':status.value,'result_code':result.value,
-                    'elapsed_ms':round((monotonic()-started)*1000),**self.status()}
+            observed=self.status()
+            established=(result.value==0 and observed['effective_protection']==level and
+                (not level or observed['hdcp_on']) and (level!=2 or observed['type_enforcement']))
+            return {'operation_status':status.value,'result_code':result.value,'async_status':status.value,
+                    'protection_established':established,'completion_source':'async_result','state_checks':checks,
+                    'elapsed_ms':round((monotonic()-started)*1000),**observed}
         finally:
-            if info:
+            if info and not retained:
                 if status.value!=0:info.call(10,[])
                 info.release()
-            if operation:operation.release()
+            if operation and not retained:operation.release()
     def current_status(self):
         # License requests run on a separate Python proxy thread. The WinRT
         # object is agile; initialize that calling apartment before querying it.
@@ -120,11 +144,17 @@ class HdcpSession:
         with self._lock:self._close()
     def _close(self):
         try:
+            for operation,info in self.pending:info.call(9,[])
             if self.session:
                 closable=self.session.query('30d5a829-7fa4-4026-83bb-d75bae4ea99e')
                 try:checked(closable.call(6,[]),'close_hdcp_session')
                 finally:closable.release()
         finally:
+            for operation,info in self.pending:
+                status=C.c_int();hr=info.call(7,[C.POINTER(C.c_int)],C.byref(status))
+                if hr>=0 and status.value!=0:info.call(10,[])
+                info.release();operation.release()
+            self.pending=[]
             if self.session:self.session.release();self.session=None
             if self.uninitialize:self.api.RoUninitialize();self.uninitialize=False
 
