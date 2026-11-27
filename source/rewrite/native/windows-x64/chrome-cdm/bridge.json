@@ -91,8 +91,8 @@
     }
   ],
   "artifacts": {
-    "widevinecdm.dll": "3edf2a49169eb352436330c983f4764d9e88e937f60d5f41215b88d22d628586",
-    "transport_probe.exe": "dc7f4e7b0443e1c79e3b81cfe23bfc98686b0b447c3784a6c9c5a790862e3645"
+    "widevinecdm.dll": "c4214cfeafe2950c623bc2c6b3d951da05cb9e02a4947958851af38987dbc916",
+    "transport_probe.exe": "2acfaab051d61863f7d13a40704abe92506f61e4761fa9e8bc8201da332b00d1"
   },
   "actual_abi_evidence": "5ce2106f461444bb",
   "automatic_runtime_updates": false,
@@ -111,5 +111,6 @@
     "source_archive": "7z2606-src.tar.xz",
     "license": "7zip-LICENSE.txt"
   },
-  "performance_revision": "cached-integrity-stop-event-v2"
+  "performance_revision": "persistent-runtime-deferred-player-v3",
+  "native_layout": "addon_data/native/chrome-cdm/pin/adapters/identity"
 }

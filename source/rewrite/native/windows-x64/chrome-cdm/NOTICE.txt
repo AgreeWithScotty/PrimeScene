@@ -3,6 +3,8 @@ No Google Chrome or Widevine binary is included in this add-on package.
 On first Windows x64 HD use, the exact pinned regular Chrome payload is downloaded directly from Google,
 SHA256 verified and read as an archive. Its installer/updater is never executed.
 The private runtime does not select or update a system browser.
+Runtime storage is Kodi's persistent add-on data, shared by immutable owned adapter versions.
+The large runtime is not stored in the replaceable add-on installation directory.
 Google executable terms: https://www.google.com/chrome/terms/ and https://policies.google.com/terms
 The downloaded original Widevine proprietary notice and host signatures are preserved.
 Unmodified 7zr.exe 26.06 is bundled with its license and exact source archive.

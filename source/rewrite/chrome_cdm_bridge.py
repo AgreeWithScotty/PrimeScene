@@ -1,5 +1,4 @@
 """Scoped standard CDM adapter for stock Windows Kodi; no player binary edits."""
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -13,15 +12,23 @@ from .chrome_runtime import PreparationCancelled
 
 JOURNAL='chrome-cdm-path-lease.json'
 
-def _directory(g):
+def _source_directory(g):
     return Path(xbmcvfs.translatePath(g.addon.getAddonInfo('path')))/'resources/native/windows-x64/chrome-cdm'
+
+
+def _directory(g):
+    from .chrome_storage import layout
+    manifest=json.loads((_source_directory(g)/'bridge.json').read_text(encoding='utf-8'))
+    return layout(g.DATA_PATH,manifest)[1]
 
 def available(g,report):
     started=monotonic()
     dialog=None
     try:
         if os.name!='nt' or struct.calcsize('P')!=8:return False
-        root=_directory(g);manifest=json.loads((root/'bridge.json').read_text(encoding='utf-8'))
+        source=_source_directory(g);manifest=json.loads((source/'bridge.json').read_text(encoding='utf-8'))
+        from .chrome_storage import layout,prepare_adapter
+        root,_=layout(g.DATA_PATH,manifest)
         from .widevine_diagnostics import windows_binary_version
         from .chrome_runtime import ensure
         import xbmc,xbmcgui
@@ -35,7 +42,8 @@ def available(g,report):
             return dialog.iscanceled()
         def cancelled():
             return monitor.abortRequested() or dialog is not None and dialog.iscanceled()
-        runtime=ensure(root,manifest,report,cancel=cancelled,progress=progress)
+        runtime=ensure(root,manifest,report,cancel=cancelled,progress=progress,
+            assets=source,legacy_root=source)
         chrome=runtime/'chrome.exe'
         actual=windows_binary_version(chrome)
         expected=manifest['chrome_abi_fixture']
@@ -45,14 +53,13 @@ def available(g,report):
             report({'event':'chrome_cdm_bridge_available','stage':'device_capability','chrome_version':actual,
                 'supported_abi_fixture':expected,'reason':'abi_not_verified','result':'unavailable'})
             return False
-        for name,digest in manifest['artifacts'].items():
-            if name not in ('widevinecdm.dll','transport_probe.exe'):raise ValueError('Invalid native artifact name')
-            if hashlib.sha256((root/name).read_bytes()).hexdigest()!=digest:raise ValueError('Native adapter artifact checksum mismatch')
+        prepare_adapter(source,root,manifest,report)
         cdm=runtime/expected/'WidevineCdm/_platform_specific/win_x64/widevinecdm.dll'
         if not cdm.is_file() or not cdm.with_suffix('.dll.sig').is_file():raise ValueError('Bundled Chrome Widevine component is missing')
         report({'event':'chrome_cdm_bridge_available','stage':'device_capability',
             'chrome_version':actual,'cdm_abi':10,'native_player':'Kodi','player_binary_modified':False,
             'runtime_source':'google_direct_download','system_chrome_required':False,'automatic_updates':False,
+            'runtime_storage':'addon_data','survives_addon_updates':True,
             'adapter_revision':manifest.get('performance_revision','baseline'),
             'elapsed_ms':round((monotonic()-started)*1000),'result':'available'})
         return True
@@ -84,8 +91,11 @@ def recover(g,report):
             api.CloseHandle.argtypes=[W.HANDLE]
             handle=api.OpenProcess(0x1000,False,int(value.get('pid',0)))
             if handle:api.CloseHandle(handle);return
-        bridge=str(_directory(g))
-        if value.get('bridge')!=bridge or not isinstance(value.get('previous'),str):raise ValueError('Invalid CDM path recovery journal')
+        from .chrome_storage import owned_directory
+        bridge=value.get('bridge')
+        if (not isinstance(bridge,str) or not isinstance(value.get('previous'),str) or
+                not (bridge==str(_source_directory(g)) or owned_directory(g.DATA_PATH,bridge))):
+            raise ValueError('Invalid CDM path recovery journal')
         adaptive=xbmcaddon.Addon('inputstream.adaptive')
         current=adaptive.getSetting('DECRYPTERPATH')
         if current==bridge:

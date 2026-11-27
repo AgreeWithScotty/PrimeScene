@@ -173,7 +173,14 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
     closed=true;changed.notify_all();Log("native_helper_pipe_closed");
   }
   void Reply(Bytes message){if(message.size()<8)return;std::lock_guard<std::mutex> lock(state_mutex);replies[prime_wire::U64(message.data())]=std::move(message);changed.notify_all();}
-  Bytes Wait(uint64_t id){std::unique_lock<std::mutex> lock(state_mutex);changed.wait_for(lock,std::chrono::seconds(12),[&]{return replies.contains(id)||closed.load()||destroyed.load();});auto found=replies.find(id);if(found==replies.end()){Log(destroyed?"native_operation_cancelled":"native_operation_timeout");return {};}auto data=std::move(found->second);replies.erase(found);return data;}
+  Bytes Wait(uint64_t id,const char* timing_stage){
+    auto started=GetTickCount64();std::unique_lock<std::mutex> lock(state_mutex);
+    changed.wait_for(lock,std::chrono::seconds(12),[&]{return replies.contains(id)||closed.load()||destroyed.load();});
+    auto found=replies.find(id);auto elapsed=static_cast<uint32_t>(GetTickCount64()-started);
+    if(elapsed>=250||found==replies.end())Log(timing_stage,elapsed);
+    if(found==replies.end()){Log(destroyed?"native_operation_cancelled":"native_operation_timeout",static_cast<uint32_t>(id));return {};}
+    auto data=std::move(found->second);replies.erase(found);return data;
+  }
   uint64_t Promise(uint32_t promise,uint32_t kind){uint64_t id=next_id++;std::lock_guard<std::mutex> lock(state_mutex);promises[id]={promise,kind};return id;}
   void CdmMessage(const Bytes& bytes){
     auto body=prime_wire::Body(bytes);if(body==UINT32_MAX||bytes.size()<32)return;
@@ -219,7 +226,7 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
   cdm::Status Decrypt(const cdm::InputBuffer_2& input_buffer,cdm::DecryptedBlock* block) override {
     uint64_t id=next_id++;Bytes data;if(input_buffer.data_size)data.assign(input_buffer.data,input_buffer.data+input_buffer.data_size);
     if(!Send(13,data)||!Send(11,prime_wire::Buffer(kDecryptorDecrypt,id,input_buffer)))return cdm::kDecryptError;
-    auto result=Wait(id);if(result.size()<24)return cdm::kDecryptError;auto status=Status(prime_wire::U32(result.data()+8),false);if(status!=cdm::kSuccess)return status;
+    auto result=Wait(id,"native_audio_wait_elapsed");if(result.size()<24)return cdm::kDecryptError;auto status=Status(prime_wire::U32(result.data()+8),false);if(status!=cdm::kSuccess)return status;
     uint32_t size=prime_wire::U32(result.data()+20);if(size>result.size()-24)return cdm::kDecryptError;
     cdm::Buffer* buffer=host->Allocate(size);if(!buffer)return cdm::kDecryptError;std::memcpy(buffer->Data(),result.data()+24,size);buffer->SetSize(size);block->SetDecryptedBuffer(buffer);block->SetTimestamp(static_cast<int64_t>(prime_wire::U64(result.data()+12)));
     if(++decrypted%256==1)Log("actual_native_decrypted_buffer",size);return cdm::kSuccess;
@@ -229,7 +236,7 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
     Log("native_decoder_codec",config.codec);Log("native_decoder_profile",config.profile);
     Log("native_decoder_width",config.coded_size.width);Log("native_decoder_height",config.coded_size.height);
     Log("native_decoder_extra_bytes",config.extra_data_size);Log("native_decoder_encryption",static_cast<uint32_t>(config.encryption_scheme));
-    uint64_t id=next_id++;if(!Send(11,prime_wire::VideoConfig(id,config)))return cdm::kInitializationError;auto response=Wait(id);auto body=prime_wire::Body(response);
+    uint64_t id=next_id++;if(!Send(11,prime_wire::VideoConfig(id,config)))return cdm::kInitializationError;auto response=Wait(id,"native_decoder_init_wait_elapsed");auto body=prime_wire::Body(response);
     bool success=body!=UINT32_MAX&&response.size()-body>=16&&response[body+8];Log("actual_native_video_decoder_initialize",success?config.coded_size.width:0);return success?cdm::kSuccess:cdm::kInitializationError;
   }
   void DeinitializeDecoder(cdm::StreamType stream) override {uint64_t id=next_id++;auto b=prime_wire::Header(kDecryptorDeinitialize,0,id,48);prime_wire::Put32(b,32,16);prime_wire::Put32(b,40,stream);Send(11,b);}
@@ -237,7 +244,7 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
   cdm::Status DecryptAndDecodeFrame(const cdm::InputBuffer_2& input_buffer,cdm::VideoFrame* frame) override {
     uint64_t id=next_id++;Bytes data;if(input_buffer.data_size)data.assign(input_buffer.data,input_buffer.data+input_buffer.data_size);
     if((!data.empty()&&!Send(12,data))||!Send(11,prime_wire::Buffer(kDecryptorDecodeVideo,id,input_buffer)))return cdm::kDecodeError;
-    auto result=Wait(id);if(result.size()<60)return cdm::kDecodeError;auto status=Status(prime_wire::U32(result.data()+8),true);if(status!=cdm::kSuccess)return status;
+    auto result=Wait(id,"native_frame_wait_elapsed");if(result.size()<60)return cdm::kDecodeError;auto status=Status(prime_wire::U32(result.data()+8),true);if(status!=cdm::kSuccess)return status;
     uint32_t size=prime_wire::U32(result.data()+12),width=prime_wire::U32(result.data()+16),height=prime_wire::U32(result.data()+20),format=prime_wire::U32(result.data()+24);
     if(!size||size>16*1024*1024||!width||!height)return cdm::kDecodeError;
     cdm::VideoFormat native_format=format==1?cdm::kI420:format==2?cdm::kYv12:cdm::kUnknownVideoFormat;
