@@ -128,7 +128,8 @@ def _discard(path, root):
         shutil.rmtree(str(path))
 
 
-def ensure(root, manifest, report, cancel=lambda: False, progress=lambda percent, text: False):
+def ensure(root, manifest, report, cancel=lambda: False, progress=lambda percent, text: False,
+           assets=None,legacy_root=None):
     started = monotonic()
     attempt = uuid.uuid4().hex[:16]
     stage = None
@@ -141,6 +142,22 @@ def ensure(root, manifest, report, cancel=lambda: False, progress=lambda percent
                     elapsed_ms=round((monotonic()-started)*1000), result=result, **facts))
     try:
         root = Path(root)
+        root.mkdir(parents=True,exist_ok=True)
+        assets=Path(assets) if assets is not None else root
+        migration_report=root/'pre-update-migration.json'
+        if migration_report.exists():
+            try:
+                prior=json.loads(migration_report.read_text(encoding='utf-8-sig'))
+                migration_attempt=prior.get('attempt')
+                migration_result=prior.get('result')
+                emit('observed',operation='prior_runtime_migration',
+                    migration_attempt=migration_attempt if isinstance(migration_attempt,str) and re.fullmatch('[a-f0-9]{16}',migration_attempt) else None,
+                    migration_result=migration_result if migration_result in ('existing_download_preserved','already_persistent','failure') else 'unknown',
+                    migration_elapsed_ms=prior.get('elapsed_ms') if isinstance(prior.get('elapsed_ms'),int) else None,
+                    migrated_files=prior.get('files') if isinstance(prior.get('files'),int) else None,
+                    migration_logging_failure_count=len(prior.get('logging_failures',[])) if isinstance(prior.get('logging_failures'),list) else None)
+            except (OSError,ValueError,TypeError,AttributeError) as error:
+                emit('failure',operation='read_prior_migration_report',exception=exception_details(error))
         rows = _inventory(manifest)
         runtime = root/'runtime'
         if cancel():
@@ -163,7 +180,19 @@ def ensure(root, manifest, report, cancel=lambda: False, progress=lambda percent
                     emit('success',operation='recover_interrupted_runtime_download')
             stage = root/('chrome-runtime-unpack-'+attempt)
             stage.mkdir()
-            candidate=fetch_and_extract(root,stage,manifest,rows,emit,cancel,progress)
+            legacy=Path(legacy_root)/'runtime' if legacy_root is not None else None
+            reused=legacy is not None and legacy.resolve()!=runtime.resolve() and _ready(legacy,rows,report)
+            if reused:
+                emit('started',operation='migrate_existing_runtime',storage='addon_data',download_required=False)
+                candidate=stage/'Chrome-bin';candidate.mkdir()
+                for row in rows.values():
+                    if cancel():raise PreparationCancelled()
+                    target=candidate/row['path'];target.parent.mkdir(parents=True,exist_ok=True)
+                    shutil.copy2(legacy/row['path'],target)
+                if not _ready(candidate,rows,report):raise ValueError('Migrated Chrome runtime checksum mismatch')
+            else:
+                candidate=fetch_and_extract(assets,stage,manifest,rows,emit,cancel,progress)
+            if cancel():raise PreparationCancelled()
             if runtime.exists():
                 retired = root/('chrome-runtime-replaced-'+attempt)
                 runtime.rename(retired)
@@ -175,8 +204,14 @@ def ensure(root, manifest, report, cancel=lambda: False, progress=lambda percent
                     retired = None
                 raise
             outcome = 'success'
-            emit('success', operation='install_verified_google_runtime', files=len(rows),
+            if reused:
+                # Keep the receipt with the verified files after the atomic move.
+                try:shutil.copy2(stage/'runtime-verification.json',root/'runtime-verification.json')
+                except OSError as error:
+                    emit('failure',operation='migrate_integrity_receipt',exception=exception_details(error))
+            emit('success', operation='migrate_existing_runtime' if reused else 'install_verified_google_runtime', files=len(rows),
                  expanded_bytes=manifest['runtime_expanded_bytes'],
+                 storage='addon_data',existing_download_reused=bool(reused),download_required=not reused,
                  system_chrome_required=False, automatic_updates=False)
             progress(100,'HD playback components are ready')
             return runtime

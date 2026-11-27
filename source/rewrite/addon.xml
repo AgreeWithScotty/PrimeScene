@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.65" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.66" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.65[CR]- Reuse verified unchanged private Chrome runtime files instead of repeating the full runtime hash scan on every playback.[CR]- Signal native helper shutdown independently of media traffic, wake cancelled waits and bound helper exit before owned-job cleanup.[CR]- Avoid redundant Windows output-protection requests while checking real protection and retaining the measured HDCP 2.2 capability for HD.[CR]- Record runtime verification work, adapter revision, output-protection release and native shutdown timings in the complete diagnostics report.[CR]- Retain automatic pinned Google runtime download and all accumulated regional, sign-in, Watchlist, Back, resume, artwork and title fixes.</news>
+    <news>0.2.66[CR]- Keep pinned Chrome and its integrity receipt in Kodi persistent add-on data so add-on updates reuse the runtime.[CR]- Reuse a matching existing download when available; otherwise automatically download once into persistent storage without a separate browser installation or manual migration step.[CR]- Share the persistent runtime across immutable owned adapter versions and recover prior scoped CDM paths safely.[CR]- Keep the catalog visible while in-add-on playback prepares, then request fullscreen when the owned native player reports audio/video ready.[CR]- Reduce local proxy shutdown polling and record slow audio, decoder, video-frame and protection/adapter shutdown stages.[CR]- Preserve native stock-Kodi HD, genuine output protection and all accumulated regional, sign-in, Watchlist, Back, resume, artwork and title fixes.</news>
   </extension>
 </addon>

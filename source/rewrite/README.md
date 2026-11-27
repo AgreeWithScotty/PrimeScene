@@ -1,1 +1,1 @@
-Smooth Prime 0.2.65 includes playback startup and shutdown improvements with all accumulated fixes. Read PERFORMANCE_0.2.65.md and change-0.2.65.json. Windows x64 HD remains in stock Kodi with the fixed private runtime downloaded directly from Google.
+Smooth Prime 0.2.66 retains Chrome across add-on updates and defers native fullscreen until AV ready. Read PERSISTENT_RUNTIME_0.2.66.md and change-0.2.66.json. Automatic persistent setup requires no separate browser installation or migration script. All accumulated fixes are retained.

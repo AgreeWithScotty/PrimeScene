@@ -114,7 +114,7 @@ class PlaybackProxy:
         self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
         self.server.daemon_threads=True;self.server.owner=self
         self.address='http://127.0.0.1:%d/%s/'%(self.server.server_port,self.key)
-        self.thread=Thread(target=self.server.serve_forever,name='SmoothMedia',daemon=True)
+        self.thread=Thread(target=self.server.serve_forever,kwargs={'poll_interval':.05},name='SmoothMedia',daemon=True)
         self.thread.start()
         report({'event':'playback_proxy_started','stage':'local_transport','port':self.server.server_port,
             'transport_revision':'license-response-flush-v1','result':'success'})

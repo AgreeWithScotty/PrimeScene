@@ -19,7 +19,7 @@ from .media_proxy import PlaybackProxy
 from .playback_progress import ResumePoints
 from .prime_diagnostics import DiagnosticLog,exception_details
 from .chrome_runtime import PreparationCancelled
-STARTUP_REVISION='reply-before-async-stop-v1'
+STARTUP_REVISION='catalog-until-av-ready-v2'
 
 
 class PlaybackLog(DiagnosticLog):
@@ -32,9 +32,10 @@ class PlaybackLog(DiagnosticLog):
 
 
 class PlayerEvents(xbmc.Player):
-    def __init__(self,path,on_terminal=None):
+    def __init__(self,path,on_terminal=None,fullscreen_when_ready=False,report=None):
         super().__init__();self.path=path;self.started=Event();self.finished=Event();self.stop_requested=Event()
         self.terminal='';self.on_terminal=on_terminal
+        self.fullscreen_when_ready=fullscreen_when_ready;self.report=report
     def _finished(self,reason):
         self.terminal=reason;self.finished.set()
         if self.on_terminal is not None:self.on_terminal(reason,'native_player_callback')
@@ -42,7 +43,17 @@ class PlayerEvents(xbmc.Player):
         try:return self.isPlaying() and self.getPlayingFile()==self.path
         except RuntimeError:return False
     def onAVStarted(self):
-        if self.owned():self.started.set()
+        if not self.owned() or self.stop_requested.is_set():return
+        first=not self.started.is_set();self.started.set()
+        if first and self.fullscreen_when_ready:
+            try:
+                xbmc.executebuiltin('ActivateWindow(fullscreenvideo)',False)
+                if self.report:self.report({'event':'playback_fullscreen_requested','stage':'av_started',
+                    'trigger':'authorized_audio_video_ready','current_window_id':xbmcgui.getCurrentWindowId(),
+                    'result':'queued'})
+            except Exception as error:
+                if self.report:self.report({'event':'playback_fullscreen_requested','stage':'av_started',
+                    'exception':exception_details(error),'result':'failure'})
     def onPlayBackStopped(self):
         if self.started.is_set() or self.stop_requested.is_set():self._finished('stopped')
     def onPlayBackEnded(self):
@@ -278,10 +289,12 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
             from .chrome_cdm_bridge import Lease
             cdm_lease=Lease(g,adaptive,report)
             cdm_lease.activate()
-        player=PlayerEvents(proxy.manifest(),restore_card)
-        report({'event':'playback_open_dispatch','stage':'player_open','resolver_handle':handle,'result':'started'})
+        deferred_fullscreen=handle<0
+        player=PlayerEvents(proxy.manifest(),restore_card,fullscreen_when_ready=deferred_fullscreen,report=report)
+        report({'event':'playback_open_dispatch','stage':'player_open','resolver_handle':handle,
+            'catalog_retained_until_av_started':deferred_fullscreen,'result':'started'})
         if handle>=0:xbmcplugin.setResolvedUrl(handle,True,item)
-        else:player.play(proxy.manifest(),item)
+        else:player.play(proxy.manifest(),item,windowed=True)
         retry_state['resolved']=True
         report({'event':'playback_open_dispatched','stage':'player_open','result':'queued'})
         def stop_opening(reason):

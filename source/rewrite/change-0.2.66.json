@@ -1,0 +1,23 @@
+{
+  "version": "0.2.66",
+  "previous": "0.2.65",
+  "changes": [
+    "Keep pinned Chrome and its integrity receipt in Kodi persistent add-on data so add-on updates reuse the runtime.",
+    "Reuse a matching existing download when available; otherwise automatically download once into persistent storage without a separate browser installation or manual migration step.",
+    "Share the persistent runtime across immutable owned adapter versions and recover prior scoped CDM paths safely.",
+    "Keep the catalog visible while in-add-on playback prepares, then request fullscreen when the owned native player reports audio/video ready.",
+    "Reduce local proxy shutdown polling and record slow audio, decoder, video-frame and protection/adapter shutdown stages.",
+    "Preserve native stock-Kodi HD, genuine output protection and all accumulated regional, sign-in, Watchlist, Back, resume, artwork and title fixes."
+  ],
+  "bytes": 7267998,
+  "sha256": "0254585894ba8478784b279f0f0076a76ad25154aba4e49fbb38a54603247465",
+  "files": 177,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "prior_storage_validation": "b097d18329f54629",
+  "prior_preservation_validation": "288308995c854b52",
+  "nuc_start_stop_or_flash_validated": false,
+  "runtime_pin": "158.0.8127.89"
+}
