@@ -1,0 +1,5 @@
+0.2.68
+- Check Windows effective HDCP protection while asynchronous preparation remains pending, in both the Python and owned native adapter waiters.
+- Retain a pending request through playback only when the requested protection is independently verified; preserve genuine level-2 enforcement and treat unknown protection as unavailable.
+- Record effective state, async status, HRESULT, wait checks and screen mode to diagnose NUC HDCP startup timeouts and display blanking.
+- Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist speed improvements, and all accumulated fixes.

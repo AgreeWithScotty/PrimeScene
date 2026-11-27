@@ -1,6 +1,5 @@
-0.2.67
-- Display cached catalog and Watchlist cards immediately while refreshing provider data in the background; reconcile confirmed additions, removals and empty lists.
-- Reuse account-scoped HTTPS connections for catalog, artwork and playback, retain confirmed regional Watchlist navigation, and use bounded gzip transfers.
-- Overlap the selected title request with Windows HDCP preparation and reduce DASH manifest processing while preserving every provider track, DRM field and signed media URL.
-- Preserve native HD in unmodified Kodi, genuine HDCP enforcement, automatic persistent Chrome reuse, and accumulated regional, sign-in, Back, resume, artwork and title fixes.
-- Record actionable connection reuse, preparation overlap, transfer size, XML processing, cancellation and failure diagnostics.
+0.2.68
+- Check Windows effective HDCP protection while asynchronous preparation remains pending, in both the Python and owned native adapter waiters.
+- Retain a pending request through playback only when the requested protection is independently verified; preserve genuine level-2 enforcement and treat unknown protection as unavailable.
+- Record effective state, async status, HRESULT, wait checks and screen mode to diagnose NUC HDCP startup timeouts and display blanking.
+- Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist speed improvements, and all accumulated fixes.

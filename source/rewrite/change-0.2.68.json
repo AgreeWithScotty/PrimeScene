@@ -1,0 +1,24 @@
+{
+  "version": "0.2.68",
+  "previous": "0.2.67",
+  "changes": [
+    "Check Windows effective HDCP protection while asynchronous preparation remains pending, in both the Python and owned native adapter waiters.",
+    "Retain a pending request through playback only when the requested protection is independently verified; preserve genuine level-2 enforcement and treat unknown protection as unavailable.",
+    "Record effective state, async status, HRESULT, wait checks and screen mode to diagnose NUC HDCP startup timeouts and display blanking.",
+    "Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist speed improvements, and all accumulated fixes."
+  ],
+  "bytes": 7278309,
+  "sha256": "bcf3353de33f1f51fa0007107c82f41232af2b2a369afa8fa825629acd6049d8",
+  "files": 179,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "matching_NUC_playback": "8e26542218ca2f86",
+  "prior_Python_WinRT_check": "3d7d318d41f54163",
+  "prior_native_adapter_build": "a90ab71662bc4b54",
+  "nuc_HDCP_timeout_reduction_confirmed": false,
+  "nuc_physical_blackout_eliminated_confirmed": false,
+  "runtime_pin": "158.0.8127.89",
+  "google_runtime_inventory_unchanged": true
+}

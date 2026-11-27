@@ -151,6 +151,11 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
         if(line.find("\"host_rpc\"")!=std::string::npos){
           auto started=GetTickCount64();
           auto facts=protection.Query(line.find("enable_output")!=std::string::npos,JsonNumber(line,"desired_mask"),&destroyed);
+          Log("native_output_async_status",protection.async_status);
+          Log("native_output_state_checks",protection.state_checks);
+          Log("native_output_verified_while_pending",protection.verified_while_pending?1:0);
+          Log("native_output_protection_result",protection.protection_result);
+          Log("native_output_effective_level",protection.effective_level);
           Log("native_output_query_elapsed",static_cast<uint32_t>(GetTickCount64()-started));
           Log("actual_windows_output_result",static_cast<uint32_t>(protection.last));Send(2,facts,JsonNumber(line,"rpc_id"));
         }else if(line.find("\"private_cdm_ready\"")!=std::string::npos){std::lock_guard<std::mutex> lock(state_mutex);ready=true;changed.notify_all();}
