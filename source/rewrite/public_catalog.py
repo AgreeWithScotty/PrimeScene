@@ -99,6 +99,7 @@ class CatalogPage:
     empty_confirmed: bool = False
     watchlist_confirmed: bool = False
     pagination_unavailable: bool = False
+    entry_url: str = ''
 
 
 def _personal_partial(result,page,observer,status,address,error,stage):
@@ -793,10 +794,19 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             body_read_ms=round((perf_counter()-body_started)*1000)
             if len(raw) > MAX_PAGE_BYTES:
                 raise PublicCatalogError('Prime Video returned more storefront data than expected.')
+            wire_bytes=len(raw)
+            decompress_started=perf_counter()
+            if response.headers.get('Content-Encoding','').lower()=='gzip':
+                import gzip
+                from io import BytesIO
+                raw=gzip.GzipFile(fileobj=BytesIO(raw)).read(MAX_PAGE_BYTES+1)
+                if len(raw)>MAX_PAGE_BYTES:raise PublicCatalogError('Decoded storefront data exceeds its size limit.')
+            decompress_ms=round((perf_counter()-decompress_started)*1000)
             decode_started=perf_counter()
             data = raw.decode(response.headers.get_content_charset() or 'utf-8', errors='replace')
             _emit(observer,{'event':'catalog_body_read','stage':stage,'status':status,
-                'address':route(final_url),'bytes':len(raw),'body_read_ms':body_read_ms,
+                'address':route(final_url),'bytes':len(raw),'wire_bytes':wire_bytes,'body_read_ms':body_read_ms,
+                'decompress_ms':decompress_ms,
                 'decode_ms':round((perf_counter()-decode_started)*1000),
                 'content_encoding':response.headers.get('Content-Encoding','identity'),
                 'elapsed_ms':round((perf_counter()-started)*1000),'result':'success'})
@@ -909,7 +919,7 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
                          'pagination_unavailable':result.pagination_unavailable,
                          'cards': len(result.cards), 'has_next': bool(result.next_url or result.next_request),'empty_confirmed':result.empty_confirmed,
                          'elapsed_ms': round((perf_counter() - started) * 1000)})
-        return result
+        return replace(result,entry_url=final_url)
     except Exception as error:
         details = {'event': 'catalog_request_failed', 'stage': stage, 'result': 'failure',
                    'address': route(address), 'exception': exception_details(error),
@@ -921,6 +931,10 @@ def fetch_page(page, opener=None, continuation=None, observer=None, _library_dep
             try:
                 body = error.read(MAX_PAGE_BYTES + 1)
                 details['response_bytes'] = len(body)
+                if len(body)<=MAX_PAGE_BYTES and error.headers.get('Content-Encoding','').lower()=='gzip':
+                    import gzip
+                    from io import BytesIO
+                    body=gzip.GzipFile(fileobj=BytesIO(body)).read(MAX_PAGE_BYTES+1)
                 if len(body) <= MAX_PAGE_BYTES and details['content_type'] == 'application/json':
                     from .http_transport import server_errors
                     document=json.loads(body)

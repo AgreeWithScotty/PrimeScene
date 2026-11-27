@@ -1172,7 +1172,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Section', '' if self.path in _SECTION_PATHS else clean(self.heading or '').upper())
 
     def _save_view(self):
-        if (self.path == '__watching__' or (self.series_context or {}).get('watching_only')
+        if (self.path in ('__watching__','__prime_watchlist__') or (self.series_context or {}).get('watching_only')
                 or getattr(self,'_personal_pagination_unavailable',False)):
             self.views.pop((self.path,self.query),None)
             return
@@ -1210,6 +1210,8 @@ class AuroraHome(xbmcgui.WindowXML):
             if save_current:
                 self._save_view()
             refreshing_progress=path=='__watching__' and self.path=='__watching__' and bool(self.rows)
+            refreshing_watchlist=path=='__prime_watchlist__' and self.path==path and bool(self.rows)
+            retaining_cards=refreshing_progress or refreshing_watchlist
             visible_cards = len(self.rows)
             if remember and ((path, query) != (self.path, self.query) or series_changed):
                 previous_nav = _PRIMARY_SECTIONS.get(self.path, (self.nav, ''))[0]
@@ -1219,7 +1221,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.query = query
             self.heading = heading or 'Movies'
             self.generation += 1
-            if not refreshing_progress:
+            if not retaining_cards:
                 self.rows = []
                 self.items, self.row_keys = [], set()
             self.next_path = None
@@ -1229,6 +1231,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.busy = True
             self._restore = selection
             token = self.generation
+            self._catalog_refresh_generation=token if refreshing_watchlist else None
             self._progress_refresh_generation=token if refreshing_progress else None
             self._navigation_started = monotonic()
             if series_changed:self.views.pop((path,query),None)
@@ -1245,7 +1248,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('SectionNotice','')
         # Kodi cannot focus an empty list. Park on this section's selector
         # before clearing it, then focus the new cards when they arrive.
-        if not refreshing_progress and self.getFocusId() in (200,410,415):
+        if not retaining_cards and self.getFocusId() in (200,410,415):
             self._focus_first_generation=token
             self.setFocusId(self._menu_control())
         self._section_label()
@@ -1271,7 +1274,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 'cache_reuse':False,'result':'success'})
         else:
             self._pending_progress_return=None
-        if not cached and not refreshing_progress:
+        if not cached and not retaining_cards:
             self.clearList()
             self._replace_rail=False
             from .browse_status import browse_intro
@@ -1297,6 +1300,10 @@ class AuroraHome(xbmcgui.WindowXML):
             self.performance({'event': 'navigation_restored', 'source': 'view_memory', 'cards': len(self.rows),
                               'generation': token,
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
+            if self.loader is not None and self.loader.handles(path):
+                self._catalog_refresh_generation=token;self.next_path=None;self.busy=True
+                future=self.loader.request(path,refresh=True)
+                future.add_done_callback(lambda result:self._cached_refresh_ready(token,path,result))
             return
         # Only a refresh of the same live list retains its own cards.
         self._replace_rail = False
@@ -1312,8 +1319,11 @@ class AuroraHome(xbmcgui.WindowXML):
             prefetched=self.loader.peek(path)
             if prefetched:
                 self._publish(token,prefetched)
+                self._catalog_refresh_generation=token
+                if path=='__prime_watchlist__':self.setProperty('SectionNotice','Refreshing Watchlist…')
                 self.performance({'event':'navigation_preload_bound','stage':'first_cards',
                     'generation':token,'cards':len(self.rows),
+                    'cache_age_seconds':prefetched.get('_cache_age_seconds'),'fresh_refresh_pending':True,
                     'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),'result':'success'})
             if path in ('__watching__','__prime_watchlist__'):
                 loader=self.loader
@@ -1323,7 +1333,28 @@ class AuroraHome(xbmcgui.WindowXML):
                     'catalog_worker_bypassed':True,'fresh_required':True,'result':'started'})
                 future.add_done_callback(lambda result:self._personal_ready(token,path,loader,result))
                 return
+            if prefetched:
+                future=self.loader.request(path,refresh=True)
+                future.add_done_callback(lambda result:self._cached_refresh_ready(token,path,result))
+                return
         self.jobs.put((token, path, query, selection))
+
+    def _cached_refresh_ready(self,token,path,future):
+        try:
+            packet=future.result()
+            if self.stop.is_set() or token!=self.generation:return
+            if packet is None:raise RuntimeError('Catalog refresh returned no result')
+            self._publish(token,packet)
+            self.performance({'event':'cached_catalog_refresh_finished','stage':'background_refresh',
+                'generation':token,'cards':len(self.rows),'result':'success'})
+        except Exception as error:
+            self.performance({'event':'cached_catalog_refresh_failed','stage':'background_refresh',
+                'generation':token,'exception':exception_details(error),'result':'failure'})
+            if token==self.generation and not self.stop.is_set():
+                self.setProperty('SectionNotice','These titles could not be refreshed. Reopen the category to retry.')
+        finally:
+            with self.lock:
+                if token==self.generation:self.busy=False
 
     def _personal_ready(self,token,path,loader,future,page_path=None,visited=()):
         page_path=page_path or path;continued=False
@@ -1333,8 +1364,10 @@ class AuroraHome(xbmcgui.WindowXML):
                     'generation':token,'reason':'section_changed','result':'cancelled'});return
             packet=future.result()
             if packet is None:raise RuntimeError('The personal list ended without a provider result')
-            self._publish(token,packet)
-            if (path=='__watching__' or not self.rows) and packet.get('next'):
+            deferred_watchlist=(path=='__prime_watchlist__' and bool(self.rows) and not packet.get('rows')
+                and packet.get('next') and not packet.get('empty_confirmed'))
+            if not deferred_watchlist:self._publish(token,packet)
+            if (path=='__watching__' or not self.rows or deferred_watchlist) and packet.get('next'):
                 next_page=packet['next']
                 if next_page in visited or next_page==page_path or len(visited)>=99:
                     raise RuntimeError('The In Progress continuation repeated or exceeded its page limit')
@@ -1435,6 +1468,9 @@ class AuroraHome(xbmcgui.WindowXML):
         return fresh
 
     def _publish(self, token, packet):
+        if getattr(self,'_catalog_refresh_generation',None)==token and not packet.get('_cache_preview'):
+            self._publish_progress_refresh(token,packet,kind='watchlist' if self.path=='__prime_watchlist__' else 'catalog')
+            return
         if self._progress_refresh_generation==token and self.path=='__watching__':
             self._publish_progress_refresh(token,packet)
             return
@@ -1519,7 +1555,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if pending and pending['generation']==token:pending['received']=True
             self._select_progress_return()
 
-    def _publish_progress_refresh(self,token,packet):
+    def _publish_progress_refresh(self,token,packet,kind='progress'):
         from .account_state import current_account
         if self.account_generation is not None and not current_account(self.g.DATA_PATH,self.account_generation):return
         started=monotonic()
@@ -1531,6 +1567,10 @@ class AuroraHome(xbmcgui.WindowXML):
             for row in packet.get('rows') or []:
                 if _top_selector_row(self.g.pluginid,row) or row.get('url') in seen:continue
                 seen.add(row.get('url'));rows.append(row)
+            if kind=='watchlist' and packet.get('pagination_unavailable'):
+                # An incomplete response cannot prove that other cached titles
+                # were removed. Retain them with the existing partial notice.
+                rows.extend(row for row in self.rows if row.get('url') not in seen)
             keys=[row.get('url') for row in self.rows];items=list(self.items)
             inserted=removed=moved=0;fresh_artwork=set()
             for index,row in enumerate(rows):
@@ -1565,14 +1605,17 @@ class AuroraHome(xbmcgui.WindowXML):
                         output.write(''.join(dumps(value)+'\n' for value in fresh_artwork))
                 try:persist_if_current(self.g.DATA_PATH,self.account_generation,track)
                 except OSError as error:self.performance({'event':'artwork_tracking_failed','exception':exception_details(error),'result':'failure'})
-            self._progress_refresh_generation=None;self._replace_rail=False
+            self._progress_refresh_generation=None;self._catalog_refresh_generation=None;self._replace_rail=False
             if rows:self.setCurrentListPosition(next((i for i,row in enumerate(rows) if row.get('url')==selected_url),min(selected,len(rows)-1)))
-            if focus==200 and not rows:self.setFocusId(309)
+            if focus==200 and not rows:self.setFocusId(self._menu_control())
             self.setProperty('ShowSplash','');self.setProperty('ProgressRefreshing','')
+            if kind!='progress':
+                self._personal_pagination_unavailable=bool(packet.get('pagination_unavailable'))
+                self.setProperty('SectionNotice',packet.get('notice') or '')
             pending=self._pending_progress_return
             if pending and pending['generation']==token:pending['received']=True
-        self._select_progress_return()
-        self.performance({'event':'progress_reconciled_in_place','generation':token,'cards':len(rows),
+        if kind=='progress':self._select_progress_return()
+        self.performance({'event':kind+'_reconciled_in_place','generation':token,'cards':len(rows),
             'inserted':inserted,'removed':removed,'moved':moved,'clear_list_called':False,
             'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
 
@@ -1600,6 +1643,8 @@ class AuroraHome(xbmcgui.WindowXML):
             self.stop.set()
         finally:
             self.stop.set()
+            for bridge in (self.bridge,self.metadata_bridge):
+                if bridge is not None:bridge.close()
             if self.genre_backdrops is not None:self.genre_backdrops.close()
             if self.loader is not None:
                 self.loader.close()

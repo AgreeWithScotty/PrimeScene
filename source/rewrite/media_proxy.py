@@ -50,7 +50,7 @@ def ttml_to_srt(data):
     return '\n\n'.join('%d\n%s --> %s\n%s'%(i,srt_time(a),srt_time(b),text) for i,(a,b,text) in enumerate(cues,1)).encode('utf-8')
 
 
-def dash_document(data,address,report):
+def _legacy_dash_document(data,address,report):
     """Preserve every provider track and URL; resolve relative media bases only."""
     if b'<!DOCTYPE' in data.upper() or b'<!ENTITY' in data.upper():raise ValueError('Unsafe manifest XML')
     root=ET.fromstring(data)
@@ -105,12 +105,20 @@ def dash_document(data,address,report):
     return ET.tostring(root,encoding='utf-8',xml_declaration=True)
 
 
+def dash_document(data,address,report):
+    from .dash_manifest import prepare,UnsupportedLayout
+    try:return prepare(data,address,report)
+    except UnsupportedLayout as error:
+        report({'event':'dash_legacy_layout','stage':'manifest_parse','reason':str(error),'result':'fallback'})
+        return _legacy_dash_document(data,address,report)
+
+
 class PlaybackProxy:
     def __init__(self,api,resources,report):
         self.api,self.resources,self.report=api,resources,report
         self.key=token_urlsafe(24);self.lock=RLock();self.refused=None;self.failed=Event();self.refused_replays=0
         self.manifest_bytes=None
-        self.client=HttpTransport(api.g.DATA_PATH,api.epoch,report,headers=api.headers)
+        self.client=HttpTransport(api.g.DATA_PATH,api.epoch,report,headers=api.headers,pool=api.connections)
         self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
         self.server.daemon_threads=True;self.server.owner=self
         self.address='http://127.0.0.1:%d/%s/'%(self.server.server_port,self.key)
@@ -122,7 +130,7 @@ class PlaybackProxy:
     def license(self):return self.address+'license'
     def prepare_manifest(self):
         started=monotonic()
-        response=self.client.request(self.resources.manifest,stage='manifest_download')
+        response=self.client.request(self.resources.manifest,headers={'Accept-Encoding':'gzip'},stage='manifest_download')
         data=dash_document(response.data,response.address,self.report)
         with self.lock:self.manifest_bytes=data
         self.report({'event':'local_manifest_prepared','stage':'local_transport','response_bytes':len(data),

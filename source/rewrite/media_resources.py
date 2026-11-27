@@ -70,8 +70,10 @@ class MediaAPI:
             self.jar.clear();raise TransportFailure('Your Amazon session needs verification. Sign in again.')
         for value in (self.account.get('name'),self.account.get('deviceid'),self.account.get('cid'),self.account.get('mid')):
             report.secret(value)
+        from .catalog_connections import CatalogConnections
+        self.connections=CatalogConnections(lambda:current_account(g.DATA_PATH,self.epoch),operation='playback')
         self.client=HttpTransport(g.DATA_PATH,self.epoch,report,hosts={urlsplit(endpoint).hostname},
-            jar=self.jar if self.auth=='website' else None,headers=headers)
+            jar=self.jar if self.auth=='website' else None,headers=headers,pool=self.connections)
         self.headers={'User-Agent':headers.get('User-Agent','PrimeScene'),'Accept-Encoding':'identity'}
         # Saved opt-in values from older releases must not pin users to SD.
         # Resolution preference never changes the CDM's actual security level.
@@ -217,5 +219,6 @@ class MediaAPI:
         try:
             if self.web is not None:self.web.close()
         finally:
+            self.connections.close()
             self.jar.clear();self.client.headers.clear();self.account.clear()
             self.headers.clear()

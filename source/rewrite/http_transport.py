@@ -101,9 +101,10 @@ class Response:
 
 
 class HttpTransport:
-    def __init__(self,profile,epoch,report,*,hosts=None,jar=None,headers=None):
+    def __init__(self,profile,epoch,report,*,hosts=None,jar=None,headers=None,pool=None):
         self.profile,self.epoch,self.report=profile,epoch,report
         self.hosts,self.jar,self.headers=hosts,jar,dict(headers or {})
+        self.pool=pool
     def active(self):return current_account(self.profile,self.epoch)
     def request(self,address,*,data=None,headers=None,method=None,limit=16*1024*1024,stage='http'):
         started=monotonic();identifier=token_hex(8);status=None
@@ -119,6 +120,9 @@ class HttpTransport:
         self.report({'event':'http_started','request_id':identifier,'stage':stage,
             'method':request.get_method(),'address':route(address),'request_bytes':len(data or b'')})
         handlers=[Redirects(self.report,self.hosts,identifier,stage)]
+        if self.pool is not None:
+            from .catalog_connections import KeepAliveHTTPSHandler
+            handlers.append(KeepAliveHTTPSHandler(self.pool,self.report))
         if self.jar is not None:
             if storefront_transport(self.hosts):
                 from .public_catalog import CatalogCookies
@@ -131,6 +135,7 @@ class HttpTransport:
                     raise TransportFailure('Amazon did not return to its catalog after sign-on. Sign in again.')
                 raw=reply.read(limit+1)
                 if len(raw)>limit:raise TransportFailure('The provider response exceeds its size limit')
+                wire_bytes=len(raw)
                 if reply.headers.get('Content-Encoding','').lower()=='gzip':
                     raw=gzip.GzipFile(fileobj=BytesIO(raw)).read(limit+1)
                     if len(raw)>limit:raise TransportFailure('The decoded provider response exceeds its size limit')
@@ -139,6 +144,7 @@ class HttpTransport:
                     for cookie in self.jar:self.report.secret(cookie.value)
                 self.report({'event':'http_completed','request_id':identifier,'stage':stage,'status':status,
                     'address':route(final),'response_bytes':len(raw),'content_type':reply.headers.get_content_type(),
+                    'wire_bytes':wire_bytes,'content_encoding':reply.headers.get('Content-Encoding','identity'),
                     'server_request_id':reply.headers.get('x-amzn-requestid') or reply.headers.get('x-amz-rid'),
                     'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
                 return Response(raw,final,status,reply.headers)
@@ -163,6 +169,8 @@ class HttpTransport:
                         'errorType':error_type,'message':error_message,'reason':error_type})
                 try:
                     body=error.read(65537);details['response_bytes']=len(body)
+                    if len(body)<=65536 and error.headers.get('Content-Encoding','').lower()=='gzip':
+                        body=gzip.GzipFile(fileobj=BytesIO(body)).read(65537)
                     if len(body)<=65536:
                         value=json.loads(body);codes=server_errors(value)
                         error.server_error_codes=tuple(codes)

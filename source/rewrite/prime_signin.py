@@ -617,8 +617,12 @@ def save_cookies(jar, path):
         temporary.unlink(missing_ok=True)
 
 
-def catalog_opener(jar, *, observer=None, headers=None):
+def catalog_opener(jar, *, observer=None, headers=None, pool=None):
     from .public_catalog import CatalogCookies
-    opener = build_opener(StorefrontRedirect(observer=observer), CatalogCookies(jar,observer))
+    handlers=[StorefrontRedirect(observer=observer),CatalogCookies(jar,observer)]
+    if pool is not None:
+        from .catalog_connections import KeepAliveHTTPSHandler
+        handlers.append(KeepAliveHTTPSHandler(pool,observer))
+    opener = build_opener(*handlers)
     opener.addheaders = list(dict(HEADERS, **(headers or {})).items())
     return opener

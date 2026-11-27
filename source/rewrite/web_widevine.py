@@ -5,6 +5,7 @@ Only URLs and feature envelopes actually returned for this title are used.
 Certificates, envelopes, handoffs and license/challenge contents stay in memory.
 """
 import base64
+from concurrent.futures import ThreadPoolExecutor
 import json
 import platform
 import re
@@ -56,10 +57,11 @@ class WebWidevine:
 
     def feature(self, identifier):
         client = HttpTransport(self.api.g.DATA_PATH, self.api.epoch, self.report,
-            hosts=PRIME_WEB_HOSTS | {urlsplit(self.origin).hostname}, jar=self.api.jar, headers=self.api.client.headers)
+            hosts=PRIME_WEB_HOSTS | {urlsplit(self.origin).hostname}, jar=self.api.jar, headers=self.api.client.headers,
+            pool=self.api.connections)
         path = ('/detail/' if self.api.account.get('pv') else '/gp/video/detail/') + quote(identifier, safe='')
         reply = client.request(self.origin + path,
-            headers={'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}, stage='widevine_feature_envelope')
+            headers={'Accept': 'application/json', 'Accept-Encoding':'gzip','X-Requested-With': 'XMLHttpRequest'}, stage='widevine_feature_envelope')
         final=urlsplit(reply.address)
         self.headers.update(Origin='https://'+final.hostname, Referer=reply.address)
         text = reply.data.decode(reply.headers.get_content_charset() or 'utf-8', errors='replace')
@@ -267,8 +269,32 @@ class WebWidevine:
 
     def resources(self, identifier):
         from .media_resources import MediaResources
-        self.prepare_output_protection()
-        self.feature(identifier)
+        started=monotonic();timings={};executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='PrimeFeature')
+        def feature():
+            before=monotonic();result='failure'
+            try:self.feature(identifier);result='success'
+            finally:
+                timings['feature_ms']=round((monotonic()-before)*1000)
+                self.report({'event':'hd_title_preparation_finished','stage':'parallel_prepare',
+                    'elapsed_ms':timings['feature_ms'],'result':result})
+        self.report({'event':'hd_parallel_preparation_started','stage':'parallel_prepare',
+            'startup_revision':'parallel-feature-hdcp-v1','result':'started'})
+        future=executor.submit(feature)
+        try:
+            before=monotonic();self.prepare_output_protection()
+            timings['hdcp_ms']=round((monotonic()-before)*1000)
+            future.result()
+            elapsed=round((monotonic()-started)*1000)
+            self.report({'event':'hd_parallel_preparation_finished','stage':'parallel_prepare',
+                **timings,'elapsed_ms':elapsed,
+                'overlapped_ms':max(0,sum(timings.values())-elapsed),'result':'success'})
+        except Exception:
+            self.api.connections.close(abort=True)
+            self.report({'event':'hd_parallel_preparation_finished','stage':'parallel_prepare',
+                **timings,'elapsed_ms':round((monotonic()-started)*1000),
+                'result':'cancelled' if self.api.g.monitor.abortRequested() else 'failure'})
+            raise
+        finally:executor.shutdown(wait=True)
         value = self.request('prs/GetVodPlaybackResources', self.body(), 'widevine_web_resources',
                              'vodPlaylistedPlaybackUrls')
         result = (value['vodPlaylistedPlaybackUrls'].get('result') or {})
