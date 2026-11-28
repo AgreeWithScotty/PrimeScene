@@ -9,6 +9,7 @@ def section_intro(section):
 
 def browse_intro(section,path,heading='',query=None,series=None):
     """Own the destination before its first result; do not assert it is empty."""
+    if path=='__watching__':return {'title':'In Progress','message':'Loading your current movies and TV shows from Amazon…'}
     if path in ('__watching__','__prime_purchases__','__prime_watchlist__','search') or path.startswith('__purchases__/'):
         intro=section_intro('home' if path=='__watching__' else 'watchlist' if path=='__prime_watchlist__' else
             'purchases' if path=='__prime_purchases__' or path.startswith('__purchases__/') else 'search')

@@ -6,7 +6,7 @@ Scene PlayVideo URL. No separate Kodi skin is required.
 """
 from json import dumps, load, loads
 from copy import deepcopy
-from concurrent.futures import Future
+from concurrent.futures import Future, CancelledError
 from pathlib import Path
 from queue import Empty, Full, Queue
 from secrets import token_hex
@@ -612,7 +612,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.play_jobs, self.play_worker = Queue(), None
         self.genre_worker = None
         self.genre_jobs = Queue()
-        self.preloaded_catalogs = Queue(maxsize=4)
+        self.preloaded_catalogs = Queue(maxsize=6)
         self._genre_focus = None
         self._genre_panel_reported = None
         self._genre_selection = None
@@ -620,6 +620,7 @@ class AuroraHome(xbmcgui.WindowXML):
         self.genre_requested = set()
         self.genre_owner = None
         self._genre_rows = []
+        self._genre_section = None
         self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={}
         self.bridge = None
         self.bridge_lock = Lock()
@@ -754,9 +755,12 @@ class AuroraHome(xbmcgui.WindowXML):
             view = self.getCurrentContainerId()
             focus = self.getFocusId()
             position = self._selected_index()
-            valid = (view == 200 and native_count == len(self.rows)
-                     and focus == (200 if self.items else self._menu_control())
-                     and (not self.items or position == selected))
+            binding_valid=view==200 and native_count==len(self.rows)
+            focus_valid=focus==(200 if self.items else self._menu_control()) and (not self.items or position==selected)
+            # WINDOW_INIT can report focus 0 until Kodi finishes initialization.
+            # The return worker selects focus after this callback; a verified
+            # list binding must not become an error or a one-second timeout.
+            valid=binding_valid and (focus_valid or stage=='window_on_init')
         self.performance({'event': 'window_controls_restored', 'stage': stage,
             'request_id': (origin or {}).get('request_id'),
             'previous_view_id': before_view, 'previous_native_cards': before_size,
@@ -765,6 +769,8 @@ class AuroraHome(xbmcgui.WindowXML):
             'focused_control': focus, 'expected_index': selected, 'actual_index': position,
             'container_cards_label': xbmc.getInfoLabel('Container(200).NumItems'),
             'catalog_worker_alive': bool(self.worker and self.worker.is_alive()),
+            'native_binding_confirmed':binding_valid,'focus_settled':focus_valid,
+            'focus_deferred_until_window_ready':binding_valid and not focus_valid and stage=='window_on_init',
             'elapsed_ms': round((monotonic()-started)*1000),
             'result': 'success' if valid else 'failure'})
         if not valid:
@@ -901,9 +907,9 @@ class AuroraHome(xbmcgui.WindowXML):
         reset_account_observations();self._reported_display_signature=None
         self._progress_refresh_generation=None
         self.setProperty('ProgressRefreshing','');self.setProperty('ProgressRefreshArt','')
-        self.genre_cache.clear();self.genre_requested.clear();self._genre_rows=[];self.genre_owner=None
+        self.genre_cache.clear();self.genre_requested.clear();self._genre_rows=[];self.genre_owner=None;self._genre_section=None
         self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={}
-        self.preloaded_catalogs=Queue(maxsize=4);self._genre_focus=None
+        self.preloaded_catalogs=Queue(maxsize=6);self._genre_focus=None
         self.setProperty('GenrePanel','')
         self._pending_progress_return = self._progress_return_request = None
         self._resume_selection = None
@@ -987,12 +993,13 @@ class AuroraHome(xbmcgui.WindowXML):
         self.play_worker = None
         self.genre_worker = None
         self.genre_jobs = Queue()
-        self.preloaded_catalogs = Queue(maxsize=4)
+        self.preloaded_catalogs = Queue(maxsize=6)
         self._genre_focus = None
         self.genre_cache.clear()
         self.genre_requested.clear()
         self.genre_owner = None
         self._genre_rows = []
+        self._genre_section = None
         self.service_rows=[];self._service_future=None;self._tile_items={};self._tile_art={}
         self.setProperty('GenrePanel','')
         self.visual_worker = None
@@ -1036,6 +1043,7 @@ class AuroraHome(xbmcgui.WindowXML):
             if self._progress_return_request == marker:return
             self._progress_return_request=marker
             self.nav='home'
+            if self.loader is not None:self.loader.invalidate_progress('playback_settled')
             self.navigate('__watching__',remember=False,heading='In Progress',save_current=False)
             self._pending_progress_return={'generation':self.generation,'request_id':request_id,
                 'identity':origin.get('identity'),'url':origin.get('url'),'selected':origin['selected']}
@@ -1065,13 +1073,14 @@ class AuroraHome(xbmcgui.WindowXML):
             try:
                 request=loads(command);pending=_read_note(self.g.DATA_PATH) or {}
                 origin=self.playback_origin
-                if origin is None and self._returned_playback_request==request.get('request_id'):
-                    continue
                 if (self.stop.is_set() or self.getProperty('InterfaceSession')!=self.interface_session
                     or pending.get('request_id') and pending['request_id']!=request.get('request_id')
                     or _playing(xbmc.Player()) or origin and origin.get('request_id') not in (None,request.get('request_id'))):
                     self.performance({'event':'playback_card_return_cancelled','request_id':request.get('request_id'),
                         'reason':'interface_invalidated_or_new_playback','result':'cancelled'});continue
+                if origin is None and self._returned_playback_request==request.get('request_id'):
+                    if request.get('progress_ready'):self._preload_progress_return(request.get('request_id'))
+                    continue
                 self._play_token+=1;source='current_view';fresh=bool(origin and origin['path']=='__watching__')
                 if fresh:source='fresh_amazon_progress'
                 elif origin:
@@ -1086,6 +1095,22 @@ class AuroraHome(xbmcgui.WindowXML):
                         source='origin_snapshot'
                     self.history=list(origin['history'])
                 before=xbmcgui.getCurrentWindowId();activated=False
+                if before==12005:
+                    # Stock Kodi performs PreviousWindow during playback cleanup.
+                    # Give that owned transition a few frames before posting a
+                    # competing activation into the same cleanup sequence.
+                    settle_started=monotonic();observed=[before]
+                    while not self.stop.is_set() and monotonic()-settle_started<.25:
+                        current=xbmcgui.getCurrentWindowId()
+                        if current!=observed[-1]:observed.append(current)
+                        if current!=12005:break
+                        if self.stop.wait(.01):break
+                    self.performance({'event':'playback_native_return_observed','stage':'native_window_settlement',
+                        'request_id':request.get('request_id'),'observed_window_ids':observed,
+                        'native_catalog_return':xbmcgui.getCurrentWindowId()==self.window_id,
+                        'elapsed_ms':round((monotonic()-settle_started)*1000),
+                        'result':'success' if xbmcgui.getCurrentWindowId()==self.window_id else 'fallback_required'})
+                    if _playing(xbmc.Player()):continue
                 # Kodi may already have returned. Activating that same ID forces
                 # CloseWindowSync and WINDOW_INIT again, producing the flash.
                 if self.stop.is_set():continue
@@ -1126,11 +1151,20 @@ class AuroraHome(xbmcgui.WindowXML):
                     'result':'pending_progress_settlement' if fresh and not request.get('progress_ready') else
                         'pending_fresh_list' if fresh and self._pending_progress_return else 'success'})
                 self._returned_playback_request=request.get('request_id')
+                if not fresh and request.get('progress_ready'):self._preload_progress_return(request.get('request_id'))
                 if (not fresh or request.get('progress_ready')) and self.playback_origin is origin:self.playback_origin=None
                 self._resume_selection=None
             except Exception as error:
                 self.performance({'event':'playback_card_return_failed','request_id':request.get('request_id'),
                     'exception':exception_details(error),'elapsed_ms':round((monotonic()-started)*1000),'result':'failure'})
+
+    def _preload_progress_return(self,request_id):
+        if getattr(self,'_progress_warmed_request',None)==request_id or self.loader is None:return
+        self._progress_warmed_request=request_id
+        self.loader.invalidate_progress('playback_settled')
+        self.loader.request('__watching__',background=True)
+        self.performance({'event':'progress_return_preload_started','stage':'watch_progress_settlement',
+            'request_id':request_id,'provider_STOP_completed':True,'disk_cache_used':False,'result':'started'})
 
     def _capture_playback_origin(self):
         """Capture at click time, before asynchronous title resolution can finish."""
@@ -1158,6 +1192,7 @@ class AuroraHome(xbmcgui.WindowXML):
             parts=urlsplit(row['url']);query=dict(parse_qsl(parts.query));query['resume']='start'
             row=dict(row,url=urlunsplit((parts.scheme,parts.netloc,parts.path,urlencode(query),parts.fragment)))
         self.playback_origin = origin
+        if self.loader is not None:self.loader.invalidate_progress('playback_started')
         self._returned_playback_request = None
         play_row(row, self.g.DATA_PATH, self.account_generation)
         note = _read_note(self.g.DATA_PATH) or {}
@@ -1335,7 +1370,8 @@ class AuroraHome(xbmcgui.WindowXML):
             prefetched=self.loader.peek(path)
             if prefetched:
                 self._publish(token,prefetched)
-                self._catalog_refresh_generation=token
+                if path=='__watching__':self._progress_refresh_generation=token
+                else:self._catalog_refresh_generation=token
                 if path=='__prime_watchlist__':self.setProperty('SectionNotice','Refreshing Watchlist…')
                 self.performance({'event':'navigation_preload_bound','stage':'first_cards',
                     'generation':token,'cards':len(self.rows),
@@ -1379,6 +1415,10 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.performance({'event':'personal_result_discarded','stage':'direct_personal_request',
                     'generation':token,'reason':'section_changed','result':'cancelled'});return
             packet=future.result()
+            if packet is None and path=='__watching__':
+                self.performance({'event':'personal_result_discarded','stage':'direct_personal_request',
+                    'generation':token,'reason':'history_observation_invalidated','result':'cancelled'})
+                return
             if packet is None:raise RuntimeError('The personal list ended without a provider result')
             deferred_watchlist=(path=='__prime_watchlist__' and bool(self.rows) and not packet.get('rows')
                 and packet.get('next') and not packet.get('empty_confirmed'))
@@ -1403,6 +1443,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 'page_number':len(visited)+1,'history_complete':path=='__watching__' and not continued,
                 'since_navigation_ms':round((monotonic()-self._navigation_started)*1000),
                 'result':'partial' if continued or packet.get('pagination_unavailable') else 'success'})
+        except CancelledError:
+            self.performance({'event':'personal_result_discarded','stage':'direct_personal_request',
+                'generation':token,'reason':'history_request_cancelled','result':'cancelled'})
         except Exception as error:
             self.performance({'event':'personal_request_failed','stage':'direct_personal_request',
                 'generation':token,'page_number':len(visited)+1,'cards_retained':len(self.rows),
@@ -1487,7 +1530,7 @@ class AuroraHome(xbmcgui.WindowXML):
         if getattr(self,'_catalog_refresh_generation',None)==token and not packet.get('_cache_preview'):
             self._publish_progress_refresh(token,packet,kind='watchlist' if self.path=='__prime_watchlist__' else 'catalog')
             return
-        if self._progress_refresh_generation==token and self.path=='__watching__':
+        if self._progress_refresh_generation==token and self.path=='__watching__' and not packet.get('_cache_preview'):
             self._publish_progress_refresh(token,packet)
             return
         started = monotonic()
@@ -2125,7 +2168,7 @@ class AuroraHome(xbmcgui.WindowXML):
             self.stop.wait(0.1)
 
     def _catalog_preload_ready(self,path,packet):
-        if self.stop.is_set() or path=='__watching__' or not packet.get('rows'):return
+        if self.stop.is_set() or not packet.get('rows'):return
         try:self.preloaded_catalogs.put_nowait((path,packet))
         except Full:
             self.performance({'event':'catalog_visual_preload_skipped','stage':'preload_artwork',
@@ -2786,11 +2829,12 @@ class AuroraHome(xbmcgui.WindowXML):
         from .genre_type import assets as genre_type
         with self.lock:
             if self.genre_owner!={'movies':301,'tv':302,'extras':303}[section]:return
-            listing=self._browse_list();selected=max(0,listing.getSelectedPosition())
-            title=self._genre_rows[selected]['title'] if selected<len(self._genre_rows) else None
+            previous_section=self._genre_section;section_changed=previous_section!=section
+            listing=self._browse_list();selected=0 if section_changed else max(0,listing.getSelectedPosition())
+            title=self._genre_rows[selected]['title'] if not section_changed and selected<len(self._genre_rows) else None
             rows=extras(self.service_rows) if section=='extras' else genres(section,self.genre_cache.get(section,[]))
-            if rows==self._genre_rows:return
-            if self._tile_items and [row['title'] for row in rows]==[row['title'] for row in self._genre_rows]:
+            if not section_changed and rows==self._genre_rows:return
+            if not section_changed and self._tile_items and [row['title'] for row in rows]==[row['title'] for row in self._genre_rows]:
                 previous=self._tile_items
                 self._tile_items={row['path']:previous[old['path']] for old,row in zip(self._genre_rows,rows)}
                 for row in rows:self._tile_items[row['path']].setProperty('GridLabel',clean(row.get('grid_label') or ''))
@@ -2798,7 +2842,7 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.performance({'event':'browse_grid_metadata_updated','section':section,'tiles':len(rows),
                     'native_list_reset':False,'result':'success'})
                 return
-            self._genre_rows=rows
+            self._genre_rows=rows;self._genre_section=section
             selected=next((i for i,row in enumerate(rows) if row['title']==title),0)
             items=[];self._tile_items={}
             for row in rows:
@@ -2825,6 +2869,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 self._tile_items[row['path']]=item
             listing.reset();listing.addItems(items);listing.selectItem(selected)
             self.performance({'event':'browse_grid_updated','section':section,'tiles':len(rows),
+                'previous_section':previous_section,'section_changed':section_changed,'selected_index':selected,
+                'cross_section_selection_reused':False,'cross_section_items_reused':False,
                 'selection_preserved':bool(title and rows[selected]['title']==title),'result':'success'})
 
     def _browse_control_id(self):

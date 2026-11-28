@@ -1,0 +1,27 @@
+{
+  "version": "0.2.71",
+  "previous": "0.2.70",
+  "changes": [
+    "Preload fresh Amazon In Progress history and show an account-scoped memory preview while each menu visit refreshes in the background; do not save history snapshots to disk.",
+    "Invalidate In Progress observations around playback changes, reject older in-flight responses and warm fresh history after provider STOP settlement.",
+    "Start Movies and TV genre cards at the beginning when switching sections; preserve same-section return positions and keep native genre items separate.",
+    "Observe Kodi native fullscreen cleanup before fallback activation and acknowledge verified catalog bindings while focus settles after window initialization.",
+    "Preserve the working Watchlist, HD playback, eliminated startup flash, persistent pinned Chrome and all accumulated fixes."
+  ],
+  "bytes": 7283295,
+  "sha256": "2c0051ecc4910beb403e8327864b39070e0004b04828dfff2b2ec4417cfd10e9",
+  "files": 179,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "authorization": "standing automatic main/Test synchronization, user 2026-11-27",
+  "matching_NUC_playback": "3bfd10f2ccfbec35",
+  "prior_real_In_Progress_attempt": "6566f7264aeb486f",
+  "user_confirmed_previous_Watchlist_fix": true,
+  "user_confirmed_previous_start_flash_fix": true,
+  "nuc_physical_Stop_flash_eliminated_confirmed": false,
+  "new_nuc_In_Progress_and_genre_UI_confirmed": false,
+  "runtime_pin": "158.0.8127.89",
+  "native_binaries_and_google_inventory_unchanged": true
+}
