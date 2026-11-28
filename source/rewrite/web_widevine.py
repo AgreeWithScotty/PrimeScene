@@ -41,6 +41,7 @@ class WebWidevine:
         self.server_certificate=''
         self.output_protection=None;self.hdcp_level=None;self.hdcp_protection_level=None
         self.output_preflight_unavailable=False
+        self.output_protection_attempted=False;self.output_queries_only=False;self.declared_quality=None
         self.origin = api.account.get('baseurl', '').rstrip('/')
         if not https_address(self.origin, PRIME_WEB_HOSTS | AMAZON_WEB_HOSTS):
             raise TransportFailure('The account has no verified Amazon website origin')
@@ -157,13 +158,14 @@ class WebWidevine:
     def prepare_output_protection(self):
         """Keep a real Windows HDCP session alive through the HD playback."""
         if self.output_protection is not None:return
+        self.output_protection_attempted=True
         self.report({'event':'windows_hdcp_preparation','stage':'hd_output_protection',
             'requested_quality':self.api.quality,'protection_revision':'verified-effective-state-v1',
             'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
-            'display_environment':{'windows_version':platform.version(),
-                'renderer':xbmc.getInfoLabel('System.Renderer') or None,
-                'render_vendor':xbmc.getInfoLabel('System.RenderVendor') or None,
-                'render_version':xbmc.getInfoLabel('System.RenderVersion') or None},'result':'started'})
+            'display_environment':dict(windows_version=platform.version(),**{
+                key:value if value and value!=label else None for key,label in
+                (('renderer','System.Renderer'),('render_vendor','System.RenderVendor'),
+                 ('render_version','System.RenderVersion')) for value in (xbmc.getInfoLabel(label),)}),'result':'started'})
         try:
             from .windows_hdcp import HdcpSession
             self.output_protection=HdcpSession()
@@ -199,6 +201,7 @@ class WebWidevine:
                 self.report({'event':'windows_hdcp_failed_session_discarded','stage':'hd_output_protection',
                     'before_player_open':True,'elapsed_ms':round((monotonic()-close_started)*1000),
                     'result':'success'})
+            self.output_queries_only=not result.get('protection_established',False)
             self.report({'event':'windows_hdcp_prepared','stage':'hd_output_protection',
                 'before':before,'windows_attempts':attempts,
                 'windows_enforced_hdcp_level':self.hdcp_level,
@@ -284,8 +287,15 @@ class WebWidevine:
         if self.api.client.active():persist_session(self.api.g.DATA_PATH, self.api.epoch, self.api.jar)
         return value
 
-    def resources(self, identifier):
-        from .media_resources import MediaResources
+    def _prepare_title(self,identifier):
+        if self.api.defer_output_protection and not self.api.force_output_protection:
+            started=monotonic();self.output_queries_only=True
+            self.feature(identifier)
+            self.report({'event':'windows_hdcp_preparation_deferred','stage':'hd_output_protection',
+                'reason':'request_provider_quality_before_optional_output_change',
+                'requested_quality':self.api.quality,'protection_claim':'unknown',
+                'elapsed_ms':round((monotonic()-started)*1000),'result':'deferred'})
+            return
         started=monotonic();timings={};executor=ThreadPoolExecutor(max_workers=1,thread_name_prefix='PrimeFeature')
         def feature():
             before=monotonic();result='failure'
@@ -312,6 +322,10 @@ class WebWidevine:
                 'result':'cancelled' if self.api.g.monitor.abortRequested() else 'failure'})
             raise
         finally:executor.shutdown(wait=True)
+
+    def resources(self,identifier,refresh_only=False):
+        from .media_resources import MediaResources
+        if not refresh_only:self._prepare_title(identifier)
         value = self.request('prs/GetVodPlaybackResources', self.body(), 'widevine_web_resources',
                              'vodPlaylistedPlaybackUrls')
         result = (value['vodPlaylistedPlaybackUrls'].get('result') or {})
@@ -327,6 +341,7 @@ class WebWidevine:
             order.index(item.get('cdn')) if item.get('cdn') in order else len(order)))
         self.handoff = (value.get('sessionization') or {}).get('sessionHandoffToken')
         self.certificate = ((value.get('widevineServiceCertificate') or {}).get('result') or {}).get('encodedServiceCertificate', '')
+        self.server_certificate=''
         if not choices or not isinstance(self.handoff, str) or not self.handoff:
             raise TransportFailure('Amazon returned incomplete web playback session data')
         if self.certificate:
@@ -351,12 +366,19 @@ class WebWidevine:
                 transitions.append({'elementType': mapping[event['eventType']],
                     'startTimecodeMs': event.get('startTimeMs') or 0, 'endTimecodeMs': event['endTimeMs']})
         declared = (main.get('manifestMetadata') or {}).get('videoQuality')
+        self.declared_quality=declared if declared in ('SD','HD','UHD') else None
         self.report({'event': 'widevine_web_resources_ready', 'stage': 'resource_selection',
             'protocol_revision': PROTOCOL_REVISION, 'requested_quality': self.api.quality,
             'provider_declared_quality': declared if declared in ('SD', 'HD', 'UHD') else None,
             'manifest_candidates': len(choices), 'certificate_present': bool(self.certificate),
             'session_handoff_present': bool(self.handoff), 'exact_provider_url': True,
             'subtitles': len(subtitles), 'result': 'success'})
+        if (declared=='SD' and self.api.quality in ('HD','UHD') and self.api.defer_output_protection
+                and not self.output_protection_attempted):
+            self.report({'event':'hdcp_quality_recheck_started','stage':'quality_authorization',
+                'trigger':'provider_offered_SD','same_title':True,'result':'started'})
+            self.prepare_output_protection()
+            return self.resources(identifier,refresh_only=True)
         return MediaResources(choices[0]['url'], subtitles, transitions, choices[0].get('cdn', ''))
 
     def license(self, challenge):
@@ -408,6 +430,13 @@ class WebWidevine:
         self.report({'event': 'widevine_web_license_received', 'stage': 'widevine_web_license',
             'license_bytes': len(data), 'key_restrictions': restrictions[:30],
             'include_hdcp_test_key': True, 'result': 'success'})
+        required=any(item.get('keyType')=='CONTENT' and item.get('hdcp') not in
+            (None,0,'HDCP_NONE') for item in restrictions)
+        if required and self.api.defer_output_protection and not self.output_protection_attempted:
+            from .media_resources import MediaProtectionRequired
+            self.report({'event':'hdcp_content_requirement_observed','stage':'quality_authorization',
+                'license_forwarded':False,'test_keys_ignored':True,'result':'retry_required'})
+            raise MediaProtectionRequired('Amazon requires output protection for this content')
         return data
 
     def close(self):

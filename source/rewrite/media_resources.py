@@ -35,6 +35,10 @@ class MediaServiceError(TransportFailure):
         super().__init__(self.user_message)
 
 
+class MediaProtectionRequired(TransportFailure):
+    stage='hd_output_protection'
+
+
 @dataclass
 class MediaResources:
     manifest:str
@@ -51,6 +55,7 @@ class MediaAPI:
         self.material=material;self.hardware_level=hardware_level;self.device_platform=device_platform
         if drm_system!='widevine':raise ValueError('This add-on uses stock Kodi Widevine playback')
         self.drm_system=drm_system;self.web=None
+        self.defer_output_protection=False;self.force_output_protection=False
         self.jar=load_session(g.DATA_PATH);self.auth='website';self.device_type=WEB_DEVICE
         endpoint=self.account.get('atvurl','').rstrip('/')
         hosts=MEDIA_API_HOSTS

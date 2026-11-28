@@ -117,7 +117,7 @@ class PlaybackProxy:
     def __init__(self,api,resources,report):
         self.api,self.resources,self.report=api,resources,report
         self.key=token_urlsafe(24);self.lock=RLock();self.refused=None;self.failed=Event();self.refused_replays=0
-        self.manifest_bytes=None
+        self.manifest_bytes=None;self.manifest_info={}
         self.client=HttpTransport(api.g.DATA_PATH,api.epoch,report,headers=api.headers,pool=api.connections)
         self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
         self.server.daemon_threads=True;self.server.owner=self
@@ -131,7 +131,11 @@ class PlaybackProxy:
     def prepare_manifest(self):
         started=monotonic()
         response=self.client.request(self.resources.manifest,headers={'Accept-Encoding':'gzip'},stage='manifest_download')
-        data=dash_document(response.data,response.address,self.report)
+        def observed(event):
+            if event.get('event')=='dash_prepared':
+                self.manifest_info={key:event.get(key) for key in ('video_representations','video_widths','video_heights')}
+            self.report(event)
+        data=dash_document(response.data,response.address,observed)
         with self.lock:self.manifest_bytes=data
         self.report({'event':'local_manifest_prepared','stage':'local_transport','response_bytes':len(data),
             'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
