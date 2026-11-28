@@ -60,6 +60,12 @@ class PlayerEvents(xbmc.Player):
         self.fullscreen_when_ready=fullscreen_when_ready;self.report=report
     def _finished(self,reason):
         self.terminal=reason;self.finished.set()
+        if self.report:
+            try:self.report({'event':'playback_terminal_display','stage':'native_player_terminal',
+                'reason':reason,'current_window_id':xbmcgui.getCurrentWindowId(),
+                'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,'result':'observed'})
+            except Exception as error:self.report({'event':'playback_terminal_display','stage':'native_player_terminal',
+                'reason':reason,'exception':exception_details(error),'result':'unavailable'})
         if self.on_terminal is not None:self.on_terminal(reason,'native_player_callback')
     def owned(self):
         try:return self.isPlaying() and self.getPlayingFile()==self.path
@@ -169,6 +175,7 @@ def stream_snapshot(player,api,report):
         return {'requested_quality':api.quality,
             'current_window_id':xbmcgui.getCurrentWindowId(),
             'fullscreen_video':xbmc.getCondVisibility('Window.IsVisible(fullscreenvideo)'),
+            'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
             'hardware_level':api.hardware_level,'selected_video':safe(values.get('currentvideostream')),
             'selected_audio':safe(values.get('currentaudiostream')),
             'native_video_choices':[safe(item) for item in (values.get('videostreams') or [])[:64]]}

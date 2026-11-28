@@ -90,6 +90,7 @@ def parse_tv_page(data, content_type, address, pluginid, observer=None, *, decod
     selected_id = primary.get('pageTitleId')
     related = [state for state in states if state.get('pageTitleId') == selected_id]
     records, links, ordered, next_links, expected = {}, {}, [], set(), 0
+    watch_states={}
     token_only = False
     for state in related:
         detail = state.get('detail') or {}
@@ -106,6 +107,16 @@ def parse_tv_page(data, content_type, address, pluginid, observer=None, *, decod
                 if isinstance(entry, dict) and entry.get('seasonId') and entry.get('seasonLink'):
                     links[entry['seasonId']] = dict(entry, link=entry['seasonLink'], titleType='season',
                         seasonNumber=entry.get('seasonNumber', entry.get('sequenceNumber')))
+        from .watch_home import progress_info
+        for name in ('action','actions'):
+            actions=state.get(name) or {}
+            if not isinstance(actions,dict):continue
+            for mapping in (actions,actions.get('btf'),actions.get('atf')):
+                if not isinstance(mapping,dict):continue
+                for identity,action in mapping.items():
+                    if isinstance(action,dict):
+                        values=progress_info(action)
+                        if values:watch_states.setdefault(identity,{}).update(values)
         listing = state.get('episodeList') or {}
         for identifier in listing.get('cardTitleIds') or []:
             if identifier and identifier not in ordered:
@@ -133,13 +144,15 @@ def parse_tv_page(data, content_type, address, pluginid, observer=None, *, decod
         if _kind(episode) != 'episode' or not _text(episode.get('title') or episode.get('displayTitle')):
             continue
         info = _info(episode)
+        info.update(watch_states.get(identifier) or {})
         if info.get('season') is None and season_number is not None:
             info['season'] = season_number
         rows.append(_episode(identifier, _text(episode.get('title') or episode.get('displayTitle')), info, pluginid))
     for identifier, entry in records.items():
         if _kind(entry) == 'season':
-            links.setdefault(identifier, entry)
-    selected_route = dict(links.get(selected_id) or selected, titleType='season')
+            links[identifier]=dict(entry,**(links.get(identifier) or {}))
+    selected_route = dict(selected,**(links.get(selected_id) or {}))
+    selected_route['titleType']='season'
     if not safe_url(selected_route.get('link'), STOREFRONT_HOSTS, address):
         selected_route['link'] = address
     links[selected_id] = selected_route
@@ -158,7 +171,13 @@ def parse_tv_page(data, content_type, address, pluginid, observer=None, *, decod
     details = {'source_states': len(related), 'episode_ids': len(ordered), 'episodes_parsed': len(rows),
         'unresolved_episode_ids': len(ordered)-len(rows), 'expected_total': expected,
         'season_routes': len(seasons), 'continuation_candidates': next_count,
-        'unsupported_token_continuation': token_only, 'selected_kind': _kind(selected)}
+        'unsupported_token_continuation': token_only, 'selected_kind': _kind(selected),
+        'episode_watch_states':sum(bool(r['info'].get('watch_state')) for r in rows),
+        'watched_episodes':sum(r['info'].get('playcount',0)>0 for r in rows),
+        'in_progress_episodes':sum(r['info'].get('watch_state')=='in_progress' for r in rows),
+        'season_owned_artwork':sum(bool(s['info'].get('fanart') or s['info'].get('thumb') or s['info'].get('poster')) for s in seasons)}
+    _emit(observer,dict(details,event='tv_episode_progress_mapped',stage='tv_parse',
+        state_source='declared_title_action_by_episode_identity',cross_title_progress_copied=False,result='success'))
     return {'rows': rows, 'info': dict(_info(selected), mediatype='season'), 'seasons': seasons,
             'selected_id': selected_id, 'next_url': next_url, 'episode_diagnostics': details}
 

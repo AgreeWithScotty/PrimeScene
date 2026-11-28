@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.71" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.72" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.71[CR]- Preload fresh Amazon In Progress history and show an account-scoped memory preview while each menu visit refreshes in the background; do not save history snapshots to disk.[CR]- Invalidate In Progress observations around playback changes, reject older in-flight responses and warm fresh history after provider STOP settlement.[CR]- Start Movies and TV genre cards at the beginning when switching sections; preserve same-section return positions and keep native genre items separate.[CR]- Observe Kodi native fullscreen cleanup before fallback activation and acknowledge verified catalog bindings while focus settles after window initialization.[CR]- Preserve the working Watchlist, HD playback, eliminated startup flash, persistent pinned Chrome and all accumulated fixes.</news>
+    <news>0.2.72[CR]- Use each season's own Amazon artwork and metadata; prepare missing sibling artwork from its declared page in the background instead of copying the selected season.[CR]- Map identity-specific Amazon episode playback actions to Watched/Unwatched states, native playcount/resume tags and exact played/remaining times.[CR]- Keep watched episodes visible inside seasons opened through In Progress and refresh episode state on entry and after provider STOP settlement.[CR]- Preserve selected cards during refresh, invalidate older episode prefetch and add passive display-mode diagnostics during playback and at Stop.[CR]- Retain working Watchlist, In Progress preload, genre reset, native HD, startup-flash and persistent Chrome fixes. The remaining physical Stop flash is still unresolved.</news>
   </extension>
 </addon>
