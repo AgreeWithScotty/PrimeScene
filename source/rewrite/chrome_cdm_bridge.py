@@ -115,7 +115,7 @@ class Lease:
         self.log_start=self.log.stat().st_size if self.log.exists() else 0
         self._output_policy=None;self._output_policy_registered=False
         self._output_token=int(self.token[:16],16) or 1
-    def _configure_output_policy(self):
+    def _configure_output_policy(self,preparation_failed=True):
         import ctypes
         self._output_policy=ctypes.WinDLL(str(self.root/'widevinecdm.dll'),winmode=0x800,use_last_error=True)
         configure=self._output_policy.SmoothPrimeConfigureHdcpPreflight
@@ -123,7 +123,8 @@ class Lease:
         if not configure(self._output_token,1):raise RuntimeError('Native output preflight ownership is unavailable')
         self._output_policy_registered=True
         self.report({'event':'chrome_cdm_output_preflight_selected','stage':'native_cdm_path',
-            'preparation_failed':True,'query_can_enable_protection':False,
+            'preparation_failed':preparation_failed,'preparation_deferred':not preparation_failed,
+            'query_can_enable_protection':False,
             'explicit_CDM_protection_requests_preserved':True,'protection_claim':'unknown','result':'success'})
     def _release_output_policy(self):
         if self._output_policy is None:return
@@ -138,7 +139,7 @@ class Lease:
         finally:
             self._output_policy=None;self._output_policy_registered=False
             FreeLibrary(module._handle);module._handle=0
-    def activate(self,preflight_unavailable=False):
+    def activate(self,preflight_unavailable=False,query_only=False):
         recover(self.g,self.report)
         if self.path.exists():raise RuntimeError('Another playback is preparing its native CDM path')
         self.previous=self.adaptive.getSetting('DECRYPTERPATH')
@@ -150,7 +151,7 @@ class Lease:
         try:
             self.adaptive.setSetting('DECRYPTERPATH',str(self.root))
             if self.adaptive.getSetting('DECRYPTERPATH')!=str(self.root):raise RuntimeError('Native CDM path did not persist')
-            if preflight_unavailable:self._configure_output_policy()
+            if preflight_unavailable or query_only:self._configure_output_policy(preflight_unavailable)
         except Exception:
             self.restore('activation_failed');raise
         self.report({'event':'chrome_cdm_bridge_path_selected','stage':'native_cdm_path','cdm_abi':10,

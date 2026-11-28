@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.69" provider-name="AgreeWithScotty">
+<addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.70" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -20,6 +20,6 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.69[CR]- Discard unsuccessful Windows HDCP sessions before playback instead of retaining failed sessions until Stop.[CR]- After failed preparation, answer native status queries as unknown without repeating an automatic HDCP probe; preserve explicit protection requests from the genuine CDM.[CR]- Queue the return to the catalog asynchronously and retain the existing readiness acknowledgement.[CR]- Scope failed-preparation policy to the selected playback and release its owned DLL reference safely; record request origin, desired protection mask and display environment.[CR]- Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist improvements, and all accumulated fixes.</news>
+    <news>0.2.70[CR]- Retain rendered Watchlist cards across menu visits and warm saved account cards and original artwork at startup.[CR]- Refresh Watchlist in the background, reuse unchanged native items and preserve loaded artwork and descriptions missing from thinner listings.[CR]- Preserve regional pagination revalidation, confirmed additions/removals and empty lists, partial responses, account isolation and fresh In Progress.[CR]- Request the best Amazon resources before optional Windows HDCP preparation; retry the same title at the same quality with genuine protection when the provider, manifest or content license requires it.[CR]- Preserve explicit CDM protection enforcement and record read-only display settings, protection stages and Watchlist retention diagnostics.[CR]- Retain native HD in stock Kodi, persistent pinned Chrome reuse and all accumulated fixes.</news>
   </extension>
 </addon>

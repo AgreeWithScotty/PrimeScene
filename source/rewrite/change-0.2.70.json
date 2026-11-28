@@ -1,0 +1,30 @@
+{
+  "version": "0.2.70",
+  "previous": "0.2.69",
+  "changes": [
+    "Retain rendered Watchlist cards across menu visits and warm saved account cards and original artwork at startup.",
+    "Refresh Watchlist in the background, reuse unchanged native items and preserve loaded artwork and descriptions missing from thinner listings.",
+    "Preserve regional pagination revalidation, confirmed additions/removals and empty lists, partial responses, account isolation and fresh In Progress.",
+    "Request the best Amazon resources before optional Windows HDCP preparation; retry the same title at the same quality with genuine protection when the provider, manifest or content license requires it.",
+    "Preserve explicit CDM protection enforcement and record read-only display settings, protection stages and Watchlist retention diagnostics.",
+    "Retain native HD in stock Kodi, persistent pinned Chrome reuse and all accumulated fixes."
+  ],
+  "bytes": 7281978,
+  "sha256": "8138fa83753f0b5ba5135765ed51a00d7279ce78030f170df92cd631c2541329",
+  "files": 179,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "matching_NUC_playback": "e9fa6aa43a4dbe47",
+  "prior_actual_stock_Kodi_HD_attempt": "968de2da9a3c4f8f",
+  "prior_real_Watchlist_attempt": "4667295c66b74615",
+  "actual_local_HD_dimensions": [
+    1920,
+    800
+  ],
+  "nuc_physical_blackout_eliminated_confirmed": false,
+  "nuc_Watchlist_render_confirmed": false,
+  "runtime_pin": "158.0.8127.89",
+  "native_binaries_and_google_inventory_unchanged": true
+}

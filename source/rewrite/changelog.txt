@@ -1,6 +1,7 @@
-0.2.69
-- Discard unsuccessful Windows HDCP sessions before playback instead of retaining failed sessions until Stop.
-- After failed preparation, answer native status queries as unknown without repeating an automatic HDCP probe; preserve explicit protection requests from the genuine CDM.
-- Queue the return to the catalog asynchronously and retain the existing readiness acknowledgement.
-- Scope failed-preparation policy to the selected playback and release its owned DLL reference safely; record request origin, desired protection mask and display environment.
-- Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist improvements, and all accumulated fixes.
+0.2.70
+- Retain rendered Watchlist cards across menu visits and warm saved account cards and original artwork at startup.
+- Refresh Watchlist in the background, reuse unchanged native items and preserve loaded artwork and descriptions missing from thinner listings.
+- Preserve regional pagination revalidation, confirmed additions/removals and empty lists, partial responses, account isolation and fresh In Progress.
+- Request the best Amazon resources before optional Windows HDCP preparation; retry the same title at the same quality with genuine protection when the provider, manifest or content license requires it.
+- Preserve explicit CDM protection enforcement and record read-only display settings, protection stages and Watchlist retention diagnostics.
+- Retain native HD in stock Kodi, persistent pinned Chrome reuse and all accumulated fixes.

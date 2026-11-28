@@ -226,7 +226,7 @@ _NAV_VALUES = ('home', 'movies', 'tv', 'extras', 'watchlist')
 _SECTION_PATHS = set(_PRIMARY_SECTIONS) | {'root', '__prime_home__', '__legacy_sports__','__genres__/movies','__genres__/tv',
     '__prime_purchases__','__purchases__/movies','__purchases__/tv'}
 _DETAIL_KEYS = ('plot', 'year', 'duration', 'runtime', 'mpaa', 'rating', 'genre', 'genres',
-                'seasons', 'season', 'episode', 'premiered', 'mediatype', 'fanart', 'thumb', 'poster')
+                'seasons', 'season', 'episode', 'premiered', 'mediatype', 'fanart', 'thumb', 'poster', 'landscape')
 
 
 def _detail_path(pluginid, row):
@@ -1172,18 +1172,26 @@ class AuroraHome(xbmcgui.WindowXML):
         self.setProperty('Section', '' if self.path in _SECTION_PATHS else clean(self.heading or '').upper())
 
     def _save_view(self):
-        if (self.path in ('__watching__','__prime_watchlist__') or (self.series_context or {}).get('watching_only')
-                or getattr(self,'_personal_pagination_unavailable',False)):
+        watchlist=self.path=='__prime_watchlist__'
+        if (self.path=='__watching__' or (self.series_context or {}).get('watching_only')
+                or not watchlist and getattr(self,'_personal_pagination_unavailable',False)):
             self.views.pop((self.path,self.query),None)
             return
         if self.rows:
             self.views[(self.path, self.query)] = {'rows': list(self.rows), 'items': list(self.items),
                 'next': self.next_path or self.pending_path, 'prefetch_at': self.prefetch_at, 'selected': self._selected_index(),
-                'series': deepcopy(self.series_context)}
+                'series': deepcopy(self.series_context),
+                'pagination_unavailable':getattr(self,'_personal_pagination_unavailable',False)}
+            if watchlist:self.performance({'event':'watchlist_view_saved','stage':'view_memory',
+                'generation':self.generation,'cards':len(self.rows),'native_items_retained':True,
+                'continuation_requires_refresh':True,'result':'success'})
             if len(self.views) > 12:
                 oldest = next((key for key in self.views if key[0] not in _SECTION_PATHS), None)
                 if oldest is not None:
                     self.views.pop(oldest)
+        elif watchlist:
+            # A confirmed empty list must not restore a previous membership.
+            self.views.pop((self.path,self.query),None)
 
     def _dismiss_pending_playback_refresh(self):
         origin=self.playback_origin
@@ -1235,8 +1243,8 @@ class AuroraHome(xbmcgui.WindowXML):
             self._progress_refresh_generation=token if refreshing_progress else None
             self._navigation_started = monotonic()
             if series_changed:self.views.pop((path,query),None)
-            cached = self.views.get((path, query)) if path not in ('__watching__','__prime_watchlist__') else None
-            if cached and cached.get('pagination_unavailable'):cached=None
+            cached = self.views.get((path, query)) if path!='__watching__' and not retaining_cards else None
+            if cached and cached.get('pagination_unavailable') and path!='__prime_watchlist__':cached=None
             self._personal_pagination_unavailable=False
             self.series_context = deepcopy(cached.get('series')) if cached else deepcopy(series)
         self.performance({'event': 'navigation_started', 'generation': token,
@@ -1298,10 +1306,18 @@ class AuroraHome(xbmcgui.WindowXML):
             if self.items:
                 self.setProperty('ShowSplash', '')
             self.performance({'event': 'navigation_restored', 'source': 'view_memory', 'cards': len(self.rows),
-                              'generation': token,
+                              'generation': token,'section':path if path in _SECTION_PATHS else 'detail_or_search',
+                              'native_items_reused':True,'fresh_refresh_pending':self.loader is not None and self.loader.handles(path),
                               'elapsed_ms': round((monotonic() - self._navigation_started) * 1000), 'result': 'success'})
             if self.loader is not None and self.loader.handles(path):
                 self._catalog_refresh_generation=token;self.next_path=None;self.busy=True
+                if path=='__prime_watchlist__':
+                    # The rendered preview is reusable; its regional paging is
+                    # not. Revalidate the current marketplace on every visit.
+                    self._personal_pagination_unavailable=bool(cached.get('pagination_unavailable'))
+                    loader=self.loader;future=loader.request(path,refresh=True)
+                    future.add_done_callback(lambda result:self._personal_ready(token,path,loader,result))
+                    return
                 future=self.loader.request(path,refresh=True)
                 future.add_done_callback(lambda result:self._cached_refresh_ready(token,path,result))
             return
@@ -1563,18 +1579,37 @@ class AuroraHome(xbmcgui.WindowXML):
             if token!=self.generation or self.stop.is_set():return
             selected=self._selected_index();focus=self.getFocusId()
             selected_url=self.rows[selected].get('url') if selected<len(self.rows) else None
-            rows=[];seen=set()
+            rows=[];seen=set();previous={row.get('url'):row for row in self.rows}
+            metadata_retained=0
             for row in packet.get('rows') or []:
                 if _top_selector_row(self.g.pluginid,row) or row.get('url') in seen:continue
+                if kind!='progress':
+                    # A listing can be thinner than its earlier title detail.
+                    # Retain presentation fields only, never access/progress
+                    # evidence or membership omitted by a confirmed response.
+                    info=dict(row.get('info') or {})
+                    saved=self.detail_cache.get(_detail_path(self.g.pluginid,row)) or {}
+                    for source in ((saved.get('info') or {}),(previous.get(row.get('url'),{}).get('info') or {})):
+                        for field in _DETAIL_KEYS:
+                            if info.get(field) in (None,'',[],{}) and source.get(field) not in (None,'',[],{}):
+                                info[field]=source[field];metadata_retained+=1
+                    row=dict(row,info=info)
                 seen.add(row.get('url'));rows.append(row)
             if kind=='watchlist' and packet.get('pagination_unavailable'):
                 # An incomplete response cannot prove that other cached titles
                 # were removed. Retain them with the existing partial notice.
                 rows.extend(row for row in self.rows if row.get('url') not in seen)
             keys=[row.get('url') for row in self.rows];items=list(self.items)
-            inserted=removed=moved=0;fresh_artwork=set()
+            inserted=removed=moved=unchanged=0;fresh_artwork=set()
             for index,row in enumerate(rows):
                 key=row.get('url')
+                if key in keys and row==previous.get(key):
+                    old=keys.index(key);existing=items[old]
+                    if old!=index:
+                        self.removeItem(old);self.addItem(existing,index)
+                        keys.pop(old);items.pop(old);keys.insert(index,key);items.insert(index,existing);moved+=1
+                    unchanged+=1
+                    continue
                 item=_item(row,self.title_cache.get((row.get('title') or '').upper(),''),self.image_cache,self.performance)
                 fresh_artwork.update(self._note_artwork(row.get('info') or {}))
                 if row.get('identity') and row.get('detail_url'):
@@ -1582,14 +1617,14 @@ class AuroraHome(xbmcgui.WindowXML):
                 if key in keys:
                     old=keys.index(key);existing=items[old]
                     existing.setLabel(item.getLabel())
-                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','ProgressLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt'):
+                    for prop in ('Meta','CardMeta','Watched','ViewingLabel','ProgressLabel','Plot','Year','Runtime','Rating','Genre','MediaType','Id','Identity','TitleArt','HeroSource'):
                         existing.setProperty(prop,item.getProperty(prop))
                     values=row.get('info') or {};known_total=duration_seconds(values);total=known_total or 100
                     position=position_seconds(values) if known_total else _progress(values)
                     try:existing.getVideoInfoTag().setResumePoint(position if position is not None else total*_progress(values)/100,total)
                     except Exception as error:self.performance({'event':'progress_indicator_update_failed','stage':'in_place_refresh',
                         'exception':exception_details(error),'result':'failure'})
-                    existing.setArt({name:item.getArt(name) for name in ('thumb','landscape','poster','icon','fanart') if item.getArt(name)})
+                    existing.setArt({name:item.getArt(name) for name in ('thumb','landscape','poster','icon','fanart','hero') if item.getArt(name)})
                     if old!=index:
                         self.removeItem(old);self.addItem(existing,index)
                         keys.pop(old);items.pop(old);keys.insert(index,key);items.insert(index,existing);moved+=1
@@ -1617,6 +1652,9 @@ class AuroraHome(xbmcgui.WindowXML):
         if kind=='progress':self._select_progress_return()
         self.performance({'event':kind+'_reconciled_in_place','generation':token,'cards':len(rows),
             'inserted':inserted,'removed':removed,'moved':moved,'clear_list_called':False,
+            'unchanged_native_items_retained':unchanged,'missing_presentation_fields_retained':metadata_retained,
+            'cards_with_artwork':sum(bool(_rail_art(row.get('info') or {})) for row in rows),
+            'cards_with_descriptions':sum(bool((row.get('info') or {}).get('plot')) for row in rows),
             'elapsed_ms':round((monotonic()-started)*1000),'result':'success'})
 
     def _work(self):

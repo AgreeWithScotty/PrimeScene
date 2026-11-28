@@ -13,13 +13,35 @@ import xbmcplugin
 import xbmcvfs
 from .app_runtime import AppRuntime,Preferences
 from .account_state import account_epoch,current_account
-from .media_resources import MediaAPI,MediaServiceError
+from .media_resources import MediaAPI,MediaServiceError,MediaProtectionRequired
 from .media_quality import lower_quality
 from .media_proxy import PlaybackProxy
 from .playback_progress import ResumePoints
 from .prime_diagnostics import DiagnosticLog,exception_details
 from .chrome_runtime import PreparationCancelled
 STARTUP_REVISION='catalog-until-av-ready-v2'
+
+
+def display_state(report,stage):
+    settings=('videoplayer.adjustrefreshrate','videoplayer.usedisplayasclock','videoscreen.fakefullscreen',
+        'videoscreen.screenmode','videoscreen.delayrefreshchange','videoplayer.allowedhdrformats')
+    try:
+        requests=[{'jsonrpc':'2.0','id':index,'method':'Settings.GetSettingValue',
+            'params':{'setting':name}} for index,name in enumerate(settings)]
+        replies=json.loads(xbmc.executeJSONRPC(json.dumps(requests)))
+        if not isinstance(replies,list):raise ValueError('Unexpected display settings response')
+        values={};unavailable={}
+        for reply in replies:
+            index=reply.get('id')
+            if not isinstance(index,int) or not 0<=index<len(settings):continue
+            if 'error' in reply:unavailable[settings[index]]=reply['error'].get('code')
+            else:values[settings[index]]=(reply.get('result') or {}).get('value')
+        report({'event':'playback_display_settings','stage':stage,'settings':values,'unavailable_settings':unavailable,
+            'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
+            'current_window_id':xbmcgui.getCurrentWindowId(),'read_only':True,'result':'observed'})
+    except Exception as error:
+        report({'event':'playback_display_settings','stage':stage,'read_only':True,
+            'exception':exception_details(error),'result':'unavailable'})
 
 
 class PlaybackLog(DiagnosticLog):
@@ -205,10 +227,11 @@ def list_item(name,proxy,report,resume,preferences,origin_url):
 
 def play(identifier,name,material='Feature',handle=-1,resume_mode='ask',outcome=None):
     state={};quality=None
-    # At most UHD -> HD -> SD; no retry can increase the requested quality.
-    for _ in range(3):
+    # One genuine protection retry at the same quality precedes any downgrade.
+    for _ in range(4):
         result=_play_attempt(identifier,name,material,-1 if state.get('resolved') else handle,
             resume_mode,outcome,state,quality_override=quality)
+        if state.pop('retry_with_output_protection',False):continue
         quality=state.pop('retry_quality',None)
         if quality is None:return result
     return False
@@ -241,6 +264,7 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
     report({'event':'playback_started','stage':'prepare','material':material,'resolver_handle':handle,
         'resume_mode':resume_mode,'startup_revision':STARTUP_REVISION,
         'kodi':xbmc.getInfoLabel('System.BuildVersion'),'result':'started'})
+    display_state(report,'before_prepare')
     try:
         from inputstreamhelper import Helper
         device_platform=next((name for name,condition in (
@@ -266,6 +290,8 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
             'inputstream_chooser_settings':inputstream_settings(adaptive,report),'result':'success'})
         api=MediaAPI(g,preferences,report,hardware_level=security_level(report),
             device_platform=device_platform,material=material,drm_system='widevine',quality_override=quality_override)
+        api.defer_output_protection=chrome_bridge
+        api.force_output_protection=bool(retry_state.get('force_output_protection'))
         if quality_override is not None:
             report({'event':'playback_quality_fallback_started','stage':'quality_authorization',
                 'same_account_and_title':True,'drm_system':'widevine','requested_quality':api.quality,
@@ -284,11 +310,22 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
         retry_state['resume']=resume
         origin_url=g.pluginid+'?'+urlencode({'mode':'PlayVideo','asin':identifier,'trailer':{'Feature':'0','Trailer':'1','LiveStreaming':'2'}[material]})
         proxy.prepare_manifest()
+        if (api.web is not None and api.defer_output_protection and not api.web.output_protection_attempted
+                and api.quality in ('HD','UHD')
+                and not (any(v>=1280 for v in proxy.manifest_info.get('video_widths') or [])
+                    or any(v>=720 for v in proxy.manifest_info.get('video_heights') or []))):
+            report({'event':'hdcp_quality_recheck_started','stage':'quality_authorization',
+                'trigger':'provider_manifest_has_no_HD','same_title':True,'result':'started'})
+            api.web.prepare_output_protection()
+            resources=api.web.resources(identifier,refresh_only=True)
+            proxy.resources=resources;proxy.manifest_bytes=None;proxy.manifest_info={}
+            proxy.prepare_manifest()
         item=list_item(name,proxy,report,resume,preferences,origin_url)
         if chrome_bridge:
             from .chrome_cdm_bridge import Lease
             cdm_lease=Lease(g,adaptive,report)
-            cdm_lease.activate(preflight_unavailable=bool(api.web is not None and api.web.output_preflight_unavailable))
+            cdm_lease.activate(preflight_unavailable=bool(api.web is not None and api.web.output_preflight_unavailable),
+                query_only=bool(api.web is not None and api.web.output_queries_only))
         deferred_fullscreen=handle<0
         player=PlayerEvents(proxy.manifest(),restore_card,fullscreen_when_ready=deferred_fullscreen,report=report)
         report({'event':'playback_open_dispatch','stage':'player_open','resolver_handle':handle,
@@ -348,12 +385,13 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
                 raise error
             if player.terminal:
                 terminal=player.terminal
-                if terminal=='error':raise RuntimeError('Kodi rejected the selected stream before playback could continue')
+                if terminal=='error':raise proxy.refused or RuntimeError('Kodi rejected the selected stream before playback could continue')
                 break
             if player.started.is_set():
                 if cdm_lease is not None:cdm_lease.restore('native_player_started')
                 if not display_reported:
                     display_reported=True
+                    display_state(report,'av_started')
                     report({'event':'playback_display_mode','stage':'av_started',
                         'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
                         'current_window_id':xbmcgui.getCurrentWindowId(),
@@ -437,6 +475,18 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
             details.update(requested_quality=api.quality,hardware_level=api.hardware_level,
                 device_platform=api.device_platform,credential_type=api.auth,quality_downgraded=False)
         report(details)
+        if (api is not None and api.web is not None and api.defer_output_protection
+                and not api.web.output_protection_attempted and not retry_state.get('force_output_protection')
+                and (isinstance(error,MediaProtectionRequired) or
+                    isinstance(error,MediaServiceError) and error.category=='quality')
+                and retry_state.get('startup_stop_complete',True)
+                and not g.monitor.abortRequested() and (player is None or not player.started.is_set())
+                and current_account(g.DATA_PATH,api.epoch)):
+            retrying=True;retry_state['force_output_protection']=True
+            retry_state['retry_with_output_protection']=True
+            report({'event':'hdcp_quality_retry','stage':'quality_authorization','requested_quality':api.quality,
+                'quality_reduced':False,'same_account_and_title':True,'result':'retry'})
+            return False
         next_quality=(lower_quality(api.quality,error.allowed_quality)
             if api is not None and isinstance(error,MediaServiceError) and error.category=='quality' else None)
         if next_quality is not None and not retry_state.get('startup_stop_complete',True):
@@ -467,6 +517,7 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
             try:resource.dismiss() if resource is prompt else resource.close()
             except Exception as error:report({'event':'playback_cleanup_failed','stage':'cleanup',
                 'exception':exception_details(error),'result':'failure'})
+        display_state(report,'after_cleanup')
         result='cancelled' if terminal in ('cancelled','account_changed','shutdown','replaced') else 'failure' if terminal in ('error','start_timeout') else 'success'
         if outcome is not None and not retrying:outcome.update(result=result,reason=terminal)
         report({'event':'playback_session_finished','stage':'terminal','reason':terminal,

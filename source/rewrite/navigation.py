@@ -67,11 +67,16 @@ class StorefrontLoader:
                 self.readers[path]=(CatalogGateway(self.g),Lock())
 
     def preload_startup(self):
-        """Warm main catalogs, then the service index; never private history."""
-        for path in ('__prime_movies__','__prime_tv__','__service_directory__'):
+        """Warm catalogs and the account's Watchlist; never watch history."""
+        preview=self.peek('__prime_watchlist__')
+        if preview and self.ready is not None and self.current():
+            self.ready('__prime_watchlist__',preview)
+        for path in ('__prime_movies__','__prime_tv__','__service_directory__','__prime_watchlist__'):
             self.request(path, background=True)
         self.report({'event':'startup_catalog_preload_started','stage':'preload',
-            'sections':['movies','tv','service_directory'],'background_workers':2,'foreground_workers':2,'result':'success'})
+            'sections':['movies','tv','service_directory','watchlist'],'background_workers':2,'foreground_workers':2,
+            'personal_workers':2,'saved_watchlist_cards':len((preview or {}).get('rows') or []),
+            'watchlist_revalidated':True,'result':'success'})
 
     def preload_focus(self,path,adjacent=()):
         """Warm first pages for the focused genre and at most one neighbour."""
