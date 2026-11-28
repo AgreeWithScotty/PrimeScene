@@ -40,6 +40,7 @@ class WebWidevine:
         self.envelope = self.handoff = self.certificate = self.title = ''
         self.server_certificate=''
         self.output_protection=None;self.hdcp_level=None;self.hdcp_protection_level=None
+        self.output_preflight_unavailable=False
         self.origin = api.account.get('baseurl', '').rstrip('/')
         if not https_address(self.origin, PRIME_WEB_HOSTS | AMAZON_WEB_HOSTS):
             raise TransportFailure('The account has no verified Amazon website origin')
@@ -158,7 +159,11 @@ class WebWidevine:
         if self.output_protection is not None:return
         self.report({'event':'windows_hdcp_preparation','stage':'hd_output_protection',
             'requested_quality':self.api.quality,'protection_revision':'verified-effective-state-v1',
-            'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,'result':'started'})
+            'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
+            'display_environment':{'windows_version':platform.version(),
+                'renderer':xbmc.getInfoLabel('System.Renderer') or None,
+                'render_vendor':xbmc.getInfoLabel('System.RenderVendor') or None,
+                'render_version':xbmc.getInfoLabel('System.RenderVersion') or None},'result':'started'})
         try:
             from .windows_hdcp import HdcpSession
             self.output_protection=HdcpSession()
@@ -184,13 +189,23 @@ class WebWidevine:
                 self.report({'event':'windows_hdcp_prepared','stage':'hd_output_protection',
                     'windows_attempts':attempts,'result':'cancelled'})
                 raise InterruptedError('Windows output protection preparation cancelled')
+            if not result.get('protection_established'):
+                # A failed/pending session must not keep reconfiguring the
+                # display through playback and then reset it again on Stop.
+                close_started=monotonic()
+                try:self.output_protection.close()
+                finally:self.output_protection=None
+                self.output_preflight_unavailable=True
+                self.report({'event':'windows_hdcp_failed_session_discarded','stage':'hd_output_protection',
+                    'before_player_open':True,'elapsed_ms':round((monotonic()-close_started)*1000),
+                    'result':'success'})
             self.report({'event':'windows_hdcp_prepared','stage':'hd_output_protection',
                 'before':before,'windows_attempts':attempts,
                 'windows_enforced_hdcp_level':self.hdcp_level,
                 'required_protection':self.hdcp_protection_level,
                 'advertised_hdcp_level':self.hdcp_level,
                 'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
-                'cdm_security_level_changed':False,'session_held_for_playback':True,
+                'cdm_security_level_changed':False,'session_held_for_playback':self.output_protection is not None,
                 'result':'success' if result.get('protection_established') else 'unavailable'})
         except InterruptedError:raise
         except Exception as error:

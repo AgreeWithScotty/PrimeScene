@@ -1,0 +1,6 @@
+0.2.69
+- Discard unsuccessful Windows HDCP sessions before playback instead of retaining failed sessions until Stop.
+- After failed preparation, answer native status queries as unknown without repeating an automatic HDCP probe; preserve explicit protection requests from the genuine CDM.
+- Queue the return to the catalog asynchronously and retain the existing readiness acknowledgement.
+- Scope failed-preparation policy to the selected playback and release its owned DLL reference safely; record request origin, desired protection mask and display environment.
+- Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist improvements, and all accumulated fixes.

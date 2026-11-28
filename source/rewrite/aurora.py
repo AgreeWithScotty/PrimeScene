@@ -1094,8 +1094,8 @@ class AuroraHome(xbmcgui.WindowXML):
                     self.performance({'event':'playback_return_activation_requested','stage':'immediate_return',
                         'request_id':request.get('request_id'),'previous_window_id':before,
                         'target_window_id':self.window_id,'screen_mode':xbmc.getInfoLabel('System.ScreenMode') or None,
-                        'intentional_grace_ms':0,'result':'started'})
-                    xbmc.executebuiltin('ActivateWindow(%d)'%self.window_id,True)
+                        'intentional_grace_ms':0,'activation_dispatch':'asynchronous','result':'started'})
+                    xbmc.executebuiltin('ActivateWindow(%d)'%self.window_id,False)
                     self._reactivation_ready.wait(1.0)
                 if xbmcgui.getCurrentWindowId()!=self.window_id:raise RuntimeError('Kodi did not return to the catalog window')
                 if self.getCurrentContainerId()!=200 or self.getListSize()!=len(self.rows):

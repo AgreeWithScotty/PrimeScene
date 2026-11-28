@@ -11,6 +11,7 @@ class WindowsOutput {
   using Result=ABI::Windows::Media::Protection::HdcpSetProtectionResult;
   Microsoft::WRL::ComPtr<ABI::Windows::Media::Protection::IHdcpSession> session;
   bool apartment_owned=false;
+  bool automatic_probe=true;
   unsigned requested_level=UINT_MAX;
   struct Pending {
     Microsoft::WRL::ComPtr<ABI::Windows::Foundation::IAsyncOperation<Result>> operation;
@@ -30,6 +31,7 @@ class WindowsOutput {
     return SUCCEEDED(last)&&active;
   }
  public:
+  explicit WindowsOutput(bool probe=true):automatic_probe(probe){}
   HRESULT last=E_FAIL;
   unsigned async_status=0,state_checks=0,protection_result=UINT_MAX,effective_level=UINT_MAX;
   bool verified_while_pending=false;
@@ -85,6 +87,12 @@ class WindowsOutput {
   }
   prime_wire::Bytes Query(bool change,uint32_t desired,const std::atomic<bool>* cancelled=nullptr) {
     prime_wire::Bytes data(12,0);
+    if(change&&desired>1){last=E_INVALIDARG;return data;}
+    if(change&&!desired&&!session){last=S_OK;prime_wire::Put32(data,0,1);return data;}
+    // QueryStatus is observational. A prior failed setup does not authorize
+    // another intrusive HDCP request. Return unknown, as the timed-out path
+    // did, until the genuine CDM explicitly requests output protection.
+    if(!session&&!change&&!automatic_probe){last=HRESULT_FROM_WIN32(ERROR_NOT_READY);return data;}
     if(!session&&!Start(cancelled))return data;
     if(change) {
       if(desired>1)return data;

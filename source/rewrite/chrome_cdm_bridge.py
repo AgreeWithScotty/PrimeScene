@@ -113,7 +113,32 @@ class Lease:
         self.path=Path(g.DATA_PATH)/JOURNAL;self.token=uuid.uuid4().hex;self.active=False
         self.log=self.root/'prime-cdm-proxy-diagnostics.jsonl'
         self.log_start=self.log.stat().st_size if self.log.exists() else 0
-    def activate(self):
+        self._output_policy=None;self._output_policy_registered=False
+        self._output_token=int(self.token[:16],16) or 1
+    def _configure_output_policy(self):
+        import ctypes
+        self._output_policy=ctypes.WinDLL(str(self.root/'widevinecdm.dll'),winmode=0x800,use_last_error=True)
+        configure=self._output_policy.SmoothPrimeConfigureHdcpPreflight
+        configure.argtypes=[ctypes.c_uint64,ctypes.c_uint32];configure.restype=ctypes.c_uint32
+        if not configure(self._output_token,1):raise RuntimeError('Native output preflight ownership is unavailable')
+        self._output_policy_registered=True
+        self.report({'event':'chrome_cdm_output_preflight_selected','stage':'native_cdm_path',
+            'preparation_failed':True,'query_can_enable_protection':False,
+            'explicit_CDM_protection_requests_preserved':True,'protection_claim':'unknown','result':'success'})
+    def _release_output_policy(self):
+        if self._output_policy is None:return
+        import ctypes
+        from _ctypes import FreeLibrary
+        module=self._output_policy
+        try:
+            if self._output_policy_registered:
+                clear=module.SmoothPrimeClearHdcpPreflight
+                clear.argtypes=[ctypes.c_uint64];clear.restype=ctypes.c_uint32
+                if not clear(self._output_token):raise RuntimeError('Native output preflight ownership changed')
+        finally:
+            self._output_policy=None;self._output_policy_registered=False
+            FreeLibrary(module._handle);module._handle=0
+    def activate(self,preflight_unavailable=False):
         recover(self.g,self.report)
         if self.path.exists():raise RuntimeError('Another playback is preparing its native CDM path')
         self.previous=self.adaptive.getSetting('DECRYPTERPATH')
@@ -125,6 +150,7 @@ class Lease:
         try:
             self.adaptive.setSetting('DECRYPTERPATH',str(self.root))
             if self.adaptive.getSetting('DECRYPTERPATH')!=str(self.root):raise RuntimeError('Native CDM path did not persist')
+            if preflight_unavailable:self._configure_output_policy()
         except Exception:
             self.restore('activation_failed');raise
         self.report({'event':'chrome_cdm_bridge_path_selected','stage':'native_cdm_path','cdm_abi':10,
@@ -138,10 +164,12 @@ class Lease:
             self.adaptive.setSetting('DECRYPTERPATH',self.previous)
             if self.adaptive.getSetting('DECRYPTERPATH')!=self.previous:raise RuntimeError('Native CDM path was not restored')
         self.path.unlink();self.active=False
+        self._release_output_policy()
         self.report({'event':'chrome_cdm_bridge_path_restored','stage':'native_cdm_path','reason':reason,
             'setting_changed_externally':not unchanged,'result':'success'})
     def close(self):
-        self.restore('playback_cleanup')
+        try:self.restore('playback_cleanup')
+        finally:self._release_output_policy()
         if not self.log.exists():return
         with self.log.open('rb') as source:source.seek(self.log_start);data=source.read(4*1024*1024+1)
         truncated=len(data)>4*1024*1024;invalid=0;records=0

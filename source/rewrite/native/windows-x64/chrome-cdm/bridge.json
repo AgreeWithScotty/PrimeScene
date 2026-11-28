@@ -91,7 +91,7 @@
     }
   ],
   "artifacts": {
-    "widevinecdm.dll": "a80072dc06db03c1ff5b21b1516ac6c7385b1f3f0e75df067c10b60f70fa87f4",
+    "widevinecdm.dll": "e814b465f835e88c5ebddf24b56fd1ca5da5f25e4256973fcdaa574d1fe014a3",
     "transport_probe.exe": "2acfaab051d61863f7d13a40704abe92506f61e4761fa9e8bc8201da332b00d1"
   },
   "actual_abi_evidence": "5ce2106f461444bb",
@@ -111,6 +111,6 @@
     "source_archive": "7z2606-src.tar.xz",
     "license": "7zip-LICENSE.txt"
   },
-  "performance_revision": "verified-hdcp-effective-state-v4",
+  "performance_revision": "failed-preflight-lifecycle-v5",
   "native_layout": "addon_data/native/chrome-cdm/pin/adapters/identity"
 }
