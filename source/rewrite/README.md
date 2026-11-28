@@ -1,10 +1,9 @@
-# Smooth Prime 0.2.70 Watchlist and HDCP fixes
+# Smooth Prime 0.2.71 In Progress, genres and Stop return
 
-- Retain rendered Watchlist cards across menu visits and warm saved account cards and original artwork at startup.
-- Refresh Watchlist in the background, reuse unchanged native items and preserve loaded artwork and descriptions missing from thinner listings.
-- Preserve regional pagination revalidation, confirmed additions/removals and empty lists, partial responses, account isolation and fresh In Progress.
-- Request the best Amazon resources before optional Windows HDCP preparation; retry the same title at the same quality with genuine protection when the provider, manifest or content license requires it.
-- Preserve explicit CDM protection enforcement and record read-only display settings, protection stages and Watchlist retention diagnostics.
-- Retain native HD in stock Kodi, persistent pinned Chrome reuse and all accumulated fixes.
+- Preload fresh Amazon In Progress history and show an account-scoped memory preview while each menu visit refreshes in the background; do not save history snapshots to disk.
+- Invalidate In Progress observations around playback changes, reject older in-flight responses and warm fresh history after provider STOP settlement.
+- Start Movies and TV genre cards at the beginning when switching sections; preserve same-section return positions and keep native genre items separate.
+- Observe Kodi native fullscreen cleanup before fallback activation and acknowledge verified catalog bindings while focus settles after window initialization.
+- Preserve the working Watchlist, HD playback, eliminated startup flash, persistent pinned Chrome and all accumulated fixes.
 
-Prior actual signed-in Watchlist reads returned 20 cards with artwork and descriptions in 1859/1609 ms; cached lookup was immediate and three original images downloaded in 641 ms. The prior real stock Kodi run re-requested the same title after verified Windows HDCP 2.2 and played 1920x800 HD for 12 seconds. No new playback tests were run for publication. The matching NUC 0.2.69 run kept 1920x1040 HD and returned to the catalog in 1031 ms, but both physical flashes persisted. The draft removes optional protection setup until required; physical NUC flash elimination and Watchlist rendering remain unconfirmed until a user run. Native binaries and the pinned Google runtime inventory are unchanged. Main/testing only; no public release promotion.
+The matching NUC 0.2.70 report and recording show three In Progress titles appearing after repeated blank introductions. Prior actual signed-in Amazon validation returned three titles in 1968 ms, memory preview in 0.0 ms, and confirmed that a real response from before playback invalidation cannot repopulate the preview. The matching Stop report shows a correctly bound list incorrectly marked as a restoration failure while focus was temporarily zero. This update fixes that readiness check and observes Kodi native return before fallback activation. Working Watchlist and playback-start flash fixes are user-confirmed; the new physical Stop-flash outcome and NUC navigation timing still need user testing. No new playback tests were run for publication. No display settings or native binaries changed. Main/testing only; no public release promotion.

@@ -36,6 +36,7 @@ class StorefrontLoader:
         self.readers = {root: (CatalogGateway(g), Lock()) for root in ROOTS}
         self.routes = {root: root for root in ROOTS}
         self.cache, self.futures = {}, {}
+        self.progress_preview=None;self.progress_revision=0
         self.revalidate=set()
         self.background_paths, self.saved_checked = set(), set()
         self.focus_path = None
@@ -67,16 +68,16 @@ class StorefrontLoader:
                 self.readers[path]=(CatalogGateway(self.g),Lock())
 
     def preload_startup(self):
-        """Warm catalogs and the account's Watchlist; never watch history."""
+        """Warm account catalogs; history previews live only in this session."""
         preview=self.peek('__prime_watchlist__')
         if preview and self.ready is not None and self.current():
             self.ready('__prime_watchlist__',preview)
-        for path in ('__prime_movies__','__prime_tv__','__service_directory__','__prime_watchlist__'):
+        for path in ('__prime_movies__','__prime_tv__','__service_directory__','__prime_watchlist__','__watching__'):
             self.request(path, background=True)
         self.report({'event':'startup_catalog_preload_started','stage':'preload',
-            'sections':['movies','tv','service_directory','watchlist'],'background_workers':2,'foreground_workers':2,
+            'sections':['movies','tv','service_directory','watchlist','in_progress'],'background_workers':2,'foreground_workers':2,
             'personal_workers':2,'saved_watchlist_cards':len((preview or {}).get('rows') or []),
-            'watchlist_revalidated':True,'result':'success'})
+            'watchlist_revalidated':True,'progress_disk_cache_used':False,'result':'success'})
 
     def preload_focus(self,path,adjacent=()):
         """Warm first pages for the focused genre and at most one neighbour."""
@@ -110,24 +111,38 @@ class StorefrontLoader:
         """Show account-owned cards immediately; preview is never a fresh result."""
         if not self.current():return None
         path=self.canonical(path)
-        if path=='__watching__':
-            return None
         with self.lock:
-            entry = self.cache.get(path)
+            entry = self.progress_preview if path=='__watching__' else self.cache.get(path)
             if not entry:return None
             packet=deepcopy(entry[1]);packet['next']=None
             packet['_cache_preview']=True;packet['_cache_age_seconds']=max(0,round(time()-entry[0]))
             return packet
+
+    def invalidate_progress(self,reason):
+        """Discard pre-play observations before accepting changed watch state."""
+        with self.lock:
+            self.progress_preview=None;self.progress_revision+=1
+            for path in list(self.futures):
+                if self.routes.get(path)=='__watching__':
+                    future=self.futures.pop(path)
+                    if not future.done():future.cancel()
+            self.report({'event':'progress_preview_invalidated','stage':'watch_progress_settlement',
+                'reason':reason,'revision':self.progress_revision,'disk_cache_used':False,'result':'success'})
 
     def request(self, path, background=False, priority=False,refresh=False):
         path = self.canonical(path)
         with self.lock:
             future = self.futures.get(path)
             if path=='__watching__':
-                # Progress settlement after playback needs a new provider read,
-                # even if an earlier history request is still finishing.
                 self.cache.pop(path,None)
-                if future is not None and not future.done():future.cancel()
+                if refresh:
+                    self.invalidate_progress('explicit_fresh_request');future=None
+                elif future is not None and not future.done():
+                    # A menu visit shares an already fresh startup/provider read.
+                    # Playback invalidates it explicitly before settlement.
+                    self.report({'event':'progress_request_shared','stage':'fresh_history_request',
+                        'revision':self.progress_revision,'result':'success'})
+                    return future
             elif path=='__prime_watchlist__' and future is not None and not future.done():return future
             if path not in FRESH_ROOTS and future is not None and not future.done():
                 # A click bypasses queued speculation. An already running exact
@@ -148,7 +163,7 @@ class StorefrontLoader:
             else:self.background_paths.discard(path)
             executor=self.personal if self.routes.get(path) in PERSONAL_ROOTS else self.preview if priority else self.background if background else self.pool
             self.futures[path] = executor.submit(
-                self._load,path,monotonic(),token_hex(8),background,priority,refresh)
+                self._load,path,monotonic(),token_hex(8),background,priority,refresh,self.progress_revision)
             return self.futures[path]
 
     def _filename(self, path):
@@ -253,7 +268,7 @@ class StorefrontLoader:
         stored = persist_if_current(self.g.DATA_PATH, self.epoch, write)
         self.report({'event': 'catalog_cache_saved', 'section': self.diagnostic_section(root), 'stored': stored})
 
-    def _load(self, path, queued, attempt, background, priority=False,refresh=False):
+    def _load(self, path, queued, attempt, background, priority=False,refresh=False,progress_revision=None):
         started = monotonic()
         self.report({'event':'catalog_load_started','stage':'preload' if background else 'navigation',
             'refresh_revision':'confirmed-preview-live-refresh-v1',
@@ -313,8 +328,17 @@ class StorefrontLoader:
                 source = 'network'
                 saved = time()
                 with self.lock:
+                    if root=='__watching__' and progress_revision!=self.progress_revision:
+                        self.report({'event':'progress_result_invalidated','stage':'watch_progress_settlement',
+                            'attempt_id':attempt,'reason':'playback_changed_since_request','result':'cancelled'})
+                        return None
                     self.revalidate.discard(path)
                     if root!='__watching__': self.cache[path] = (saved, deepcopy(packet))
+                    elif path=='__watching__':
+                        self.progress_preview=(saved,deepcopy(packet))
+                        self.report({'event':'progress_preview_ready','stage':'fresh_history_preview',
+                            'attempt_id':attempt,'cards':len(packet.get('rows') or []),
+                            'revision':self.progress_revision,'disk_cache_used':False,'result':'success'})
                     if packet.get('next'):
                         self.routes[packet['next']] = root
                         if root in FRESH_ROOTS:self.readers[packet['next']]=(bridge,reader_lock)
@@ -358,6 +382,7 @@ class StorefrontLoader:
         for bridge in {id(pair[0]):pair[0] for pair in self.readers.values()}.values():bridge.close()
         with self.lock:
             self.cache.clear()
+            self.progress_preview=None;self.progress_revision+=1
             self.revalidate.clear()
             self.futures.clear()
             self.routes.clear()
