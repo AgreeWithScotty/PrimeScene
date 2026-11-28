@@ -6,9 +6,9 @@ SmoothFlix. Native account verification, fresh In Progress, Prime-included Movie
 and TV, Sports, Purchases, description/artwork preloading and originating-card
 playback return use one permanent add-on: plugin.video.primeinterface.
 
-## Current developer installer: 0.2.72
+## Current developer installer: 0.2.73
 
-[Download the 0.2.72 installer](https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.72.zip). Season cards use their own Amazon artwork. Episodes show watched/unwatched states and exact played/remaining times, including completed episodes in In Progress seasons. Working native HD and all accumulated fixes are preserved. The remaining Stop flash is unresolved; current NUC diagnostics are needed. Windows x64 HD automatically provisions a fixed private Chrome runtime directly from Google on first use. No separate browser install or automatic browser updates. Playback remains in stock Kodi. Includes all accumulated fixes. Main/testing update only; no public release promotion.
+[Download the 0.2.73 installer](https://raw.githubusercontent.com/AgreeWithScotty/PrimeScene/main/packages/plugin.video.primeinterface/plugin.video.primeinterface-0.2.73.zip). Windows playback in the same mode as the menu temporarily suppresses a redundant Stop display reset and restores the original preference afterward. Season artwork, episode viewing state and all accumulated native HD fixes are retained. The physical NUC Stop-flash outcome still needs user testing. Windows x64 HD automatically provisions a fixed private Chrome runtime directly from Google on first use. No separate browser install or automatic browser updates. Playback remains in stock Kodi. Includes all accumulated fixes. Main/testing update only; no public release promotion.
 
 ## Screenshots
 

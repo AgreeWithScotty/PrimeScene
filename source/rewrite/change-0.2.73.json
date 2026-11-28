@@ -1,0 +1,26 @@
+{
+  "version": "0.2.73",
+  "previous": "0.2.72",
+  "changes": [
+    "Suppress a redundant Windows Stop display reset when settled playback uses the same reported mode as the pre-play menu and the original refresh policy is on start/stop.",
+    "Restore the original refresh policy after fullscreen closes; preserve different playback modes, other user policies and manual preference changes.",
+    "Use an owned journal, named mutex, live heartbeat and service recovery to prevent cleanup races and recover interrupted temporary settings.",
+    "Keep the non-account recovery journal through sign-out so account cleanup cannot strand the temporary display preference.",
+    "Retain season-owned artwork, watched/unwatched episode states, exact played/remaining clocks, native HD and all accumulated fixes."
+  ],
+  "bytes": 7288095,
+  "sha256": "ecef9b1c6ce55d8648d41a720abb686967485ace792af40bcec373f6b888721a",
+  "files": 180,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "authorization": "standing automatic main/Test synchronization, user 2026-11-27",
+  "matching_NUC_Stop_attempt": "496662e90369dade",
+  "actual_Kodi_policy_check": "0ecaf317f3b54baa",
+  "exact_Kodi_source_revision": "a3a448d26b",
+  "real_policy_ownership_and_recovery_verified": true,
+  "physical_NUC_Stop_flash_eliminated": false,
+  "runtime_pin": "158.0.8127.89",
+  "native_binaries_and_google_inventory_unchanged": true
+}

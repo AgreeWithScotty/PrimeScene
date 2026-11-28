@@ -3362,8 +3362,13 @@ def watch_playback(profile):
     active_note = None
     last_position = last_duration = 0
     last_sample = 0
+    last_display_recovery=0
     while not monitor.abortRequested():
         playing = _playing(player)
+        if not playing and monotonic()-last_display_recovery>=1:
+            last_display_recovery=monotonic()
+            from .display_continuity import recover as recover_display_policy
+            recover_display_policy(profile,report)
         note = _read_note(profile)
         if note and (not active_note or note.get('request_id') != active_note.get('request_id')):
             active_note = note
