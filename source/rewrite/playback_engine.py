@@ -252,7 +252,7 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
     note=retry_state.setdefault('return_note',_read_note(g.DATA_PATH) or {})
     report=PlaybackLog(g,note.get('request_id'))
     report.secret(identifier);report.secret(name)
-    started=monotonic();api=proxy=prompt=cdm_lease=None;terminal='error';position=duration=0;player=None
+    started=monotonic();api=proxy=prompt=cdm_lease=display_continuity=None;terminal='error';position=duration=0;player=None
     return_sent=False;retrying=False
     def restore_card(reason,source):
         nonlocal return_sent
@@ -328,6 +328,8 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
             proxy.resources=resources;proxy.manifest_bytes=None;proxy.manifest_info={}
             proxy.prepare_manifest()
         item=list_item(name,proxy,report,resume,preferences,origin_url)
+        from .display_continuity import DisplayContinuity
+        display_continuity=DisplayContinuity(g,report)
         if chrome_bridge:
             from .chrome_cdm_bridge import Lease
             cdm_lease=Lease(g,adaptive,report)
@@ -406,6 +408,7 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
                         'result':'observed'})
                 if not player.owned():
                     terminal=player.terminal or ('replaced' if player.isPlaying() else 'stopped');break
+                if display_continuity is not None:display_continuity.update()
                 try:position,duration=player.getTime(),player.getTotalTime()
                 except RuntimeError:
                     if g.monitor.waitForAbort(.1):break
@@ -519,7 +522,7 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
     finally:
         restore_card(terminal,'cleanup_entry')
         cleanup_started=monotonic()
-        for resource in (prompt,proxy,api,cdm_lease):
+        for resource in (prompt,proxy,api,cdm_lease,display_continuity):
             if resource is None:continue
             try:resource.dismiss() if resource is prompt else resource.close()
             except Exception as error:report({'event':'playback_cleanup_failed','stage':'cleanup',

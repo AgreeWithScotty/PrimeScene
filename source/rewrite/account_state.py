@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 ADDON_ID = 'plugin.video.primeinterface'
 STATE_FILE = 'account-state.db'
 NEUTRAL_FILES = {STATE_FILE, STATE_FILE + '-journal', STATE_FILE + '-wal', STATE_FILE + '-shm',
-                 'signin-lock.db', 'signin-lock.db-journal'}
+                 'signin-lock.db', 'signin-lock.db-journal', 'display-continuity-lease.json'}
 
 
 @contextmanager

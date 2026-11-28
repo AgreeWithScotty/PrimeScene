@@ -20,6 +20,8 @@ def run():
     registry.setProperty(property_name,token)
     report=DiagnosticLog(g.DATA_PATH,g.addon.getAddonInfo('version'),operation='service')
     try:
+        from .display_continuity import recover as recover_display_policy
+        recover_display_policy(g.DATA_PATH,report)
         from .chrome_cdm_bridge import recover as recover_cdm_path
         try:recover_cdm_path(g,report)
         except Exception as error:

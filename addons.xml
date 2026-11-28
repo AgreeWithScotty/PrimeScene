@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <addons>
-  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.72" provider-name="AgreeWithScotty">
+  <addon id="plugin.video.primeinterface" name="Smooth Prime" version="0.2.73" provider-name="AgreeWithScotty">
   <requires>
     <import addon="xbmc.python" version="3.0.1" />
     <import addon="script.module.inputstreamhelper" version="0.8.6" />
@@ -21,7 +21,7 @@
     <summary lang="en_GB">Smooth Prime: Prime Video in the Aurora Cinema interface</summary>
     <description lang="en_GB">Smooth Prime is maintained by AgreeWithScotty. Catalog, account authentication, HTTPS transport, media resources, Widevine license relay, subtitles and playback lifecycle use independently written implementations. The dedicated Aurora interface is adapted from Scott's SmoothFlix. Not affiliated with Amazon. See NOTICE.md for asset and dependency licenses.</description>
     <disclaimer lang="en_GB">Uses your own Amazon account and Kodi InputStream Adaptive with Widevine. Not affiliated with Amazon.</disclaimer>
-    <news>0.2.72[CR]- Use each season's own Amazon artwork and metadata; prepare missing sibling artwork from its declared page in the background instead of copying the selected season.[CR]- Map identity-specific Amazon episode playback actions to Watched/Unwatched states, native playcount/resume tags and exact played/remaining times.[CR]- Keep watched episodes visible inside seasons opened through In Progress and refresh episode state on entry and after provider STOP settlement.[CR]- Preserve selected cards during refresh, invalidate older episode prefetch and add passive display-mode diagnostics during playback and at Stop.[CR]- Retain working Watchlist, In Progress preload, genre reset, native HD, startup-flash and persistent Chrome fixes. The remaining physical Stop flash is still unresolved.</news>
+    <news>0.2.73[CR]- Suppress a redundant Windows Stop display reset when settled playback uses the same reported mode as the pre-play menu and the original refresh policy is on start/stop.[CR]- Restore the original refresh policy after fullscreen closes; preserve different playback modes, other user policies and manual preference changes.[CR]- Use an owned journal, named mutex, live heartbeat and service recovery to prevent cleanup races and recover interrupted temporary settings.[CR]- Keep the non-account recovery journal through sign-out so account cleanup cannot strand the temporary display preference.[CR]- Retain season-owned artwork, watched/unwatched episode states, exact played/remaining clocks, native HD and all accumulated fixes.</news>
   </extension>
 </addon>
   <addon id="repository.primescene" name="Prime Scene Repository" version="0.1.2" provider-name="Prime Scene contributors">
