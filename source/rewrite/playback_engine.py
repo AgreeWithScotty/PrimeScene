@@ -288,7 +288,7 @@ def _play_attempt(identifier,name,material,handle,resume_mode,outcome,retry_stat
         if chrome_bridge:
             from .chrome_cdm_bridge import Lease
             cdm_lease=Lease(g,adaptive,report)
-            cdm_lease.activate()
+            cdm_lease.activate(preflight_unavailable=bool(api.web is not None and api.web.output_preflight_unavailable))
         deferred_fullscreen=handle<0
         player=PlayerEvents(proxy.manifest(),restore_card,fullscreen_when_ready=deferred_fullscreen,report=report)
         report({'event':'playback_open_dispatch','stage':'player_open','resolver_handle':handle,

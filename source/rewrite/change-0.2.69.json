@@ -1,0 +1,25 @@
+{
+  "version": "0.2.69",
+  "previous": "0.2.68",
+  "changes": [
+    "Discard unsuccessful Windows HDCP sessions before playback instead of retaining failed sessions until Stop.",
+    "After failed preparation, answer native status queries as unknown without repeating an automatic HDCP probe; preserve explicit protection requests from the genuine CDM.",
+    "Queue the return to the catalog asynchronously and retain the existing readiness acknowledgement.",
+    "Scope failed-preparation policy to the selected playback and release its owned DLL reference safely; record request origin, desired protection mask and display environment.",
+    "Retain native HD in stock Kodi, persistent pinned Chrome reuse, catalog and Watchlist improvements, and all accumulated fixes."
+  ],
+  "bytes": 7279597,
+  "sha256": "ceb3f0416b11ddcde7c59030353ce27826d86b5019ccb8dd23196563cd56fbf3",
+  "files": 179,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "matching_NUC_playback": "69dcd347da62a7e7",
+  "prior_native_policy_check": "adf98e3be2c94a06",
+  "prior_native_adapter_build": "1fcda7d721fc45db",
+  "nuc_HDCP_timeout_reduction_confirmed": false,
+  "nuc_physical_blackout_eliminated_confirmed": false,
+  "runtime_pin": "158.0.8127.89",
+  "google_runtime_inventory_unchanged": true
+}

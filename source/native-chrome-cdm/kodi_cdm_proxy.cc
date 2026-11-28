@@ -15,6 +15,10 @@
 #include "runtime_fixture.h"
 using prime_wire::Bytes;
 namespace {
+std::mutex output_policy_lock;
+uint64_t output_policy_token=0;
+bool output_preflight_unavailable=false;
+bool OutputPreflightUnavailable(){std::lock_guard<std::mutex> guard(output_policy_lock);return output_preflight_unavailable;}
 std::wstring ModuleDirectory(){
   HMODULE module=nullptr;GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
       reinterpret_cast<LPCWSTR>(&ModuleDirectory),&module);
@@ -143,14 +147,19 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
     Log("native_proxy_closed",static_cast<uint32_t>(rendered));
   }
   void Read(){
-    WindowsOutput protection;std::string buffered;char chunk[16384];DWORD count=0;
+    const bool failed_preflight=OutputPreflightUnavailable();
+    WindowsOutput protection(!failed_preflight);std::string buffered;char chunk[16384];DWORD count=0;
+    Log("native_output_preflight_unavailable",failed_preflight?1:0);
     while(ReadFile(output,chunk,sizeof(chunk),&count,nullptr)&&count){
       buffered.append(chunk,count);if(buffered.size()>8*1024*1024){Log("private_record_size_limit");break;}
       size_t newline;
       while((newline=buffered.find('\n'))!=std::string::npos){std::string line=buffered.substr(0,newline);buffered.erase(0,newline+1);
         if(line.find("\"host_rpc\"")!=std::string::npos){
           auto started=GetTickCount64();
-          auto facts=protection.Query(line.find("enable_output")!=std::string::npos,JsonNumber(line,"desired_mask"),&destroyed);
+          const bool change=line.find("enable_output")!=std::string::npos;
+          const auto desired=JsonNumber(line,"desired_mask");
+          Log("native_output_request_is_enable",change?1:0);Log("native_output_requested_mask",desired);
+          auto facts=protection.Query(change,desired,&destroyed);
           Log("native_output_async_status",protection.async_status);
           Log("native_output_state_checks",protection.state_checks);
           Log("native_output_verified_while_pending",protection.verified_while_pending?1:0);
@@ -266,6 +275,17 @@ class Proxy final:public cdm::ContentDecryptionModule_10 {
 };
 } // namespace
 extern "C" {
+CDM_API uint32_t SmoothPrimeConfigureHdcpPreflight(uint64_t token,uint32_t unavailable){
+  if(!token||unavailable!=1)return 0;
+  std::lock_guard<std::mutex> guard(output_policy_lock);
+  if(output_policy_token&&output_policy_token!=token)return 0;
+  output_policy_token=token;output_preflight_unavailable=true;return 1;
+}
+CDM_API uint32_t SmoothPrimeClearHdcpPreflight(uint64_t token){
+  std::lock_guard<std::mutex> guard(output_policy_lock);
+  if(!token||output_policy_token!=token)return 0;
+  output_policy_token=0;output_preflight_unavailable=false;return 1;
+}
 CDM_API void INITIALIZE_CDM_MODULE(){Log("native_proxy_module_loaded");}
 CDM_API void DeinitializeCdmModule(){Log("native_proxy_module_unloaded");}
 CDM_API const char* GetCdmVersion(){return "4.10.3112.0";} // Actual delegated CDM ABI fixture; this DLL is the proxy.
