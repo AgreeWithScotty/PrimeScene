@@ -50,14 +50,14 @@ def _clock(seconds):
 
 
 def progress_label(values):
+    if viewing_label(values)=='Watched':return 'Watched'
     position=position_seconds(values);total=duration_seconds(values)
     if position is None or position<=0:return ''
     raw=_seconds(values.get('resume_seconds'))
     estimated=raw in (None,0) or total and raw>total
     played=('~' if estimated else '')+_clock(position)+' played'
     if not total:return played
-    minutes=max(0,ceil((total-position)/60));hours,minutes=divmod(minutes,60)
-    left=('%dh %dm'%(hours,minutes) if hours else '%dm'%minutes)+' left'
+    left=_clock(total-position)+' left'
     return played+'  ·  '+left
 
 def viewing_label(values):
@@ -65,6 +65,8 @@ def viewing_label(values):
     try:watched=float(values.get('playcount') or 0)>0
     except (TypeError,ValueError):watched=False
     if watched:return 'Watched'
+    if values.get('watch_state')=='unwatched' and pct==0:return 'Unwatched'
+    if pct>=100:return 'Watched'
     if not 0<pct<100:return ''
     seconds=duration_seconds(values)
     if seconds:return '%d min remaining'%max(1,ceil(seconds*(100-pct)/6000))

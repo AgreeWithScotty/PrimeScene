@@ -1,0 +1,32 @@
+{
+  "version": "0.2.72",
+  "previous": "0.2.71",
+  "changes": [
+    "Use each season's own Amazon artwork and metadata; prepare missing sibling artwork from its declared page in the background instead of copying the selected season.",
+    "Map identity-specific Amazon episode playback actions to Watched/Unwatched states, native playcount/resume tags and exact played/remaining times.",
+    "Keep watched episodes visible inside seasons opened through In Progress and refresh episode state on entry and after provider STOP settlement.",
+    "Preserve selected cards during refresh, invalidate older episode prefetch and add passive display-mode diagnostics during playback and at Stop.",
+    "Retain working Watchlist, In Progress preload, genre reset, native HD, startup-flash and persistent Chrome fixes. The remaining physical Stop flash is still unresolved."
+  ],
+  "bytes": 7284739,
+  "sha256": "51d984acc9bcc3854ec8b9cdcf96ff64851b4cadbc4fa958d21eb7b9b4b4532f",
+  "files": 179,
+  "target_branch": "main",
+  "merge_target": "testing",
+  "tests_run_for_this_publication": false,
+  "public_promotion": false,
+  "authorization": "standing automatic main/Test synchronization, user 2026-11-27",
+  "prior_real_Amazon_TV_attempt": "da0e3e2d198a4af6",
+  "actual_season_1_states": {
+    "in_progress": 2,
+    "watched": 1,
+    "unwatched": 5
+  },
+  "distinct_own_season_art_verified": true,
+  "new_NUC_episode_GUI_confirmed": false,
+  "Stop_flash_fixed": false,
+  "current_Stop_report_missing": true,
+  "latest_supplied_Stop_report_version": "0.2.70",
+  "runtime_pin": "158.0.8127.89",
+  "native_binaries_and_google_inventory_unchanged": true
+}

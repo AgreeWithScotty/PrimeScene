@@ -1,9 +1,9 @@
-# Smooth Prime 0.2.71 In Progress, genres and Stop return
+# Smooth Prime 0.2.72 season artwork and episode viewing state
 
-- Preload fresh Amazon In Progress history and show an account-scoped memory preview while each menu visit refreshes in the background; do not save history snapshots to disk.
-- Invalidate In Progress observations around playback changes, reject older in-flight responses and warm fresh history after provider STOP settlement.
-- Start Movies and TV genre cards at the beginning when switching sections; preserve same-section return positions and keep native genre items separate.
-- Observe Kodi native fullscreen cleanup before fallback activation and acknowledge verified catalog bindings while focus settles after window initialization.
-- Preserve the working Watchlist, HD playback, eliminated startup flash, persistent pinned Chrome and all accumulated fixes.
+- Use each season's own Amazon artwork and metadata; prepare missing sibling artwork from its declared page in the background instead of copying the selected season.
+- Map identity-specific Amazon episode playback actions to Watched/Unwatched states, native playcount/resume tags and exact played/remaining times.
+- Keep watched episodes visible inside seasons opened through In Progress and refresh episode state on entry and after provider STOP settlement.
+- Preserve selected cards during refresh, invalidate older episode prefetch and add passive display-mode diagnostics during playback and at Stop.
+- Retain working Watchlist, In Progress preload, genre reset, native HD, startup-flash and persistent Chrome fixes. The remaining physical Stop flash is still unresolved.
 
-The matching NUC 0.2.70 report and recording show three In Progress titles appearing after repeated blank introductions. Prior actual signed-in Amazon validation returned three titles in 1968 ms, memory preview in 0.0 ms, and confirmed that a real response from before playback invalidation cannot repopulate the preview. The matching Stop report shows a correctly bound list incorrectly marked as a restoration failure while focus was temporarily zero. This update fixes that readiness check and observes Kodi native return before fallback activation. Working Watchlist and playback-start flash fixes are user-confirmed; the new physical Stop-flash outcome and NUC navigation timing still need user testing. No new playback tests were run for publication. No display settings or native binaries changed. Main/testing only; no public release promotion.
+Actual signed-in Amazon validation confirmed different original artwork for Seasons 1 and 2, and correctly mapped all eight Season 1 episodes: two in progress, one finished and five unstarted. Final labels were validated from the unmodified real responses, including 0:33 played / 50:09 left, 43:23 played / 4:18 left, Watched and Unwatched. Completed episodes remain visible. No new Kodi playback tests were run for publication. The physical NUC GUI outcome is not verified. The user reports the Stop flash persists on 0.2.71, but the current available NUC report ends with 0.2.70; current Stop diagnostics are still needed. This version adds passive display samples without changing display/HDCP settings or Stop behavior. Main/testing only; no public release promotion.

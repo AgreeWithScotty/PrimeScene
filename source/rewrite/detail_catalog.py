@@ -54,7 +54,7 @@ def parse_detail(data,content_type,address,pluginid,observer):
                     if link:
                         seasons[entry['seasonId']]={'identity':entry['seasonId'],'detail_url':link,
                             'title':_text(entry.get('title')) or 'Season '+str(entry.get('seasonNumber',entry.get('sequenceNumber',''))),
-                            'info':{'mediatype':'season','season':entry.get('seasonNumber',entry.get('sequenceNumber'))}}
+                            'info':dict(_info(entry),mediatype='season',season=entry.get('seasonNumber',entry.get('sequenceNumber')))}
         for name in ('action','actions'):
             container=(state.get(name) or {}).get(identifier) or {}
             if isinstance(container,dict):
@@ -62,6 +62,8 @@ def parse_detail(data,content_type,address,pluginid,observer):
                 if isinstance(main,dict):actions.extend(main.get('children') or [])
     if not record:raise PublicCatalogError('Selected title metadata is missing. Open Diagnostics.')
     info=_info(record);kind=_kind(record);label=_text(record.get('title') or record.get('displayTitle'))
+    if identifier in seasons:
+        seasons[identifier]['info']=dict(info,**{k:v for k,v in seasons[identifier]['info'].items() if v not in (None,'',[],{})})
     if not label:raise PublicCatalogError('Selected title has no title label')
     if kind in ('tvshow','season'):
         if any((s.get('episodeList') or {}).get('cardTitleIds') for s in related):

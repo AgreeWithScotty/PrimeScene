@@ -11,10 +11,20 @@ def _number(value):
 
 def progress_info(node,depth=0):
     if not isinstance(node,dict) or depth>6:return {}
+    if node.get('isTrailer') is True or node.get('videoMaterialType') not in (None,'Feature','FEATURE','feature'):return {}
     result = {}
+    status=node.get('playbackStatus')
+    state={'FeatureFinished':'watched','FeatureNotStarted':'unwatched','FeatureInProgress':'in_progress'}.get(status) if isinstance(status,str) else None
+    if state:
+        result.update(watch_state=state,playcount=1 if state=='watched' else 0)
+        if state in ('watched','unwatched'):result['percentplayed']=100 if state=='watched' else 0
+    runtime=_number(node.get('runTime'))
+    if runtime is not None and runtime>0:result['duration']=runtime
     for key in ('isWatched', 'watched', 'completed', 'isCompleted'):
         if node.get(key) is True:
-            result['playcount'] = 1
+            result.update(playcount=1,watch_state='watched')
+    if not state and not result.get('playcount') and any(node.get(key) is False for key in ('isWatched','watched','completed','isCompleted')):
+        result.update(playcount=0,watch_state='unwatched')
     for key in ('percentplayed', 'percentWatched', 'percentageWatched', 'progressPercentage'):
         value = node.get(key)
         value=_number(value)
@@ -31,15 +41,14 @@ def progress_info(node,depth=0):
         if value is not None:
             result['resume_seconds']=value*scale
             break
-    for key in ('watchProgress', 'playbackProgress', 'viewingProgress'):
-        if isinstance(node.get(key), dict):
-            result.update(progress_info(node[key],depth+1))
-    # Playback actions carry the resume time even when the card has no percentage.
-    for action in node.get('playbackActions') or []:
-        if (isinstance(action,dict) and action.get('videoMaterialType') in (None,'Feature','FEATURE')
-                and 'resume_seconds' not in result):
-            extra=progress_info(action,depth+1)
-            if 'resume_seconds' in extra:result['resume_seconds']=extra['resume_seconds']
+    # Follow declared playback wrappers only, never arbitrary related-title maps.
+    for key in ('watchProgress','playbackProgress','viewingProgress','playbackActions',
+                'primaryActions','payload','playback','main','children'):
+        value=node.get(key)
+        for child in value if isinstance(value,list) else (value,):
+            if isinstance(child,dict):result.update(progress_info(child,depth+1))
+    if result.get('watch_state')=='unwatched' and (result.get('resume_seconds',0)>0 or result.get('percentplayed',0)>0):
+        result['watch_state']='in_progress'
     return result
 
 def complete(info):

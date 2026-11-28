@@ -415,11 +415,14 @@ def _item(row, title_art='', image_cache=None, report=None):
         item.setProperty('TitleArt', title_art)
     try:
         tag = item.getVideoInfoTag()
+        watched=viewing_label(info)=='Watched'
+        if hasattr(tag,'setPlaycount') and ('playcount' in info or info.get('watch_state')):
+            tag.setPlaycount(1 if watched else 0)
         progress = _progress(info)
         if hasattr(tag, 'setResumePoint'):
             known_total=duration_seconds(info);total=known_total or 100
             position=position_seconds(info) if known_total else progress
-            tag.setResumePoint(position if position is not None else total*progress/100,total)
+            tag.setResumePoint(0 if watched else position if position is not None else total*progress/100,total)
         if title and hasattr(tag, 'setTitle'):
             tag.setTitle(title)
         if plot and hasattr(tag, 'setPlot'):
@@ -1082,6 +1085,7 @@ class AuroraHome(xbmcgui.WindowXML):
                     if request.get('progress_ready'):self._preload_progress_return(request.get('request_id'))
                     continue
                 self._play_token+=1;source='current_view';fresh=bool(origin and origin['path']=='__watching__')
+                episode_view=bool(origin and (origin.get('series') or {}).get('view')=='episodes')
                 if fresh:source='fresh_amazon_progress'
                 elif origin:
                     self.nav=origin['nav']
@@ -1151,8 +1155,9 @@ class AuroraHome(xbmcgui.WindowXML):
                     'result':'pending_progress_settlement' if fresh and not request.get('progress_ready') else
                         'pending_fresh_list' if fresh and self._pending_progress_return else 'success'})
                 self._returned_playback_request=request.get('request_id')
+                if episode_view and request.get('progress_ready'):self._refresh_episode_return(origin)
                 if not fresh and request.get('progress_ready'):self._preload_progress_return(request.get('request_id'))
-                if (not fresh or request.get('progress_ready')) and self.playback_origin is origin:self.playback_origin=None
+                if (not fresh and not episode_view or request.get('progress_ready')) and self.playback_origin is origin:self.playback_origin=None
                 self._resume_selection=None
             except Exception as error:
                 self.performance({'event':'playback_card_return_failed','request_id':request.get('request_id'),
@@ -1165,6 +1170,42 @@ class AuroraHome(xbmcgui.WindowXML):
         self.loader.request('__watching__',background=True)
         self.performance({'event':'progress_return_preload_started','stage':'watch_progress_settlement',
             'request_id':request_id,'provider_STOP_completed':True,'disk_cache_used':False,'result':'started'})
+
+    def _refresh_episode_return(self,origin):
+        request_id=origin.get('request_id')
+        if getattr(self,'_episode_refresh_request',None)==request_id or self.loader is None:return
+        with self.lock:
+            if (self.path,self.query)!=(origin['path'],origin['query']):return
+            self._episode_refresh_request=request_id
+            # Retain the rendered rail but invalidate any older page prefetch.
+            self.generation+=1;token=self.generation
+            self.pending_path=None;self.next_path=None;self.busy=False
+        path=(origin.get('series') or {}).get('requested_path') or origin['path']
+        def read():
+            packet=self._read_tv_detail(path,token);seen={path}
+            while packet and packet.get('next') and not any(r.get('url')==origin['url'] for r in packet.get('rows') or []):
+                next_path=packet['next']
+                if next_path in seen or len(seen)>=100:raise RuntimeError('Episode progress continuation repeated')
+                seen.add(next_path);page=self._read_tv_detail(next_path,token)
+                if page is None:return None
+                packet=dict(packet,rows=(packet.get('rows') or [])+(page.get('rows') or []),next=page.get('next'))
+            return packet
+        def ready(future):
+            try:
+                packet=future.result()
+                if self.stop.is_set() or token!=self.generation or packet is None:
+                    self.performance({'event':'episode_progress_return_refresh','stage':'watch_progress_settlement',
+                        'request_id':request_id,'reason':'view_changed_or_cancelled','result':'cancelled'});return
+                packet=dict(packet,rows=[r for r in packet.get('rows') or [] if _kind(r.get('info'))=='episode'])
+                self._publish_progress_refresh(token,packet,kind='episodes')
+                self.performance({'event':'episode_progress_return_refresh','stage':'watch_progress_settlement',
+                    'request_id':request_id,'episodes':len(packet['rows']),'source':'fresh_Amazon_after_STOP','result':'success'})
+            except Exception as error:
+                self.performance({'event':'episode_progress_return_refresh','stage':'watch_progress_settlement',
+                    'request_id':request_id,'exception':exception_details(error),'result':'failure'})
+                if token==self.generation and not self.stop.is_set():
+                    self.setProperty('SectionNotice','Episode viewing status could not be refreshed. Reopen the season to retry.')
+        self.loader.personal.submit(read).add_done_callback(ready)
 
     def _capture_playback_origin(self):
         """Capture at click time, before asynchronous title resolution can finish."""
@@ -1664,7 +1705,10 @@ class AuroraHome(xbmcgui.WindowXML):
                         existing.setProperty(prop,item.getProperty(prop))
                     values=row.get('info') or {};known_total=duration_seconds(values);total=known_total or 100
                     position=position_seconds(values) if known_total else _progress(values)
-                    try:existing.getVideoInfoTag().setResumePoint(position if position is not None else total*_progress(values)/100,total)
+                    try:
+                        tag=existing.getVideoInfoTag();watched=viewing_label(values)=='Watched'
+                        tag.setResumePoint(0 if watched else position if position is not None else total*_progress(values)/100,total)
+                        if hasattr(tag,'setPlaycount') and ('playcount' in values or values.get('watch_state')):tag.setPlaycount(1 if watched else 0)
                     except Exception as error:self.performance({'event':'progress_indicator_update_failed','stage':'in_place_refresh',
                         'exception':exception_details(error),'result':'failure'})
                     existing.setArt({name:item.getArt(name) for name in ('thumb','landscape','poster','icon','fanart','hero') if item.getArt(name)})
@@ -1924,8 +1968,7 @@ class AuroraHome(xbmcgui.WindowXML):
         season_source='prepared_title' if prepared and prepared.get('seasons') else 'shared_title_request'
         if prepared and prepared.get('seasons'):packet=deepcopy(prepared)
         elif season_view:packet=self._fetch_detail(path)
-        else:packet=(self._read_tv_detail(path, token) if context.get('watching_only') or continuation and continuation[1] == 'tv_detail'
-                    else self._fetch_detail(path))
+        else:packet=self._read_tv_detail(path, token)
         if packet is None and not self.stop.is_set() and token == self.generation:
             packet = self._read_tv_detail(path, token)
         if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
@@ -1946,7 +1989,9 @@ class AuroraHome(xbmcgui.WindowXML):
                 raise RuntimeError('Amazon did not return season links for this show. Open Diagnostics.')
             rows=[]
             for season in seasons:
-                info=dict(packet.get('info') or {})
+                # A selected season's artwork/year/watch state cannot describe
+                # every sibling. Missing own art is fetched by title read-ahead.
+                info={k:v for k,v in (packet.get('info') or {}).items() if k in ('genre','genres','mpaa','rating')}
                 info.update({k:v for k,v in (season.get('info') or {}).items() if v not in (None,'',[],{})})
                 info['mediatype']='season'
                 rows.append(dict(season,info=info,video=False,season_choice=True,watching_only=context.get('watching_only',False)))
@@ -1956,6 +2001,8 @@ class AuroraHome(xbmcgui.WindowXML):
                 self.series_context=context;self._season_properties()
             self.performance({'event':'series_seasons_published','stage':'season_listing','season_count':len(rows),
                 'request_id':context.get('season_request_id'),'source':season_source,'season_metadata_only':True,
+                'season_owned_artwork':sum(bool((r.get('info') or {}).get('fanart') or _rail_art(r.get('info') or {})) for r in rows),
+                'parent_artwork_copied_to_siblings':False,
                 'click_to_seasons_ms':round((monotonic()-context.get('season_selection_started',monotonic()))*1000),
                 'automatic_episode_selection':False,'result':'success'})
             return dict(packet,rows=rows,next=None)
@@ -1981,7 +2028,7 @@ class AuroraHome(xbmcgui.WindowXML):
                                       for row in present_episodes))
             current_season = chosen.get('identity') == packet.get('selected_id')
             if (not present_episodes or not already_listed and not current_season) and season_path != path:
-                packet = self._read_tv_detail(season_path,token) if context.get('watching_only') else self._fetch_detail(season_path)
+                packet = self._read_tv_detail(season_path,token)
                 if packet is None and not self.stop.is_set() and token == self.generation:
                     packet = self._read_tv_detail(season_path, token)
                 if packet in (None, 'wait') or token != self.generation or self.stop.is_set():
@@ -2006,25 +2053,11 @@ class AuroraHome(xbmcgui.WindowXML):
         if token != self.generation or self.stop.is_set():
             return None
         if context.get('watching_only'):
-            from .watch_home import complete
-            before = len(episodes)
-            episodes = [row for row in episodes if not complete(row.get('info') or {})]
-            self.performance({'event':'home_episodes_filtered','stage':'series_navigation',
-                'source_episodes':before,'unfinished_episodes':len(episodes),'result':'success'})
-            packet = dict(packet,rows=episodes)
-            if not episodes:
-                current_number = context.get('requested_season')
-                next_season = next((row for row in seasons if current_number is not None
-                    and _season_number(row) > float(current_number) and _season_number(row) < 1 << 20),None)
-                if next_season is not None:
-                    next_path = _browse_path(self.g.pluginid,next_season['url'])
-                    if next_path and next_path != path:
-                        context['requested_path'] = next_path
-                        context['requested_season'] = (next_season.get('info') or {}).get('season')
-                        with self.lock:
-                            if token!=self.generation or self.stop.is_set():return None
-                            self.series_context = context
-                        return self._episode_listing(next_path,token)
+            self.performance({'event':'home_episode_states_preserved','stage':'series_navigation',
+                'source_episodes':len(episodes),'completed_episodes_hidden':0,
+                'watched_episodes':sum(viewing_label(r.get('info') or {})=='Watched' for r in episodes),
+                'in_progress_episodes':sum((r.get('info') or {}).get('watch_state')=='in_progress' for r in episodes),
+                'result':'success'})
         if episodes:
             episodes.sort(key=_episode_order)
             if not context.get('season_label'):
